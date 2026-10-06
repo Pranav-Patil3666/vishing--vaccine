@@ -33,6 +33,7 @@ export function routeTranscript(
   }
 
   const text = typeof transcript === "string" ? transcript : transcript?.text;
+  if (text !== undefined && text !== null && typeof text !== "string") return fallbackFor(currentNode, "unknown-transcript");
   const normalizedText = text ? normalizeTranscript(text) : "";
   if (!normalizedText) return fallbackFor(currentNode, "unknown-transcript");
 

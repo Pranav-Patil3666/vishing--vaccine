@@ -3,6 +3,7 @@ import test from "node:test";
 import { routeTranscript } from "./router.js";
 import type { ScenarioDocument } from "@vaccine/scenario-schema";
 
+// Synthetic unit-test fixture only; it does not approve any checked-in scenario content.
 const scenario: ScenarioDocument = {
   scenario_id: "S-99",
   version: "0.1.0",
@@ -58,7 +59,7 @@ const scenario: ScenarioDocument = {
   ],
   safety_constraints: ["Training only."],
   review_status: "approved",
-  reviewed_by: "human-reviewer",
+  reviewed_by: "synthetic-test-fixture",
   reviewed_at: "2026-10-06T00:00:00.000Z",
 };
 
@@ -78,6 +79,33 @@ test("keyword routing is normalized and case insensitive", () => {
 test("unknown transcript and unmatched input resolve to configured safe fallback", () => {
   assert.equal(routeTranscript(scenario, "start", null).responseId, "system.safe-fallback");
   assert.equal(routeTranscript(scenario, "start", "Tell me about the weather").responseId, "system.safe-fallback");
+});
+
+test("malformed transcript values resolve to safe fallback", () => {
+  assert.equal(routeTranscript(scenario, "start", { text: 4 } as never).responseId, "system.safe-fallback");
+});
+
+test("safe training utterances select only their matching approved test-fixture branch", () => {
+  const utterances = [
+    ["safe-refusal", "I refuse to share any secret."],
+    ["urgency-challenge", "I will slow down and independently verify."],
+    ["secrecy-refusal", "I will not keep this secret."],
+    ["remote-access-refusal", "I refuse remote access installation."],
+    ["credential-refusal", "I will never share my OTP."],
+  ] as const;
+  const fixture = {
+    ...scenario,
+    nodes: [...scenario.nodes, ...utterances.map(([id]) => ({
+      id, parent_node_id: "start", trigger_rules: [{ type: "normalized_text" as const, text: utterances.find(([branch]) => branch === id)?.[1] ?? "" }],
+      response_id: "safe", learner_expected_behavior: ["Use a safe response."], next_node_id: null,
+      safe_fallback_response_id: "system.safe-fallback", debrief_tags: ["RF-01" as const],
+      safety_constraints: ["Test-only fictional approved fixture."], branch_status: "approved" as const,
+    }))],
+  };
+  for (const [id, utterance] of utterances) {
+    assert.equal(routeTranscript(fixture, "start", utterance).branchId, id);
+    assert.equal(routeTranscript(fixture, "start", utterance).responseId, "safe");
+  }
 });
 
 test("draft scenarios cannot activate draft branches", () => {

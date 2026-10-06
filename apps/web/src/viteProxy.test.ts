@@ -17,6 +17,7 @@ test("Vite web development proxy reaches the backend health route", async () => 
   const vite = await createViteServer({
     configFile: fileURLToPath(new URL("../vite.config.ts", import.meta.url)),
     root: fileURLToPath(new URL("..", import.meta.url)),
+    optimizeDeps: { noDiscovery: true },
     server: { host: "127.0.0.1", port: 0 },
   });
 
@@ -29,6 +30,9 @@ test("Vite web development proxy reaches the backend health route", async () => 
     const body = await response.json() as { status?: string; environment?: string };
     assert.equal(body.status, "ok");
     assert.equal(body.environment, "test");
+    const apiRoute = await fetch(`http://127.0.0.1:${webAddress.port}/api/sessions/not-a-session`);
+    assert.equal(apiRoute.status, 404);
+    assert.match(await apiRoute.text(), /SESSION_NOT_FOUND/);
   } finally {
     await vite.close();
     await new Promise<void>((resolve, reject) => api.close((error) => error ? reject(error) : resolve()));

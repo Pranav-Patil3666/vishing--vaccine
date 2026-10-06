@@ -2,7 +2,9 @@
 
 ## Release rule
 
-Scenario JSON is draft content until it passes the roadmap's review gate. The checked-in S-01, S-02, and S-03 files are metadata-only placeholders with `language` and `voice_id` unset, no caller script, and a system safe-template fallback. They must not be presented as reviewed or used to launch a training session.
+Phase 2's explicitly marked metadata-only development mock may create a session solely to exercise consent/state/transcription plumbing. For draft content, the router always returns the generic system-safe fallback and makes no approved-branch claim. This does not make draft scenarios eligible for a reviewed training session.
+
+Scenario JSON is draft content until it passes the roadmap's review gate. All checked-in files have `language` and `voice_id` unset, no caller script, and a system safe-template fallback. S-01 additionally has draft-only learner-behavior branch structure that resolves to the system-safe template; those branches are not approved runtime content. The files must not be presented as reviewed or used to launch a reviewed training session.
 
 Every scenario identifies itself as a simulation and names a fictional organization with `training_only: true`. Scenario metadata must include at least one learning objective, roadmap red-flag mapping, per-node expected learner behavior, safety constraints, a valid response reference, and a safe fallback. Approved scenarios additionally require a verified language, voice ID, reviewer, review date, approved nodes, and non-draft responses.
 

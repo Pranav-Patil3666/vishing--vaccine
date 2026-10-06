@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => {
           target: process.env.API_PROXY_TARGET || environment.API_PROXY_TARGET || "http://127.0.0.1:3001",
           changeOrigin: false,
         },
+        "/api": {
+          target: process.env.API_PROXY_TARGET || environment.API_PROXY_TARGET || "http://127.0.0.1:3001",
+          changeOrigin: false,
+        },
       },
     },
   };

@@ -35,6 +35,78 @@
       "debrief_tags": ["RF-01", "RF-02"],
       "safety_constraints": ["Draft metadata only; do not use as a caller script."],
       "branch_status": "draft"
+    },
+    {
+      "id": "challenge-urgency",
+      "parent_node_id": "start",
+      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will slow down and verify independently."] }],
+      "response_id": "system.safe-fallback",
+      "learner_expected_behavior": ["Pause under urgency and verify independently."],
+      "next_node_id": "verification-follow-up",
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-01", "RF-02"],
+      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
+      "branch_status": "draft"
+    },
+    {
+      "id": "refuse-secrecy",
+      "parent_node_id": "start",
+      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will not keep this secret."] }],
+      "response_id": "system.safe-fallback",
+      "learner_expected_behavior": ["Refuse secrecy and use an official channel."],
+      "next_node_id": null,
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-03"],
+      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
+      "branch_status": "draft"
+    },
+    {
+      "id": "refuse-remote-access",
+      "parent_node_id": "start",
+      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I refuse remote access installation."] }],
+      "response_id": "system.safe-fallback",
+      "learner_expected_behavior": ["Refuse remote-access installation."],
+      "next_node_id": null,
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-04"],
+      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
+      "branch_status": "draft"
+    },
+    {
+      "id": "refuse-credential-disclosure",
+      "parent_node_id": "start",
+      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will never share my OTP."] }],
+      "response_id": "system.safe-fallback",
+      "learner_expected_behavior": ["Do not disclose a secret or credential."],
+      "next_node_id": null,
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-05"],
+      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
+      "branch_status": "draft"
+    },
+    {
+      "id": "verification-follow-up",
+      "parent_node_id": "challenge-urgency",
+      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will contact official support."] }],
+      "response_id": "system.safe-fallback",
+      "learner_expected_behavior": ["Use a known official support channel."],
+      "next_node_id": "safe-close",
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-02"],
+      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
+      "branch_status": "draft"
+    },
+    {
+      "id": "safe-close",
+      "parent_node_id": "verification-follow-up",
+      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will end the simulation and contact official support."] }],
+      "response_id": "system.safe-fallback",
+      "learner_expected_behavior": ["End the simulation and escalate through an official channel."],
+      "next_node_id": null,
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-02"],
+      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
+      "branch_status": "draft"
     }
   ],
   "safety_constraints": [

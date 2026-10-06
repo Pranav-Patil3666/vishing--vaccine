@@ -114,9 +114,12 @@ export type ScenarioNode = z.infer<typeof ScenarioNodeSchema>;
 export const DebriefEventSchema = z.object({
   eventId: z.string().min(1),
   turnNumber: z.number().int().nonnegative(),
+  callerTesting: z.string().min(1),
   observedBehavior: z.enum(["safe", "risky", "unmatched"]),
   redFlagIds: z.array(RedFlagIdSchema),
   recommendedAction: z.string().min(1),
+  evidenceSnippet: z.string().optional(),
+  rubricPoints: z.array(z.number().int().min(1).max(5)).optional(),
 });
 export type DebriefEvent = z.infer<typeof DebriefEventSchema>;
 
@@ -124,13 +127,29 @@ export const ConsentStateSchema = z.object({
   status: z.enum(["not-requested", "granted", "denied", "withdrawn"]),
   updatedAt: z.string().datetime().optional(),
   purpose: z.literal("microphone-transcription"),
+  version: z.string().min(1).optional(),
 });
 export type ConsentState = z.infer<typeof ConsentStateSchema>;
 
+export const SessionLifecycleStateSchema = z.enum([
+  "CREATED", "CONSENT_REQUIRED", "READY", "CALLER_SPEAKING", "LISTENING",
+  "TRANSCRIBING", "ROUTING", "GENERATING_RESPONSE", "PLAYING_RESPONSE",
+  "COMPLETED", "ENDED_BY_LEARNER", "FALLBACK", "ERROR",
+]);
+export type SessionLifecycleState = z.infer<typeof SessionLifecycleStateSchema>;
+
 export const LatencyMeasurementSchema = z.object({
   operation: z.string().min(1),
+  stage: z.string().min(1).optional(),
+  sessionId: z.string().min(1).optional(),
+  turnNumber: z.number().int().nonnegative().optional(),
+  startedAt: z.string().datetime().optional(),
+  endedAt: z.string().datetime().optional(),
   durationMs: z.number().nonnegative(),
   measuredAt: z.string().datetime(),
+  success: z.boolean().optional(),
+  failureCode: z.string().optional(),
+  branchId: z.string().nullable().optional(),
   cacheHit: z.boolean().optional(),
 });
 export type LatencyMeasurement = z.infer<typeof LatencyMeasurementSchema>;
@@ -152,6 +171,10 @@ export const SessionStateSchema = z.object({
   language: z.string().min(1),
   currentNodeId: z.string().min(1),
   turnNumber: z.number().int().nonnegative(),
+  state: SessionLifecycleStateSchema,
+  consentRequired: z.literal(true),
+  recordingEnabled: z.boolean(),
+  consentVersion: z.string().min(1),
   consent: ConsentStateSchema,
   observedEvents: z.array(DebriefEventSchema),
   mode: z.enum(["safe", "demo"]),
@@ -159,6 +182,38 @@ export const SessionStateSchema = z.object({
   metrics: z.array(LatencyMeasurementSchema),
 });
 export type SessionState = z.infer<typeof SessionStateSchema>;
+
+export const CreateSessionRequestSchema = z.object({
+  scenarioId: z.string().min(1), scenarioVersion: z.string().min(1), language: z.string().min(1),
+  voiceId: z.string().min(1).optional(), demoMode: z.boolean(),
+}).strict();
+export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
+export const ConsentRequestSchema = z.object({ consentVersion: z.string().min(1) }).strict();
+export const MockTurnRequestSchema = z.object({ text: z.string() }).strict();
+export const EndSessionRequestSchema = z.object({}).strict();
+
+export const SafeSessionSchema = z.object({
+  sessionId: z.string().min(1), scenarioId: z.string().min(1), scenarioVersion: z.string().min(1),
+  language: z.string().min(1), state: SessionLifecycleStateSchema, consent: ConsentStateSchema,
+  turnNumber: z.number().int().nonnegative(), currentNodeId: z.string().min(1),
+  mode: z.enum(["safe", "demo"]), recordingEnabled: z.boolean(),
+  cache: z.object({ hits: z.number().int().nonnegative(), misses: z.number().int().nonnegative() }),
+  debriefEvents: z.array(DebriefEventSchema),
+  metrics: z.array(LatencyMeasurementSchema),
+});
+export type SafeSession = z.infer<typeof SafeSessionSchema>;
+
+export const SessionCreateResponseSchema = z.object({ session: SafeSessionSchema, simulationOnly: z.literal(true), draftFallbackOnly: z.boolean() });
+export const TurnApiResponseSchema = z.object({
+  session: SafeSessionSchema,
+  transcript: z.object({ eventId: z.string(), turnNumber: z.number().int(), text: z.string(), language: z.string(), normalizationStatus: z.string() }),
+  branch: z.object({ id: z.string().nullable(), responseId: z.string(), matched: z.boolean(), reason: z.string() }),
+  response: z.object({ mediaType: z.string(), cacheKey: z.string(), cacheHit: z.boolean(), playable: z.literal(false), fallback: z.boolean(), durationMs: z.number().optional() }),
+  debriefEvent: DebriefEventSchema,
+  latency: z.array(LatencyMeasurementSchema),
+  creditMode: z.enum(["none", "demo"]),
+});
+export type TurnApiResponse = z.infer<typeof TurnApiResponseSchema>;
 
 export const ProviderErrorSchema = z.object({
   code: z.enum(["unavailable", "invalid_request", "rate_limited", "capacity_exceeded", "unknown"]),
