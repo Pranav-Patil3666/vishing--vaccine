@@ -1,0 +1,48 @@
+{
+  "scenario_id": "S-03",
+  "version": "0.1.0-draft",
+  "language": null,
+  "voice_id": null,
+  "fictional_organization": {
+    "name": "BlueLine Connect",
+    "training_only": true
+  },
+  "simulation": true,
+  "opening_line": "Draft placeholder only. No simulated caller script has been approved.",
+  "learning_objectives": [
+    "Recognize account-lock pressure and avoid sharing personal or payment data."
+  ],
+  "red_flag_ids": ["RF-01", "RF-05", "RF-07"],
+  "responses": {
+    "draft.opening": {
+      "text": "Draft placeholder only. No caller line is approved.",
+      "safety_status": "draft"
+    },
+    "system.safe-fallback": {
+      "text": "This is a fictional training simulation. You can end now and verify any claim independently.",
+      "safety_status": "system_safe_template"
+    }
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "parent_node_id": null,
+      "trigger_rules": [],
+      "response_id": "draft.opening",
+      "learner_expected_behavior": ["Pause and verify through a trusted channel."],
+      "next_node_id": null,
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-01", "RF-05", "RF-07"],
+      "safety_constraints": ["Draft metadata only; do not use as a caller script."],
+      "branch_status": "draft"
+    }
+  ],
+  "safety_constraints": [
+    "Fictional training simulation only.",
+    "Do not request or enter real credentials or personal data.",
+    "Do not provide operational instructions for real-world deception."
+  ],
+  "review_status": "draft",
+  "reviewed_by": null,
+  "reviewed_at": null
+}

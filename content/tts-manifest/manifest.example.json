@@ -1,0 +1,16 @@
+{
+  "manifest_version": "0.1.0-draft",
+  "status": "draft",
+  "entries": [],
+  "entry_fields": [
+    "response_id",
+    "language",
+    "voice_id",
+    "configuration_version",
+    "cache_key",
+    "media_type",
+    "artifact_reference",
+    "review_status"
+  ],
+  "note": "No provider model, voice, output, or generated audio is available in Phase 1."
+}

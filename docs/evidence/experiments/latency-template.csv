@@ -1,0 +1,1 @@
+run_id,configuration,scenario_id,language,turn_id,speech_end_utc,first_audio_utc,first_audio_latency_ms,full_response_latency_ms,cache_hit,error,environment,network_notes,protocol_artifact,true_n,caveat

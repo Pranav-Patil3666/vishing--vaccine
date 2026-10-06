@@ -1,0 +1,36 @@
+{
+  "name": "vishing-vaccine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/contracts",
+    "packages/scenario-schema",
+    "packages/scenario-router",
+    "packages/credit-guard",
+    "packages/ui",
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "build:packages": "npm run build --workspace @vaccine/contracts && npm run build --workspace @vaccine/scenario-schema && npm run build --workspace @vaccine/scenario-router && npm run build --workspace @vaccine/credit-guard && npm run build --workspace @vaccine/ui",
+    "build": "npm run build:packages && npm run build --workspace @vaccine/api && npm run build --workspace @vaccine/web",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "test": "npm run build:packages && tsx --test packages/contracts/src/contracts.test.ts packages/scenario-schema/src/schema.test.ts packages/scenario-router/src/router.test.ts packages/credit-guard/src/creditGuard.test.ts apps/api/src/health.test.ts apps/api/src/environment.test.ts apps/api/src/session.test.ts apps/api/src/providers/mockAdapters.test.ts apps/api/src/cache/cacheKey.test.ts apps/web/src/healthClient.test.ts apps/web/src/environment.test.ts apps/web/src/viteProxy.test.ts",
+    "validate:scenarios": "npm run build:packages && node scripts/validate-scenarios.mjs",
+    "secret-scan": "node scripts/secret-scan.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run validate:scenarios && npm run build && npm run secret-scan",
+    "dev:api": "npm run build:packages && npm run dev --workspace @vaccine/api",
+    "dev:web": "npm run build:packages && npm run dev --workspace @vaccine/web"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.19.17",
+    "eslint": "10.0.3",
+    "globals": "16.4.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.58.1"
+  }
+}

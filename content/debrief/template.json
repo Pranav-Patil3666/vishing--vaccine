@@ -1,0 +1,13 @@
+{
+  "template_version": "0.1.0-draft",
+  "status": "draft",
+  "purpose": "Turn-by-turn learning reflection; no risk score or efficacy claim.",
+  "fields": [
+    { "id": "turn_number", "required": true },
+    { "id": "observed_behavior", "required": true },
+    { "id": "mapped_red_flags", "required": true },
+    { "id": "safe_recommendation", "required": true },
+    { "id": "evidence_reference", "required": false }
+  ],
+  "privacy": "Transcript evidence is transient by default; do not include audio."
+}

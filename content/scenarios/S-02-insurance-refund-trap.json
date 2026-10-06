@@ -1,0 +1,48 @@
+{
+  "scenario_id": "S-02",
+  "version": "0.1.0-draft",
+  "language": null,
+  "voice_id": null,
+  "fictional_organization": {
+    "name": "HarborShield Insurance",
+    "training_only": true
+  },
+  "simulation": true,
+  "opening_line": "Draft placeholder only. No simulated caller script has been approved.",
+  "learning_objectives": [
+    "Recognize refund bait and refuse remote-access or payment-credential requests."
+  ],
+  "red_flag_ids": ["RF-04", "RF-06", "RF-08"],
+  "responses": {
+    "draft.opening": {
+      "text": "Draft placeholder only. No caller line is approved.",
+      "safety_status": "draft"
+    },
+    "system.safe-fallback": {
+      "text": "This is a fictional training simulation. You can end now and verify any claim independently.",
+      "safety_status": "system_safe_template"
+    }
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "parent_node_id": null,
+      "trigger_rules": [],
+      "response_id": "draft.opening",
+      "learner_expected_behavior": ["Refuse risky requests and verify independently."],
+      "next_node_id": null,
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": ["RF-04", "RF-06", "RF-08"],
+      "safety_constraints": ["Draft metadata only; do not use as a caller script."],
+      "branch_status": "draft"
+    }
+  ],
+  "safety_constraints": [
+    "Fictional training simulation only.",
+    "Do not request or enter real credentials or personal data.",
+    "Do not provide operational instructions for real-world deception."
+  ],
+  "review_status": "draft",
+  "reviewed_by": null,
+  "reviewed_at": null
+}
