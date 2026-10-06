@@ -1,9 +1,40 @@
-import { RedFlagIdSchema, SYSTEM_SAFE_FALLBACK_RESPONSE_ID, TriggerRuleSchema } from "@vaccine/contracts";
+import {
+  BehaviorLabelSchema,
+  RedFlagIdSchema,
+  SessionTerminalStateSchema,
+  SYSTEM_SAFE_FALLBACK_RESPONSE_ID,
+  TriggerRuleSchema,
+} from "@vaccine/contracts";
 import { z } from "zod";
 
 const responseSchema = z.object({
   text: z.string().min(1),
   safety_status: z.enum(["draft", "system_safe_template", "reviewed_safe"]),
+}).strict();
+
+const tacticSchema = z.object({
+  tactic_id: z.string().min(1),
+  pressure_level: z.number().int().min(0).max(5),
+  behavior_targets: z.array(BehaviorLabelSchema).min(1),
+  response_ids: z.array(z.string().min(1)).min(1),
+}).strict();
+
+const adaptivePolicySchema = z.object({
+  max_pressure_level: z.number().int().min(0).max(5),
+  max_turns: z.number().int().min(1).max(30),
+  safe_word: z.string().min(1).max(80),
+  escalation_behaviors: z.array(BehaviorLabelSchema).min(1),
+  terminal_states: z.array(SessionTerminalStateSchema).min(1),
+  tactics: z.array(tacticSchema).min(1),
+}).strict();
+
+const safetyMetadataSchema = z.object({
+  visible_simulation_label: z.literal(true),
+  ai_voice_disclosure_required: z.literal(true),
+  consent_before_recording: z.literal(true),
+  audio_retention: z.literal("none_by_default"),
+  dummy_data_mode: z.literal("synthetic_only"),
+  safe_ending_response_id: z.string().min(1),
 }).strict();
 
 const scenarioNodeSchema = z.object({
@@ -34,6 +65,8 @@ export const ScenarioDocumentSchema = z.object({
   red_flag_ids: z.array(RedFlagIdSchema).min(1),
   responses: z.record(z.string().min(1), responseSchema),
   nodes: z.array(scenarioNodeSchema).min(1),
+  adaptive_policy: adaptivePolicySchema.optional(),
+  safety_metadata: safetyMetadataSchema.optional(),
   safety_constraints: z.array(z.string().min(1)).min(1),
   review_status: z.enum(["draft", "in_review", "approved", "rejected"]),
   reviewed_by: z.string().min(1).nullable(),
@@ -90,6 +123,42 @@ export const ScenarioDocumentSchema = z.object({
     }
     if (node.safety_constraints.length === 0) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["nodes", index, "safety_constraints"], message: "At least one node safety constraint is required." });
+    }
+  }
+
+  if (scenario.adaptive_policy) {
+    const tacticIds = new Set<string>();
+    const policy = scenario.adaptive_policy;
+    if (!scenario.safety_metadata) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["safety_metadata"], message: "Adaptive scenarios require explicit simulation, consent, voice-disclosure, retention, synthetic-data, and safe-ending metadata." });
+    }
+    if (!policy.terminal_states.includes("SAFE_WORD") || !policy.terminal_states.includes("LEARNER_ENDED")) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "terminal_states"], message: "Adaptive scenarios must support both safe-word and learner-ended terminal states." });
+    }
+    for (const [index, tactic] of policy.tactics.entries()) {
+      if (tacticIds.has(tactic.tactic_id)) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "tactics", index, "tactic_id"], message: `Duplicate tactic ID: ${tactic.tactic_id}` });
+      }
+      tacticIds.add(tactic.tactic_id);
+      if (tactic.pressure_level > policy.max_pressure_level) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "tactics", index, "pressure_level"], message: "Tactic pressure cannot exceed the configured maximum." });
+      }
+      for (const [responseIndex, responseId] of tactic.response_ids.entries()) {
+        const response = scenario.responses[responseId];
+        if (!response) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "tactics", index, "response_ids", responseIndex], message: `Unknown approved response ID: ${responseId}` });
+        } else if (scenario.review_status === "approved" && response.safety_status !== "reviewed_safe") {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "tactics", index, "response_ids", responseIndex], message: "Released tactics must refer only to reviewed-safe scenario responses." });
+        }
+      }
+    }
+  }
+
+  if (scenario.safety_metadata) {
+    if (!responseIds.has(scenario.safety_metadata.safe_ending_response_id)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["safety_metadata", "safe_ending_response_id"], message: "Safe ending response ID does not exist." });
+    } else if (scenario.responses[scenario.safety_metadata.safe_ending_response_id]?.safety_status === "draft") {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["safety_metadata", "safe_ending_response_id"], message: "Safe ending response must be a system-safe template or reviewed-safe response." });
     }
   }
 

@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 import {
-  AudioInputSchema, TranscriptEventSchema, type DebriefEvent, type LatencyMeasurement,
+  AudioInputSchema, TranscriptEventSchema, type ApprovedCallerResponse, type BehaviorClassification, type DebriefEvent, type LearnerTurnEvent, type LatencyMeasurement,
   type SessionLifecycleState, type SessionState, type SpeechRecognizer, type SpeechSynthesizer,
 } from "@vaccine/contracts";
 import { evaluateCreditRequest, type CreditBudget } from "@vaccine/credit-guard";
-import { routeTranscript } from "@vaccine/scenario-router";
 import type { ScenarioDocument } from "@vaccine/scenario-schema";
+import { selectAdaptiveAction, toSpeechSynthesisRequest } from "./adaptivePolicy.js";
+import { DeterministicBehaviorClassifier } from "./behaviorClassifier.js";
 import { createTtsCacheKey } from "./cache/cacheKey.js";
+import { appendLearnerTurnEvent } from "./eventLog.js";
+import { countFillerWords, deriveSpeechRate } from "./timing.js";
 import { ApplicationError } from "./errors.js";
 import { transitionSession } from "./session.js";
 import { InMemorySessionStore } from "./sessionStore.js";
@@ -40,10 +43,28 @@ export interface TurnResult {
 
 export class TurnOrchestrator {
   private readonly audioCache: TtsMetadataCache;
+  private readonly behaviorClassifier = new DeterministicBehaviorClassifier();
+  private readonly pendingSyntheses = new Map<string, Promise<{ mediaType: string; durationMs?: number }>>();
+  private readonly turnTails = new Map<string, Promise<void>>();
   private readonly usedUnits = new Map<string, number>();
   constructor(private readonly options: TurnPipelineOptions) { this.audioCache = options.cache ?? new Map(); }
 
   async processTurn(sessionId: string, learnerText: string): Promise<TurnResult> {
+    const previous = this.turnTails.get(sessionId) ?? Promise.resolve();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const tail = previous.then(() => gate, () => gate);
+    this.turnTails.set(sessionId, tail);
+    await previous;
+    try {
+      return await this.processTurnNow(sessionId, learnerText);
+    } finally {
+      release();
+      if (this.turnTails.get(sessionId) === tail) this.turnTails.delete(sessionId);
+    }
+  }
+
+  private async processTurnNow(sessionId: string, learnerText: string): Promise<TurnResult> {
     let session = this.options.store.get(sessionId);
     if (session.consent.status !== "granted" || !session.recordingEnabled) throw new ApplicationError("CONSENT_REQUIRED", "Explicit consent is required before processing a turn.");
     if (session.state !== "READY" && session.state !== "LISTENING" && session.state !== "FALLBACK") throw new ApplicationError("INVALID_STATE", "Session is not ready to accept a learner turn.");
@@ -69,18 +90,29 @@ export class TurnOrchestrator {
         return parsed.data;
       });
       step("ROUTING");
-      const route = await this.measure(stageMeasurements, sessionId, turnNumber, "routing", async () => {
-        try { return routeTranscript(scenario, session.currentNodeId, transcript); }
-        catch { throw new ApplicationError("ROUTING_FAILED", "Safe deterministic routing failed."); }
+      const behavior = this.behaviorClassifier.classify({ transcriptText: transcript.text });
+      const policyAction = await this.measure(stageMeasurements, sessionId, turnNumber, "routing", async () => {
+        try {
+          return selectAdaptiveAction({
+            scenario,
+            behavior: behavior.label,
+            turnNumber,
+            currentPressureLevel: session.currentPressureLevel,
+            previousTacticIds: session.previousTacticIds,
+            previousResponseIds: session.timelineEvents.flatMap((event) => event.callerResponseId ? [event.callerResponseId] : []),
+            learnerText: transcript.text,
+          });
+        } catch { throw new ApplicationError("ROUTING_FAILED", "Approved adaptive policy or safe fallback could not be resolved."); }
       });
+      const route = { branchId: policyAction.tacticId, responseId: policyAction.response.responseId, matched: policyAction.reason === "selected", reason: policyAction.reason };
       selectedBranchId = route.branchId;
       stageMeasurements.at(-1)!.branchId = route.branchId;
-      const responseText = scenario.responses[route.responseId]?.text;
-      if (!responseText || (route.responseId !== "system.safe-fallback" && scenario.review_status !== "approved")) {
-        throw new ApplicationError("ROUTING_FAILED", "Router did not resolve an approved or system-safe response.");
-      }
-      const cacheKey = createTtsCacheKey({ responseId: route.responseId, text: responseText, language: session.language, voice: scenario.voice_id ?? "mock-metadata-only" });
+      const approvedResponse = policyAction.response;
+      const responseText = approvedResponse.text;
+      const cacheKey = createTtsCacheKey({ responseId: route.responseId, text: responseText, language: approvedResponse.language, voice: approvedResponse.voice, configurationVersion: scenario.version });
       step("GENERATING_RESPONSE");
+      const ttsApproved = await this.measure(stageMeasurements, sessionId, turnNumber, "tts_credit_check", async () =>
+        this.preflightBillable("tts", this.options.ttsUnits, sessionId, cacheKey));
       let cached: { mediaType: string; durationMs?: number } | undefined;
       try { cached = await this.measure(stageMeasurements, sessionId, turnNumber, "cache_lookup", async () => this.audioCache.get(cacheKey)); }
       catch { cached = undefined; }
@@ -89,17 +121,15 @@ export class TurnOrchestrator {
       let audioMetadata = cached;
       let fallbackUsed = false;
       if (!audioMetadata) {
+        if (!ttsApproved) {
+          fallbackUsed = true;
+          audioMetadata = { mediaType: "application/x-vaccine-safe-text-fallback" };
+        }
+      }
+      if (!audioMetadata) {
         try {
-          audioMetadata = await this.measure(stageMeasurements, sessionId, turnNumber, "tts", async () => {
-            this.authorizeBillable("tts", this.options.ttsUnits, sessionId, false);
-            try {
-              const result = await this.options.synthesizer.synthesize({ responseId: route.responseId, text: responseText, language: session.language, voice: scenario.voice_id ?? "mock-metadata-only" });
-              return { mediaType: result.mediaType, ...(result.durationMs === undefined ? {} : { durationMs: result.durationMs }) };
-            } catch {
-              throw new ApplicationError("SYNTHESIS_FAILED", "Mock speech synthesis failed; safe text fallback is available.");
-            }
-          });
-          try { this.audioCache.set(cacheKey, audioMetadata); } catch { /* a cache write miss does not block the safe response */ }
+          audioMetadata = await this.measure(stageMeasurements, sessionId, turnNumber, "tts", async () =>
+            this.synthesizeOnce(cacheKey, approvedResponse, sessionId));
         } catch (error) {
           if (!(error instanceof ApplicationError) || !["SYNTHESIS_FAILED", "CREDIT_LIMIT_REACHED"].includes(error.code)) throw error;
           fallbackUsed = true;
@@ -107,19 +137,26 @@ export class TurnOrchestrator {
         }
       }
       step("PLAYING_RESPONSE");
+      const learnerTurnEvent = createLearnerTurnEvent({ session, turnNumber, behavior, policyAction, transcriptText: transcript.text });
       session = {
         ...session,
         turnNumber,
-        currentNodeId: route.nextNodeId ?? session.currentNodeId,
+        currentTacticId: policyAction.tacticId,
+        currentPressureLevel: policyAction.pressureLevel,
+        previousTacticIds: policyAction.tacticId ? [...session.previousTacticIds, policyAction.tacticId] : session.previousTacticIds,
+        safeWordState: policyAction.reason === "safe_word" ? "triggered" : session.safeWordState,
+        behaviorHistory: [...session.behaviorHistory, behavior],
+        terminalState: scenario.adaptive_policy ? policyAction.terminalState : session.terminalState,
         cache: { hits: session.cache.hits + (cacheHit ? 1 : 0), misses: session.cache.misses + (cacheHit ? 0 : 1) },
       };
-      const matchedNode = route.branchId ? scenario.nodes.find((node) => node.id === route.branchId) : undefined;
-      const callerTesting = scenario.review_status === "approved" && matchedNode
-        ? `Approved branch tested red-flag IDs ${matchedNode.debrief_tags.join(", ")}.`
-        : "No reviewed scenario branch was tested; the system-safe fallback was used.";
+      session = appendLearnerTurnEvent(session, learnerTurnEvent);
+      const callerTesting = policyAction.tacticId
+        ? `Approved adaptive tactic ${policyAction.tacticId} at pressure ${policyAction.pressureLevel} was selected.`
+        : "No approved adaptive tactic was selected; the system-safe fallback was used.";
       const event = makeDebriefEvent(turnNumber, transcript.text, callerTesting);
       session = { ...session, observedEvents: [...session.observedEvents, event] };
-      session = transitionSession(session, fallbackUsed ? "FALLBACK" : route.nextNodeId === null && scenario.review_status === "approved" ? "COMPLETED" : "LISTENING");
+      const adaptiveTerminal = scenario.adaptive_policy !== undefined && policyAction.terminalState !== null;
+      session = transitionSession(session, fallbackUsed ? "FALLBACK" : adaptiveTerminal ? "COMPLETED" : "LISTENING");
       const totalMs = this.elapsed(totalStarted);
       session = { ...session, metrics: [...session.metrics, ...stageMeasurements, { operation: "turn_total", stage: "turn_total", sessionId, turnNumber, startedAt: totalStarted.toISOString(), endedAt: this.time().toISOString(), durationMs: totalMs, measuredAt: this.time().toISOString(), success: true, branchId: route.branchId, cacheHit }] };
       this.options.store.update(session);
@@ -153,6 +190,35 @@ export class TurnOrchestrator {
     if (units > 0) this.usedUnits.set(operation, usedUnits + units);
   }
 
+  private preflightBillable(operation: string, units: number, sessionId: string, cacheKey: string): boolean {
+    if (this.pendingSyntheses.has(cacheKey)) return true;
+    const usedUnits = this.usedUnits.get(operation) ?? this.options.budget.usedUnits;
+    return evaluateCreditRequest(
+      { ...this.options.budget, usedUnits },
+      { operation, estimatedUnits: units, cacheAvailable: true, sessionId },
+      this.time(),
+    ).allowed;
+  }
+
+  private synthesizeOnce(cacheKey: string, response: ApprovedCallerResponse, sessionId: string): Promise<{ mediaType: string; durationMs?: number }> {
+    const pending = this.pendingSyntheses.get(cacheKey);
+    if (pending) return pending;
+    const synthesis = Promise.resolve().then(async () => {
+      this.authorizeBillable("tts", this.options.ttsUnits, sessionId, false);
+      let result;
+      try {
+        result = await this.options.synthesizer.synthesize(toSpeechSynthesisRequest(response));
+      } catch {
+        throw new ApplicationError("SYNTHESIS_FAILED", "Mock speech synthesis failed; safe text fallback is available.");
+      }
+      const metadata = { mediaType: result.mediaType, ...(result.durationMs === undefined ? {} : { durationMs: result.durationMs }) };
+      try { this.audioCache.set(cacheKey, metadata); } catch { /* a cache write miss does not block the safe response */ }
+      return metadata;
+    }).finally(() => { this.pendingSyntheses.delete(cacheKey); });
+    this.pendingSyntheses.set(cacheKey, synthesis);
+    return synthesis;
+  }
+
   private async measure<T>(measurements: LatencyMeasurement[], sessionId: string, turnNumber: number, operation: string, run: () => Promise<T>): Promise<T> {
     const startedAt = this.time();
     let success = false;
@@ -169,7 +235,6 @@ export class TurnOrchestrator {
 }
 
 function makeDebriefEvent(turnNumber: number, text: string, callerTesting: string): DebriefEvent {
-  const safeText = redactSensitiveText(text).slice(0, 240);
   const normalized = text.normalize("NFKC").toLowerCase();
   const evidence = [
     /\b(?:pause|slow down|no rush|not act immediately)\b/i.test(normalized) ? { flag: "RF-01" as const, point: 2 } : undefined,
@@ -196,11 +261,42 @@ function makeDebriefEvent(turnNumber: number, text: string, callerTesting: strin
     observedBehavior: risky ? "risky" : flags.length ? "safe" : "unmatched",
     redFlagIds: flags,
     recommendedAction: risky ? "Do not share credentials or grant remote access; stop and use a known official channel." : flags.length ? "Continue to verify through a known official channel." : "Pause and use an independently known official channel.",
-    evidenceSnippet: safeText,
     ...(!risky && evidence.some((item) => item.point !== undefined) ? { rubricPoints: [...new Set(evidence.flatMap((item) => item.point === undefined ? [] : [item.point]))].sort((left, right) => left - right) } : {}),
   };
 }
 
 function redactSensitiveText(text: string): string {
   return text.replace(/\b(?:otp|pin|cvv|password|card number|account number)\b\s*[:#=-]?\s*[\d -]{3,20}/gi, "[redacted sensitive value]").replace(/\b\d{6,19}\b/g, "[redacted number]");
+}
+
+function createLearnerTurnEvent(input: {
+  session: SessionState;
+  turnNumber: number;
+  behavior: BehaviorClassification;
+  policyAction: ReturnType<typeof selectAdaptiveAction>;
+  transcriptText: string;
+}): LearnerTurnEvent {
+  const fillers = countFillerWords(input.transcriptText);
+  const speech = deriveSpeechRate(input.transcriptText, 0);
+  return {
+    sessionId: input.session.sessionId,
+    turnId: `${input.session.sessionId}:turn-${input.turnNumber}`,
+    scenarioId: input.session.scenarioId,
+    scenarioVersion: input.session.scenarioVersion,
+    language: input.session.language,
+    callerTacticId: input.policyAction.tacticId,
+    callerResponseId: input.policyAction.response.responseId,
+    callerPressureLevel: input.policyAction.pressureLevel,
+    fillerWords: fillers,
+    fillerCount: fillers.reduce((sum, item) => sum + item.count, 0),
+    recognizedWordCount: speech.recognizedWordCount,
+    speechRateWpm: null,
+    baselineSpeechRateWpm: input.session.baselineSpeechRateWpm,
+    speechRateDeltaPercent: null,
+    baselineStatus: input.session.baselineSpeechRateWpm === null ? "insufficient_data" : "available",
+    interruption: { status: "unknown", source: "UNKNOWN", playbackTimingCertain: false },
+    behavior: input.behavior,
+    complianceMoment: null,
+    observedEvidenceRuleIds: [...input.behavior.evidenceRuleIds, ...fillers.map((item) => `filler.${item.token}`)],
+  };
 }

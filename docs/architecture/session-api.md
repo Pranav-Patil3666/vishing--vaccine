@@ -4,11 +4,11 @@ All endpoints are local development interfaces. The API binds to loopback, retur
 
 ## Runtime boundary
 
-**Real internal architecture:** shared Zod request/response contracts, explicit session state machine, in-memory session store, consent checks, provider interfaces, deterministic router, cache-key generation, credit guard ordering, typed errors, rate-limit abstraction, and latency measurements.
+**Current internal architecture:** shared Zod contracts, explicit session state machine, in-memory session store, consent checks, provider interfaces, deterministic behavior classifier and adaptive-policy boundary, approved response references, cache-key generation, credit guard, typed errors, rate limits, and separate operational latency measurements.
 
 **Mock development behavior:** learner input is text encoded into a transient byte buffer tagged `text/mock`; MockPrisma returns it as a normalized `TranscriptEvent`; MockTimbre returns empty non-playable audio metadata; rate limits and credit units are local configured abstractions. This does not describe or emulate Gnani request/response formats.
 
-The checked-in scenario files remain drafts and have no verified language or voice metadata. The API permits only the explicit `pending-verification` sentinel with `demoMode: true` for these files, and the router can return only `system.safe-fallback`. This is not an approved scenario branch or language claim. A reviewed scenario remains unavailable until the roadmap's human content review and provider language/voice gates are completed.
+The checked-in scenario files remain drafts and have no verified language or voice metadata. The API permits only the explicit `pending-verification` sentinel with `demoMode: true` for these files. They have no approved adaptive tactic pool, so the policy can return only `system.safe-fallback`. This is not an approved scenario branch or language claim. A reviewed scenario remains unavailable until human content review and provider language/voice gates are completed.
 
 ## Endpoints
 
@@ -41,7 +41,7 @@ Strict body: `{ "consentVersion": "training-consent-v1" }`. Only a session await
 
 ### `POST /api/sessions/:sessionId/turn`
 
-Development-only strict body: `{ "text": "I will verify independently." }`. Requires granted consent and `READY`, `LISTENING`, or recoverable `FALLBACK` state. Empty text is rejected. Processing is `mock text → SpeechRecognizer interface → TranscriptEvent validation → deterministic scenario router → safe response ID → cache lookup → SpeechSynthesizer interface on miss → debrief event`. The result explicitly marks generated audio as non-playable. In draft mode routing always resolves to the system-safe fallback.
+Development-only strict body: `{ "text": "I will verify independently." }`. Requires granted consent and `READY`, `LISTENING`, or recoverable `FALLBACK` state. Empty text is rejected. Processing is `mock text → SpeechRecognizer interface → TranscriptEvent validation → deterministic behavior classification → adaptive policy → approved response reference → credit preflight → cache lookup → SpeechSynthesizer interface on authorized miss → turn event`. The result explicitly marks generated audio as non-playable. In draft mode policy always resolves to the system-safe fallback.
 
 ### `POST /api/sessions/:sessionId/end`
 
@@ -59,7 +59,7 @@ Consent is explicit and versioned. Page load and session creation are not consen
 
 Errors use `{ "error": { "code", "message", "retryAfterSeconds?", "fallbackMode?" } }`; known codes map consistently to 400, 404, 409, 422, 429, 502, or 500. A rejected configured credit request includes `fallbackMode: "demo-safe"`. Stack traces and environment values are never returned. Development limits allow five session creates and twelve turns per minute per remote address; the in-memory limiter is replaceable. Request bodies are capped at 16 KiB.
 
-The credit guard checks configured project units before a mock provider operation. These are not Gnani credits. Cache hits avoid synthesis. Latency measurements include stage duration/timestamps and are attached to session state; no raw text is emitted to logs.
+The credit guard checks configured project units before recognizer and TTS provider operations. These are not Prisma credits. TTS preflight precedes cache resolution; cache hits avoid billable synthesis. API stage duration/timestamps are operational telemetry and do not drive pressure-curve latency. Learner response latency uses only a local monotonic timeline. No raw transcript is stored in the new event timeline.
 
 ## Storage and provider replacement
 

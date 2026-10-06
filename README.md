@@ -1,6 +1,6 @@
 # Vishing Vaccine
 
-Vishing Vaccine is a training simulator for recognizing voice-based social engineering. This repository contains the Phase 1 foundation and Phase 2 local session engine: provider-neutral contracts, scenario validation, deterministic routing, explicit consent, an in-memory session API, and a temporary mock development shell.
+Vishing Vaccine is a training simulator for recognizing voice-based social engineering. This repository contains a local session engine and Phase 2A foundation: shared contracts, scenario validation, deterministic behavior classification and adaptive-policy boundaries, explicit consent, a fact-only pressure timeline, and a temporary mock development shell.
 
 All sample scenario documents are drafts. Their organizations are marked fictional and training-only; they contain no caller script. The API can exercise only the system-safe fallback in metadata-only mock mode until human scenario review and language/voice verification are complete. No provider API is called, no real provider behavior is implied, and no learner audio is persisted.
 
@@ -54,4 +54,4 @@ npm run build
 - [Dependency record](DEPENDENCIES.md)
 - [Project roadmap](ROADMAP.md)
 
-Prisma, Timbre, and Evon integrations are intentionally represented by deterministic mocks only. See the roadmap before starting a later phase; the development shell is not a final learner experience and draft scenario content is not approved for release.
+Prisma, Timbre, and Evon integrations are intentionally represented by deterministic mocks only. See the [pressure curve](docs/architecture/pressure-curve.md), [timing model](docs/architecture/timing-model.md), [adaptive policy](docs/architecture/adaptive-policy.md), [Prisma realtime contract](docs/architecture/prisma-realtime-contract.md), and roadmap before starting a later phase. The development shell is not a final learner experience and draft scenario content is not approved for release.

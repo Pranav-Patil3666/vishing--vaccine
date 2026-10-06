@@ -25,16 +25,19 @@ test("mock session API requires consent and only serves the draft-safe fallback"
   assert.equal(duplicate.status, 409);
   const turn = await fetch(`${base}/api/sessions/${created.session.sessionId}/turn`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "I will verify this through the official channel." }) });
   assert.equal(turn.status, 200);
-  const result = await turn.json() as { branch: { responseId: string; matched: boolean; reason: string }; transcript: { text: string }; session: { turnNumber: number; state: string }; response: { cacheHit: boolean; playable: boolean }; debriefEvent: { callerTesting: string } };
+  const result = await turn.json() as { branch: { responseId: string; matched: boolean; reason: string }; transcript: { text: string }; session: { turnNumber: number; state: string; timelineEvents: Array<Record<string, unknown>> }; response: { cacheHit: boolean; playable: boolean }; debriefEvent: { callerTesting: string } };
   assert.equal(result.branch.responseId, "system.safe-fallback");
   assert.equal(result.branch.matched, false);
-  assert.equal(result.branch.reason, "scenario-not-approved");
+  assert.equal(result.branch.reason, "no_approved_tactic");
   assert.equal(result.transcript.text, "I will verify this through the official channel.");
   assert.equal(result.session.turnNumber, 1);
   assert.equal(result.session.state, "LISTENING");
   assert.equal(result.response.playable, false);
   assert.equal(result.response.cacheHit, false);
-  assert.match(result.debriefEvent.callerTesting, /No reviewed scenario branch/);
+  assert.match(result.debriefEvent.callerTesting, /No approved adaptive tactic/);
+  assert.equal(result.session.timelineEvents.length, 1);
+  assert.equal(result.session.timelineEvents[0]?.interruption && typeof result.session.timelineEvents[0].interruption, "object");
+  assert.equal("transcriptText" in (result.session.timelineEvents[0] ?? {}), false);
   const repeat = await fetch(`${base}/api/sessions/${created.session.sessionId}/turn`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "I will verify this through the official channel." }) });
   const repeatedResult = await repeat.json() as { response: { cacheHit: boolean } };
   assert.equal(repeatedResult.response.cacheHit, true);
@@ -42,6 +45,9 @@ test("mock session API requires consent and only serves the draft-safe fallback"
   const stored = await get.json() as { session: Record<string, unknown>; debriefEvents: Array<Record<string, unknown>> };
   assert.equal("audio" in stored.session, false);
   assert.equal(stored.debriefEvents.length, 2);
+  const timeline = stored.session.timelineEvents as Array<Record<string, unknown>>;
+  assert.equal(timeline.length, 2);
+  assert.equal(timeline.every((event) => !("rawAudio" in event) && !("transcriptText" in event)), true);
   const ended = await fetch(`${base}/api/sessions/${created.session.sessionId}/end`, { method: "POST" });
   const endResult = await ended.json() as { session: { state: string; recordingEnabled: boolean }; transientAudioCleared: boolean };
   assert.equal(endResult.session.state, "ENDED_BY_LEARNER");
@@ -63,7 +69,7 @@ test("API errors are structured and do not leak configuration", async (context) 
   assert.equal(body.includes("secret-test-marker"), false);
 });
 
-test("unknown and credential-like mock input falls back safely and is redacted from stored debrief", async (context) => {
+test("unknown and credential-like mock input falls back safely without storing transcript snippets", async (context) => {
   const server = createApiServer({ environment: "test" });
   context.after(() => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));
   server.listen(0, "127.0.0.1"); await once(server, "listening");
@@ -76,7 +82,7 @@ test("unknown and credential-like mock input falls back safely and is redacted f
   const result = await turn.json() as { branch: { responseId: string }; transcript: { text: string }; debriefEvent: { evidenceSnippet?: string } };
   assert.equal(result.branch.responseId, "system.safe-fallback");
   assert.equal(result.transcript.text.includes("123456"), false);
-  assert.equal(result.debriefEvent.evidenceSnippet?.includes("123456"), false);
+  assert.equal(result.debriefEvent.evidenceSnippet, undefined);
 });
 
 test("session creation rate limit returns typed retry metadata", async (context) => {

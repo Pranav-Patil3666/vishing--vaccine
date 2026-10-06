@@ -13,6 +13,7 @@ import { InMemorySessionStore } from "./sessionStore.js";
 import { InMemoryRateLimiter } from "./rateLimit.js";
 import { TurnOrchestrator } from "./turnOrchestrator.js";
 import { ApplicationError, errorResponse } from "./errors.js";
+import { debriefForSession } from "./debriefEngine.js";
 import type { CreditBudget } from "@vaccine/credit-guard";
 
 export interface HealthServerOptions {
@@ -92,6 +93,8 @@ export function createApiServer(options: HealthServerOptions): Server {
         language: input.language, startingNodeId: scenario.nodes.find((node) => node.parent_node_id === null)?.id ?? "start",
         consentVersion: CONSENT_VERSION,
         mode: input.demoMode ? "demo" : "safe",
+        maxPressureLevel: scenario.adaptive_policy?.max_pressure_level ?? 5,
+        maxTurns: scenario.adaptive_policy?.max_turns ?? 12,
       });
       const endedAt = (options.now ?? (() => new Date()))();
       const state = { ...initial, metrics: [{ operation: "session_creation", stage: "session_creation", sessionId: initial.sessionId, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString(), durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()), measuredAt: endedAt.toISOString(), success: true }] };
@@ -165,6 +168,12 @@ function safeSession(state: ReturnType<typeof createSessionState>) {
     sessionId: state.sessionId, scenarioId: state.scenarioId, scenarioVersion: state.scenarioVersion,
     language: state.language, state: state.state, consent: state.consent, turnNumber: state.turnNumber,
     currentNodeId: state.currentNodeId, mode: state.mode, recordingEnabled: state.recordingEnabled,
+    currentTacticId: state.currentTacticId, currentPressureLevel: state.currentPressureLevel,
+    previousTacticIds: state.previousTacticIds, maxPressureLevel: state.maxPressureLevel, maxTurns: state.maxTurns,
+    safeWordState: state.safeWordState, behaviorHistory: state.behaviorHistory,
+    baselineSpeechRateWpm: state.baselineSpeechRateWpm, baselineSpeechRateSampleCount: state.baselineSpeechRateSampleCount,
+    timelineEvents: state.timelineEvents, terminalState: state.terminalState,
+    pressureDebrief: debriefForSession(state),
     cache: state.cache, debriefEvents: state.observedEvents,
     metrics: state.metrics,
   };

@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  ApprovedCallerResponseReferenceSchema,
+  BehaviorClassificationSchema,
+  DeterministicDebriefSchema,
+  LearnerTurnEventSchema,
+  SessionTerminalStateSchema,
+} from "./pressure.js";
 
 export const redFlagIds = [
   "RF-01",
@@ -76,12 +83,7 @@ export const SpeechRecognitionRequestSchema = z.object({
 });
 export type SpeechRecognitionRequest = z.infer<typeof SpeechRecognitionRequestSchema>;
 
-export const SpeechSynthesisRequestSchema = z.object({
-  responseId: z.string().min(1),
-  text: z.string().min(1),
-  language: z.string().min(1),
-  voice: z.string().min(1),
-});
+export const SpeechSynthesisRequestSchema = ApprovedCallerResponseReferenceSchema;
 export type SpeechSynthesisRequest = z.infer<typeof SpeechSynthesisRequestSchema>;
 
 export const ScenarioStateSchema = z.object({
@@ -177,6 +179,17 @@ export const SessionStateSchema = z.object({
   consentVersion: z.string().min(1),
   consent: ConsentStateSchema,
   observedEvents: z.array(DebriefEventSchema),
+  currentTacticId: z.string().min(1).nullable(),
+  currentPressureLevel: z.number().int().min(0).max(5),
+  previousTacticIds: z.array(z.string().min(1)),
+  maxPressureLevel: z.number().int().min(0).max(5),
+  maxTurns: z.number().int().positive(),
+  safeWordState: z.enum(["armed", "triggered"]),
+  behaviorHistory: z.array(BehaviorClassificationSchema),
+  baselineSpeechRateWpm: z.number().finite().positive().nullable(),
+  baselineSpeechRateSampleCount: z.number().int().nonnegative(),
+  timelineEvents: z.array(LearnerTurnEventSchema),
+  terminalState: SessionTerminalStateSchema.nullable(),
   mode: z.enum(["safe", "demo"]),
   cache: z.object({ hits: z.number().int().nonnegative(), misses: z.number().int().nonnegative() }),
   metrics: z.array(LatencyMeasurementSchema),
@@ -196,6 +209,13 @@ export const SafeSessionSchema = z.object({
   sessionId: z.string().min(1), scenarioId: z.string().min(1), scenarioVersion: z.string().min(1),
   language: z.string().min(1), state: SessionLifecycleStateSchema, consent: ConsentStateSchema,
   turnNumber: z.number().int().nonnegative(), currentNodeId: z.string().min(1),
+  currentTacticId: z.string().min(1).nullable(), currentPressureLevel: z.number().int().min(0).max(5),
+  previousTacticIds: z.array(z.string().min(1)), maxPressureLevel: z.number().int().min(0).max(5),
+  maxTurns: z.number().int().positive(), safeWordState: z.enum(["armed", "triggered"]),
+  behaviorHistory: z.array(BehaviorClassificationSchema),
+  baselineSpeechRateWpm: z.number().finite().positive().nullable(), baselineSpeechRateSampleCount: z.number().int().nonnegative(),
+  timelineEvents: z.array(LearnerTurnEventSchema), terminalState: SessionTerminalStateSchema.nullable(),
+  pressureDebrief: DeterministicDebriefSchema.nullable(),
   mode: z.enum(["safe", "demo"]), recordingEnabled: z.boolean(),
   cache: z.object({ hits: z.number().int().nonnegative(), misses: z.number().int().nonnegative() }),
   debriefEvents: z.array(DebriefEventSchema),

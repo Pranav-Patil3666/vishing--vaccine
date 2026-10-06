@@ -111,3 +111,38 @@ test("safety scan reports incomplete detection coverage as a failure", () => {
   assert.equal(result.passed, false);
   assert.equal(result.coverage, "incomplete");
 });
+
+test("adaptive policy validates approved tactic pool, pressure bounds, response references, and safety metadata", () => {
+  const adaptive = structuredClone(safeScenario);
+  adaptive.responses.escalated = { text: "This remains a training simulation; verify independently.", safety_status: "reviewed_safe" };
+  adaptive.adaptive_policy = {
+    max_pressure_level: 2,
+    max_turns: 4,
+    safe_word: "stop the simulation",
+    escalation_behaviors: ["COMPLIED", "DISCLOSED_DUMMY_SECRET"],
+    terminal_states: ["SAFE_WORD", "LEARNER_ENDED", "VERIFIED_INDEPENDENTLY", "DUMMY_SECRET_DISCLOSED", "MAX_TURNS"],
+    tactics: [
+      { tactic_id: "calm-verification", pressure_level: 0, behavior_targets: ["UNKNOWN", "REFUSED"], response_ids: ["opening"] },
+      { tactic_id: "bounded-follow-up", pressure_level: 2, behavior_targets: ["COMPLIED"], response_ids: ["escalated"] },
+    ],
+  };
+  adaptive.safety_metadata = {
+    visible_simulation_label: true,
+    ai_voice_disclosure_required: true,
+    consent_before_recording: true,
+    audio_retention: "none_by_default",
+    dummy_data_mode: "synthetic_only",
+    safe_ending_response_id: "system.safe-fallback",
+  };
+  assert.equal(ScenarioDocumentSchema.safeParse(adaptive).success, true);
+
+  const missingSafetyMetadata = structuredClone(adaptive);
+  delete missingSafetyMetadata.safety_metadata;
+  assert.equal(ScenarioDocumentSchema.safeParse(missingSafetyMetadata).success, false);
+  const missingResponse = structuredClone(adaptive);
+  missingResponse.adaptive_policy!.tactics[0]!.response_ids = ["missing"];
+  assert.equal(ScenarioDocumentSchema.safeParse(missingResponse).success, false);
+  const excessivePressure = structuredClone(adaptive);
+  excessivePressure.adaptive_policy!.tactics[0]!.pressure_level = 3;
+  assert.equal(ScenarioDocumentSchema.safeParse(excessivePressure).success, false);
+});

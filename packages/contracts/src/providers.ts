@@ -6,6 +6,11 @@ import type {
   SpeechSynthesisRequest,
   TranscriptEvent,
 } from "./domain.js";
+import type { ApprovedCallerResponse, ApprovedCallerResponseReference } from "./pressure.js";
+
+export interface ApprovedResponseResolver {
+  resolve(reference: ApprovedCallerResponseReference): ApprovedCallerResponse | undefined;
+}
 
 export interface SpeechRecognizer {
   transcribe(request: SpeechRecognitionRequest): Promise<TranscriptEvent>;

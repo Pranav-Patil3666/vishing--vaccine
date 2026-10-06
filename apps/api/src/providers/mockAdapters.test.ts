@@ -19,10 +19,14 @@ test("speech recognizer mock returns only deterministic transcript contract fiel
 
 test("synthesizer mock never claims to produce playable provider audio", async () => {
   const result = await new MockTimbreSynthesizer().synthesize({
+    scenarioId: "S-01",
+    scenarioVersion: "test-only",
     responseId: "safe-template",
-    text: "Simulation disclosure.",
     language: "pending-verification",
     voice: "pending-verification",
+    safetyStatus: "system_safe_template",
+    scenarioReviewStatus: "not_applicable",
+    approvalReference: "system-template:safe-template",
   });
   assert.equal(result.bytes.byteLength, 0);
   assert.equal(result.mediaType, "application/x-vaccine-mock-audio");

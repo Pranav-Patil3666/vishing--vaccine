@@ -14,6 +14,14 @@ test("session state begins without consent and contains no audio field", () => {
   assert.equal(state.state, "CONSENT_REQUIRED");
   assert.equal(state.recordingEnabled, false);
   assert.equal(state.mode, "demo");
+  assert.equal(state.currentTacticId, null);
+  assert.equal(state.currentPressureLevel, 0);
+  assert.equal(state.maxPressureLevel, 5);
+  assert.equal(state.maxTurns, 12);
+  assert.equal(state.safeWordState, "armed");
+  assert.deepEqual(state.behaviorHistory, []);
+  assert.equal(state.baselineSpeechRateWpm, null);
+  assert.deepEqual(state.timelineEvents, []);
   assert.equal("audio" in state, false);
 });
 
@@ -41,6 +49,7 @@ test("state machine rejects invalid transitions and session end disables recordi
   const ended = endSession(granted, new Date());
   assert.equal(ended.state, "ENDED_BY_LEARNER");
   assert.equal(ended.recordingEnabled, false);
+  assert.equal(ended.terminalState, "LEARNER_ENDED");
 });
 
 test("replayed session snapshots require consent again", () => {

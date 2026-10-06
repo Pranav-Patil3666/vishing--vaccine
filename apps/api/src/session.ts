@@ -8,6 +8,8 @@ export interface NewSessionInput {
   startingNodeId: string;
   consentVersion?: string;
   mode?: "safe" | "demo";
+  maxPressureLevel?: number;
+  maxTurns?: number;
 }
 
 export function createSessionState(input: NewSessionInput): SessionState {
@@ -24,6 +26,17 @@ export function createSessionState(input: NewSessionInput): SessionState {
     consentVersion: input.consentVersion ?? "training-consent-v1",
     consent: { status: "not-requested", purpose: "microphone-transcription" },
     observedEvents: [],
+    currentTacticId: null,
+    currentPressureLevel: 0,
+    previousTacticIds: [],
+    maxPressureLevel: input.maxPressureLevel ?? 5,
+    maxTurns: input.maxTurns ?? 12,
+    safeWordState: "armed",
+    behaviorHistory: [],
+    baselineSpeechRateWpm: null,
+    baselineSpeechRateSampleCount: 0,
+    timelineEvents: [],
+    terminalState: null,
     mode: input.mode ?? "demo",
     cache: { hits: 0, misses: 0 },
     metrics: [],
@@ -97,6 +110,7 @@ export function endSession(state: SessionState, endedAt: Date): SessionState {
     state: "ENDED_BY_LEARNER",
     recordingEnabled: false,
     consent: { ...state.consent, status: "withdrawn", updatedAt: endedAt.toISOString() },
+    terminalState: "LEARNER_ENDED",
   };
 }
 
