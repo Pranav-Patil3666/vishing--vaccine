@@ -17,6 +17,11 @@ export function App() {
   const [session, setSession] = useState<SafeSession | null>(null);
   const [lastTurn, setLastTurn] = useState<TurnApiResponse | null>(null);
   const [text, setText] = useState("");
+  const [useTimingFixture, setUseTimingFixture] = useState(false);
+  const [noResponse, setNoResponse] = useState(false);
+  const [callerEndMs, setCallerEndMs] = useState("1000");
+  const [learnerStartMs, setLearnerStartMs] = useState("1450");
+  const [learnerEndMs, setLearnerEndMs] = useState("2200");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -58,7 +63,14 @@ export function App() {
   async function submitTurn(): Promise<void> {
     if (!session) return;
     await action(async () => {
-      const result = await callApi(`/api/sessions/${encodeURIComponent(session.sessionId)}/turn`, { text }, TurnApiResponseSchema);
+      const timingFixture = useTimingFixture ? {
+        callerAudioStartedAtMs: 0,
+        callerAudioEndedAtMs: Number(callerEndMs),
+        learnerSpeechStartedAtMs: noResponse ? null : Number(learnerStartMs),
+        learnerSpeechEndedAtMs: noResponse ? null : Number(learnerEndMs),
+        noResponse,
+      } : undefined;
+      const result = await callApi(`/api/sessions/${encodeURIComponent(session.sessionId)}/turn`, { text: noResponse ? "" : text, ...(timingFixture ? { timingFixture } : {}) }, TurnApiResponseSchema);
       setLastTurn(result); setSession(result.session); setText("");
     });
   }
@@ -86,12 +98,23 @@ export function App() {
         {!session && <button type="button" onClick={() => void createSession()} disabled={busy}>Create draft-safe demo session</button>}
         {session && <>
           <p>State: <strong>{session.state}</strong> · Turn: {session.turnNumber} · Recording: {String(session.recordingEnabled)}</p>
-          <p>Scenario: {session.scenarioId} ({session.scenarioVersion}) · Language: {session.language}</p>
+          <p>Scenario: {session.scenarioId} ({session.scenarioVersion}) · Lifecycle: {session.scenarioRuntimeStatus} · Language: {session.language}</p>
+          <p>Caller tactic: {session.currentTacticId ?? "none"} · Response: {session.currentResponseId ?? "none"} · Category: {session.currentTacticCategory ?? "none"} · Pressure: {session.currentPressureLevel}/{session.maxPressureLevel}</p>
           {session.state === "CONSENT_REQUIRED" && <button type="button" onClick={() => void grantConsent()} disabled={busy}>Grant explicit mock consent</button>}
           {(session.state === "READY" || session.state === "LISTENING" || session.state === "FALLBACK") && <>
             <label htmlFor="mock-text">Mock learner text input</label>
             <input id="mock-text" value={text} onChange={(event) => setText(event.target.value)} maxLength={2000} />
-            <button type="button" onClick={() => void submitTurn()} disabled={busy || !text.trim()}>Submit mock turn</button>
+            <fieldset>
+              <legend>Development timing fixture</legend>
+              <label><input type="checkbox" checked={useTimingFixture} onChange={(event) => setUseTimingFixture(event.target.checked)} /> Include deterministic local timing</label>
+              {useTimingFixture && <>
+                <label>Caller playback end (ms) <input type="number" min="0" value={callerEndMs} onChange={(event) => setCallerEndMs(event.target.value)} /></label>
+                <label>Learner speech start (ms) <input type="number" min="0" value={learnerStartMs} onChange={(event) => setLearnerStartMs(event.target.value)} disabled={noResponse} /></label>
+                <label>Learner speech end (ms) <input type="number" min="0" value={learnerEndMs} onChange={(event) => setLearnerEndMs(event.target.value)} disabled={noResponse} /></label>
+                <label><input type="checkbox" checked={noResponse} onChange={(event) => setNoResponse(event.target.checked)} /> Simulate no response</label>
+              </>}
+            </fieldset>
+            <button type="button" onClick={() => void submitTurn()} disabled={busy || (!text.trim() && !noResponse)}>Submit mock turn</button>
           </>}
           {session.state !== "ENDED_BY_LEARNER" && session.state !== "COMPLETED" && <button type="button" onClick={() => void endSession()} disabled={busy}>End session</button>}
         </>}
@@ -100,9 +123,19 @@ export function App() {
         <h2 id="turn-heading">Last turn</h2>
         <p>Transcript: {lastTurn.transcript.text}</p>
         <p>Branch: {lastTurn.branch.id ?? "none"} · Response: {lastTurn.branch.responseId} · Route reason: {lastTurn.branch.reason}</p>
+        <p>Policy: {lastTurn.branch.policyDecisionCode} · Next pressure: {lastTurn.branch.nextPressureLevel} · Terminal: {lastTurn.branch.terminalState ?? "none"}</p>
         <p>Caller response metadata: {lastTurn.response.mediaType} · cache {lastTurn.response.cacheHit ? "hit" : "miss"} · fallback: {String(lastTurn.response.fallback)} · playable audio: {String(lastTurn.response.playable)}</p>
+        <p>Behavior: {lastTurn.learnerTurnEvent.behavior.label} · Latency: {lastTurn.learnerTurnEvent.responseLatency?.valueMs ?? "unknown"} ms · Pre-speech silence: {lastTurn.learnerTurnEvent.preSpeechSilence?.valueMs ?? "unknown"} ms</p>
+        <p>Fillers: {lastTurn.learnerTurnEvent.fillerCount} · Speech rate: {lastTurn.learnerTurnEvent.speechRateWpm ?? "unknown"} WPM · Baseline: {lastTurn.learnerTurnEvent.baselineSpeechRateWpm ?? "insufficient data"} · Interruption: {lastTurn.learnerTurnEvent.interruption.status}{lastTurn.learnerTurnEvent.interruption.offsetMs === null ? "" : ` at +${lastTurn.learnerTurnEvent.interruption.offsetMs} ms`}</p>
+        <p>Compliance moment: {lastTurn.learnerTurnEvent.complianceMoment ? `segment ${lastTurn.learnerTurnEvent.complianceMoment.segmentIndex}, approximate` : "none"}</p>
         <h3>Debrief events</h3>
         <ul>{session?.debriefEvents.map((event) => <li key={event.eventId}>Turn {event.turnNumber}: {event.observedBehavior}; {event.callerTesting}; flags: {event.redFlagIds.join(", ") || "none"}; observed rubric points: {event.rubricPoints?.join(", ") || "none"}. {event.recommendedAction}{event.evidenceSnippet ? ` Evidence: ${event.evidenceSnippet}` : ""}</li>)}</ul>
+        <h3>Pressure timeline</h3>
+        <ol>{session?.pressureDebrief?.pressureTimeline.map((point) => <li key={point.turnId}>
+          {point.turnId}: caller {point.callerTacticId ?? "none"} at {point.callerPressureLevel}/5; learner {point.learnerBehavior.label}; latency {point.responseLatency?.valueMs ?? "unknown"} ms; interruption {point.interruptedCaller}; next {point.selectedNextTacticId ?? "safe fallback"} at {point.nextPressureLevel}; policy {point.policyDecisionCode}.
+        </li>)}</ol>
+        <p>Recommended next behavior: {session?.pressureDebrief?.recommendedNextBehavior}</p>
+        <p>Observable points: {session?.pressureDebrief?.observableScoring.pointsAwarded}/{session?.pressureDebrief?.observableScoring.pointsPossible}</p>
       </section>}
       {error && <p role="alert">{error}</p>}
     </main>

@@ -7,6 +7,7 @@ import { validateScenarioSafety } from "./safety.js";
 const safeScenario: ScenarioDocument = {
   scenario_id: "S-99",
   version: "0.1.0",
+  lifecycle_status: "RUNTIME_ELIGIBLE",
   language: "en",
   voice_id: "test-only",
   fictional_organization: { name: "Example Fictional Cooperative", training_only: true },
@@ -67,9 +68,10 @@ test("scenario schema rejects a missing system-safe response", () => {
 test("release validation rejects draft placeholders", () => {
   const draft = structuredClone(safeScenario);
   draft.review_status = "draft";
+  draft.lifecycle_status = "DRAFT";
   draft.reviewed_by = null;
   draft.reviewed_at = null;
-  assert.throws(() => validateScenarioForRelease(draft), /not approved/);
+  assert.throws(() => validateScenarioForRelease(draft), /not runtime eligible/);
 });
 
 test("regex rules reject malformed and potentially unsafe patterns", () => {
@@ -120,10 +122,10 @@ test("adaptive policy validates approved tactic pool, pressure bounds, response 
     max_turns: 4,
     safe_word: "stop the simulation",
     escalation_behaviors: ["COMPLIED", "DISCLOSED_DUMMY_SECRET"],
-    terminal_states: ["SAFE_WORD", "LEARNER_ENDED", "VERIFIED_INDEPENDENTLY", "DUMMY_SECRET_DISCLOSED", "MAX_TURNS"],
+    terminal_states: ["SAFE_WORD", "LEARNER_ENDED", "SAFE_VERIFIED", "DUMMY_SECRET_DISCLOSED", "MAX_TURNS"],
     tactics: [
-      { tactic_id: "calm-verification", pressure_level: 0, behavior_targets: ["UNKNOWN", "REFUSED"], response_ids: ["opening"] },
-      { tactic_id: "bounded-follow-up", pressure_level: 2, behavior_targets: ["COMPLIED"], response_ids: ["escalated"] },
+      { tactic_id: "calm-verification", category: "AUTHORITY", pressure_level: 0, prompts_dummy_secret: false, behavior_targets: ["UNKNOWN", "REFUSED"], response_ids: ["opening"] },
+      { tactic_id: "bounded-follow-up", category: "URGENCY", pressure_level: 2, prompts_dummy_secret: false, behavior_targets: ["COMPLIED"], response_ids: ["escalated"] },
     ],
   };
   adaptive.safety_metadata = {

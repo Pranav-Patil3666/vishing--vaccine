@@ -4,6 +4,9 @@ import {
   ApprovedScenarioPackageSchema,
   BehaviorTrainingExampleSchema,
   DraftScenarioPackageSchema,
+  approveDraftScenarioPackage,
+  makeScenarioRuntimeEligible,
+  submitScenarioForSafetyReview,
   isRuntimeEligible,
 } from "./authoring.js";
 import { ScenarioDocumentSchema } from "./scenario.js";
@@ -11,6 +14,7 @@ import { ScenarioDocumentSchema } from "./scenario.js";
 const scenarioBase = {
   scenario_id: "S-98",
   version: "0.2.0",
+  lifecycle_status: "DRAFT",
   language: "en",
   voice_id: "reviewed-voice",
   fictional_organization: { name: "Fictional Learning Circle", training_only: true },
@@ -51,6 +55,7 @@ function draftScenario() {
 
 function approvedScenario() {
   const scenario = structuredClone(scenarioBase);
+  scenario.lifecycle_status = "RUNTIME_ELIGIBLE";
   scenario.review_status = "approved";
   scenario.reviewed_by = "human-reviewer";
   scenario.reviewed_at = "2026-10-06T00:00:00.000Z";
@@ -70,7 +75,9 @@ const trainingExample = {
 test("offline draft packages and generated JSON artifacts stay ineligible for runtime", () => {
   const scenario = draftScenario();
   const result = DraftScenarioPackageSchema.parse({
-    packageId: "draft-1", source: "offline_authoring", target: "offline_pre_generated", scenario,
+    packageId: "draft-1", status: "DRAFT", source: "offline_authoring", target: "offline_pre_generated",
+    scenarioBrief: { scenarioId: "S-98", learningObjective: "Pause and independently verify.", redFlags: ["RF-01"], language: "en" }, scenario,
+    tacticPool: [], candidateApprovedResponses: [], behaviorTrainingExamples: [trainingExample], debriefTemplateVariants: [],
     candidateUtterances: [trainingExample],
     importableArtifacts: [{ artifactId: "artifact-1", format: "scenario-json", scenario }],
     review: { decision: "pending", reviewerId: null, reviewedAt: null, checklist: { ...safetyChecklist, safeEndingAvailable: false }, notes: [] },
@@ -83,7 +90,9 @@ test("offline draft packages and generated JSON artifacts stay ineligible for ru
 test("human review and matching approved artifact are both required for runtime eligibility", () => {
   const scenario = approvedScenario();
   const result = ApprovedScenarioPackageSchema.parse({
-    packageId: "approved-1", source: "offline_authoring", target: "offline_pre_generated", scenario,
+    packageId: "approved-1", status: "RUNTIME_ELIGIBLE", source: "offline_authoring", target: "offline_pre_generated",
+    scenarioBrief: { scenarioId: "S-98", learningObjective: "Pause and independently verify.", redFlags: ["RF-01"], language: "en" }, scenario,
+    tacticPool: [], candidateApprovedResponses: [], behaviorTrainingExamples: [trainingExample], debriefTemplateVariants: [],
     candidateUtterances: [trainingExample],
     importableArtifacts: [{ artifactId: "artifact-1", format: "scenario-json", scenario }],
     review: { decision: "approved", reviewerId: "reviewer-1", reviewedAt: "2026-10-06T00:00:00.000Z", checklist: safetyChecklist, notes: [] },
@@ -104,4 +113,27 @@ test("behavior training examples require a data split and reject unredacted cred
   assert.equal(BehaviorTrainingExampleSchema.safeParse(trainingExample).success, true);
   assert.equal(BehaviorTrainingExampleSchema.safeParse({ ...trainingExample, split: "held_out_test" }).success, true);
   assert.equal(BehaviorTrainingExampleSchema.safeParse({ ...trainingExample, utterance: "The password is private-value." }).success, false);
+});
+
+test("scenario lifecycle requires separate safety review, human approval, and runtime eligibility transitions", () => {
+  const scenario = draftScenario();
+  const initial = DraftScenarioPackageSchema.parse({
+    packageId: "lifecycle-1", status: "DRAFT", source: "offline_authoring", target: "offline_pre_generated",
+    scenarioBrief: { scenarioId: "S-98", learningObjective: "Pause and independently verify.", redFlags: ["RF-01"], language: "en" }, scenario,
+    tacticPool: [], candidateApprovedResponses: [], behaviorTrainingExamples: [trainingExample], debriefTemplateVariants: [],
+    candidateUtterances: [trainingExample],
+    importableArtifacts: [{ artifactId: "lifecycle-artifact", format: "scenario-json", scenario }],
+    review: { decision: "pending", reviewerId: null, reviewedAt: null, checklist: safetyChecklist, notes: [] }, runtimeEligible: false,
+  });
+  const inReview = submitScenarioForSafetyReview(initial);
+  assert.equal(inReview.status, "SAFETY_REVIEW");
+  assert.equal(inReview.scenario.lifecycle_status, "SAFETY_REVIEW");
+  const humanApproved = approveDraftScenarioPackage(inReview, {
+    reviewerId: "reviewer-1", reviewedAt: "2026-10-07T00:00:00.000Z", checklist: safetyChecklist,
+  });
+  assert.equal(humanApproved.status, "APPROVED");
+  assert.equal(humanApproved.runtimeEligible, false);
+  const runtime = makeScenarioRuntimeEligible(humanApproved);
+  assert.equal(runtime.status, "RUNTIME_ELIGIBLE");
+  assert.equal(isRuntimeEligible(runtime), true);
 });

@@ -1,4 +1,4 @@
-import type { ConsentState, SessionLifecycleState, SessionState } from "@vaccine/contracts";
+import type { ConsentState, ScenarioRuntimeStatus, SessionLifecycleState, SessionState } from "@vaccine/contracts";
 
 export interface NewSessionInput {
   sessionId: string;
@@ -10,6 +10,7 @@ export interface NewSessionInput {
   mode?: "safe" | "demo";
   maxPressureLevel?: number;
   maxTurns?: number;
+  scenarioRuntimeStatus?: ScenarioRuntimeStatus;
 }
 
 export function createSessionState(input: NewSessionInput): SessionState {
@@ -25,8 +26,12 @@ export function createSessionState(input: NewSessionInput): SessionState {
     recordingEnabled: false,
     consentVersion: input.consentVersion ?? "training-consent-v1",
     consent: { status: "not-requested", purpose: "microphone-transcription" },
+    scenarioRuntimeStatus: input.scenarioRuntimeStatus ?? "DRAFT",
     observedEvents: [],
     currentTacticId: null,
+    currentResponseId: null,
+    currentTacticCategory: null,
+    currentTacticPromptedDummySecret: false,
     currentPressureLevel: 0,
     previousTacticIds: [],
     maxPressureLevel: input.maxPressureLevel ?? 5,
@@ -36,6 +41,7 @@ export function createSessionState(input: NewSessionInput): SessionState {
     baselineSpeechRateWpm: null,
     baselineSpeechRateSampleCount: 0,
     timelineEvents: [],
+    pressureTimeline: [],
     terminalState: null,
     mode: input.mode ?? "demo",
     cache: { hits: 0, misses: 0 },

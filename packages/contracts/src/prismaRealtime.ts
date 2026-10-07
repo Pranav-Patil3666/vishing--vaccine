@@ -135,6 +135,26 @@ export const PrismaRealtimeLocalEventSchema = z.union([
 ]);
 export type PrismaRealtimeLocalEvent = z.infer<typeof PrismaRealtimeLocalEventSchema>;
 
+/** Deterministic adapter trace; frame bytes are represented only by validated metadata. */
+export const PrismaRealtimeTraceEventSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("CONNECT") }).strict(),
+  z.object({ type: z.literal("CONNECTED") }).strict(),
+  z.object({
+    type: z.literal("AUDIO_FRAME"), frameIndex: z.number().int().nonnegative(),
+    byteLength: z.literal(PCM_FRAME_BYTES), sampleRateHz: PcmSampleRateSchema,
+    encoding: z.literal("PCM_S16LE"), channels: z.literal(1), durationMs: z.number().finite().positive(),
+  }).strict(),
+  z.object({ type: z.literal("PROCESSING"), processingTimestamp: z.string().datetime() }).strict(),
+  z.object({
+    type: z.literal("TRANSCRIPT"), text: z.string(), segmentIndex: z.number().int().nonnegative(),
+    segmentId: z.string().min(1), audioDurationMs: z.number().finite().nonnegative(),
+    providerLatencyMs: z.number().finite().nonnegative(), providerTimestamp: z.string().datetime(),
+  }).strict(),
+  z.object({ type: z.literal("ERROR"), code: z.string().min(1).max(80) }).strict(),
+  z.object({ type: z.literal("CLOSE") }).strict(),
+]);
+export type PrismaRealtimeTraceEvent = z.infer<typeof PrismaRealtimeTraceEventSchema>;
+
 /** Backend-only boundary; a concrete WebSocket adapter is intentionally not part of this contract amendment. */
 export interface PrismaRealtimeTransport {
   connect(configuration: PcmAudioConfiguration): Promise<void>;

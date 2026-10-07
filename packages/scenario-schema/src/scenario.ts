@@ -3,6 +3,7 @@ import {
   RedFlagIdSchema,
   SessionTerminalStateSchema,
   SYSTEM_SAFE_FALLBACK_RESPONSE_ID,
+  TacticCategorySchema,
   TriggerRuleSchema,
 } from "@vaccine/contracts";
 import { z } from "zod";
@@ -14,7 +15,9 @@ const responseSchema = z.object({
 
 const tacticSchema = z.object({
   tactic_id: z.string().min(1),
+  category: TacticCategorySchema,
   pressure_level: z.number().int().min(0).max(5),
+  prompts_dummy_secret: z.boolean().default(false),
   behavior_targets: z.array(BehaviorLabelSchema).min(1),
   response_ids: z.array(z.string().min(1)).min(1),
 }).strict();
@@ -53,6 +56,7 @@ const scenarioNodeSchema = z.object({
 export const ScenarioDocumentSchema = z.object({
   scenario_id: z.string().regex(/^S-\d{2}$/),
   version: z.string().min(1),
+  lifecycle_status: z.enum(["DRAFT", "SAFETY_REVIEW", "APPROVED", "RUNTIME_ELIGIBLE"]).default("DRAFT"),
   language: z.string().min(1).nullable(),
   voice_id: z.string().min(1).nullable(),
   fictional_organization: z.object({
@@ -135,6 +139,9 @@ export const ScenarioDocumentSchema = z.object({
     if (!policy.terminal_states.includes("SAFE_WORD") || !policy.terminal_states.includes("LEARNER_ENDED")) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "terminal_states"], message: "Adaptive scenarios must support both safe-word and learner-ended terminal states." });
     }
+    if (!policy.terminal_states.includes("SAFE_VERIFIED")) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "terminal_states"], message: "Adaptive scenarios must terminate safely after independent verification." });
+    }
     for (const [index, tactic] of policy.tactics.entries()) {
       if (tacticIds.has(tactic.tactic_id)) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["adaptive_policy", "tactics", index, "tactic_id"], message: `Duplicate tactic ID: ${tactic.tactic_id}` });
@@ -168,6 +175,17 @@ export const ScenarioDocumentSchema = z.object({
 
   if ((scenario.reviewed_by === null) !== (scenario.reviewed_at === null)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["reviewed_by"], message: "Reviewer and review date must either both be present or both be null." });
+  }
+
+  if (scenario.lifecycle_status === "SAFETY_REVIEW" && scenario.review_status !== "in_review") {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["review_status"], message: "Safety-review lifecycle requires review_status=in_review." });
+  }
+  if ((scenario.lifecycle_status === "APPROVED" || scenario.lifecycle_status === "RUNTIME_ELIGIBLE")
+    && scenario.review_status !== "approved") {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["lifecycle_status"], message: "Approved lifecycle states require completed scenario review." });
+  }
+  if (scenario.lifecycle_status === "RUNTIME_ELIGIBLE" && scenario.review_status !== "approved") {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["lifecycle_status"], message: "Runtime eligibility requires human-approved scenario content." });
   }
 
   if (scenario.review_status === "approved") {
@@ -212,8 +230,12 @@ export function validateScenarioDocument(input: unknown): ScenarioDocument {
 
 export function validateScenarioForRelease(input: unknown): ScenarioDocument {
   const scenario = validateScenarioDocument(input);
-  if (scenario.review_status !== "approved") {
-    throw new Error("Scenario is not approved for release.");
+  if (scenario.lifecycle_status !== "RUNTIME_ELIGIBLE" || scenario.review_status !== "approved") {
+    throw new Error("Scenario is not runtime eligible.");
   }
   return scenario;
+}
+
+export function isScenarioRuntimeEligible(scenario: ScenarioDocument): boolean {
+  return scenario.lifecycle_status === "RUNTIME_ELIGIBLE" && scenario.review_status === "approved";
 }

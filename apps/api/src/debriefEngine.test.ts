@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { LearnerTurnEvent, TimingInstant } from "@vaccine/contracts";
+import { LearnerTurnEventSchema, type LearnerTurnEvent, type TimingInstant } from "@vaccine/contracts";
 import { buildDeterministicDebrief } from "./debriefEngine.js";
 
 const instant = (monotonicMs: number): TimingInstant => ({ monotonicMs, source: "LOCAL_VAD", precision: "instant" });
 
 function event(overrides: Partial<LearnerTurnEvent> = {}): LearnerTurnEvent {
-  return {
+  return LearnerTurnEventSchema.parse({
     sessionId: "session-1", turnId: "turn-1", scenarioId: "S-01", scenarioVersion: "0.2", language: "en",
     callerTacticId: "tactic-1", callerResponseId: "response-1", callerPressureLevel: 1,
     fillerWords: [], fillerCount: 0, speechRateWpm: null, baselineSpeechRateWpm: null, speechRateDeltaPercent: null,
@@ -15,12 +15,13 @@ function event(overrides: Partial<LearnerTurnEvent> = {}): LearnerTurnEvent {
     behavior: { label: "VERIFIED_INDEPENDENTLY", evidenceRuleIds: ["behavior.verify_independent"], source: "deterministic_rules" },
     complianceMoment: null, observedEvidenceRuleIds: ["behavior.verify_independent"],
     ...overrides,
-  };
+  });
 }
 
 test("debrief statements and pressure timeline trace directly to event facts", () => {
   const first = event({
     responseLatency: { valueMs: 320, source: "DERIVED", sourceInputs: ["LOCAL_MONOTONIC_CLOCK", "LOCAL_VAD"], precision: "turn" },
+    responseLatencySource: "DERIVED", responseLatencyPrecision: "turn",
     preSpeechSilence: { valueMs: 320, source: "DERIVED", sourceInputs: ["LOCAL_MONOTONIC_CLOCK", "LOCAL_VAD"], precision: "turn" },
     fillerWords: [{ token: "um", count: 1 }], fillerCount: 1,
     speechDuration: { valueMs: 2_000, source: "DERIVED", sourceInputs: ["LOCAL_VAD", "LOCAL_VAD"], precision: "turn" },
@@ -28,10 +29,11 @@ test("debrief statements and pressure timeline trace directly to event facts", (
   });
   const second = event({
     turnId: "turn-2", callerPressureLevel: 3,
-    behavior: { label: "DISCLOSED_DUMMY_SECRET", evidenceRuleIds: ["behavior.synthetic_dummy_secret_match"], source: "deterministic_rules" },
+    behavior: { label: "DISCLOSED_DUMMY_SECRET", evidenceRuleIds: ["behavior.synthetic_dummy_secret_match"], source: "deterministic_rules", context: { activeTacticId: null, activeTacticCategory: null, relevantRedFlagIds: [] }, safetySignals: [] },
     complianceMoment: {
+      turnId: "turn-2",
       segmentIndex: 4, localSegmentStart: instant(5_000), localSegmentEnd: instant(5_700),
-      timingSource: "LOCAL_VAD", precision: "segment", approximate: true,
+      timingSource: "LOCAL_VAD", source: "synthetic_dummy_secret_detector", precision: "segment", approximate: true,
     },
     observedEvidenceRuleIds: ["behavior.synthetic_dummy_secret_match"],
   });
@@ -45,7 +47,7 @@ test("debrief statements and pressure timeline trace directly to event facts", (
   assert.match(result.statements.find((statement) => statement.kind === "filler")?.text ?? "", /1 filler word/);
   assert.match(result.statements.find((statement) => statement.kind === "speech_rate")?.text ?? "", /120 words per minute/);
   assert.match(result.statements.find((statement) => statement.eventFact.includes("speechRateDeltaPercent"))?.text ?? "", /20%/);
-  assert.match(result.statements.find((statement) => statement.kind === "compliance")?.text ?? "", /segment 4 \(approximate segment timing\)/);
+  assert.match(result.statements.find((statement) => statement.kind === "compliance")?.text ?? "", /within segment 4; local segment timing is approximate/);
   assert.equal(result.firstComplianceMoment?.segmentIndex, 4);
   assert.equal(result.pressureTimeline[1]?.approximateTiming, true);
   assert.equal(result.statements.some((statement) => /scared|nervous|anxious|intimidated|panicked/i.test(statement.text)), false);
@@ -53,8 +55,8 @@ test("debrief statements and pressure timeline trace directly to event facts", (
 
 test("debrief marks unavailable interruption timing and does not invent latency", () => {
   const result = buildDeterministicDebrief([event({
-    responseLatency: undefined,
-    interruption: { status: "unknown", source: "UNKNOWN", playbackTimingCertain: false },
+    responseLatency: null,
+    interruption: { status: "unknown", offsetMs: null, source: "UNKNOWN", playbackTimingCertain: false },
   })]);
   assert.equal(result.statements.some((statement) => statement.kind === "latency"), false);
   assert.match(result.statements.find((statement) => statement.eventFact === "interruption=unknown")?.text ?? "", /uncertain or missing/);

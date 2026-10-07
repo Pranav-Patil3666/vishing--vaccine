@@ -34,7 +34,7 @@ test("mock session API requires consent and only serves the draft-safe fallback"
   assert.equal(result.session.state, "LISTENING");
   assert.equal(result.response.playable, false);
   assert.equal(result.response.cacheHit, false);
-  assert.match(result.debriefEvent.callerTesting, /No approved adaptive tactic/);
+  assert.match(result.debriefEvent.callerTesting, /system-safe fallback/);
   assert.equal(result.session.timelineEvents.length, 1);
   assert.equal(result.session.timelineEvents[0]?.interruption && typeof result.session.timelineEvents[0].interruption, "object");
   assert.equal("transcriptText" in (result.session.timelineEvents[0] ?? {}), false);

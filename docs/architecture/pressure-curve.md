@@ -10,7 +10,7 @@ For each turn, the event model can carry pressure, response latency, pre-speech 
 
 All local audio events are placed on one session-local monotonic timeline. Latency is caller playback end to learner speech start. Hesitation reports that measured silence and filler-word evidence; it is not an emotion measure. Speech rate uses recognized transcript word count divided by measured learner speech duration. The count is an approximation, not a linguistic truth.
 
-The first three valid speech-rate samples create a session-local mean baseline. That reference stays fixed for later comparison. Before three valid samples, baseline and percentage change are unavailable. The current text-only mock has no local speech-duration measurement, so its rate and latency remain unavailable.
+The first valid turn with at least five normalized words and positive measured duration establishes a fixed session-local baseline. Later valid turns compare against that baseline; short turns and missing/zero durations do not change it. Without a valid baseline, the status is `insufficient_data` and percentage change is null. The text-only mock has no local speech-duration measurement unless a development timing fixture supplies one.
 
 ## Interpretation boundary
 

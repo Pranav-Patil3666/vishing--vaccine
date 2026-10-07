@@ -4,6 +4,7 @@ import {
   BehaviorClassificationSchema,
   DeterministicDebriefSchema,
   LearnerTurnEventSchema,
+  PressureTimelinePointSchema,
   SessionTerminalStateSchema,
 } from "./pressure.js";
 
@@ -140,6 +141,32 @@ export const SessionLifecycleStateSchema = z.enum([
 ]);
 export type SessionLifecycleState = z.infer<typeof SessionLifecycleStateSchema>;
 
+export const ScenarioRuntimeStatusSchema = z.enum(["DRAFT", "SAFETY_REVIEW", "APPROVED", "RUNTIME_ELIGIBLE"]);
+export type ScenarioRuntimeStatus = z.infer<typeof ScenarioRuntimeStatusSchema>;
+
+/** Development-only timing values use one session-local monotonic millisecond reference. */
+export const AudioTimingFixtureSchema = z.object({
+  callerAudioStartedAtMs: z.number().finite().nonnegative().optional(),
+  callerAudioEndedAtMs: z.number().finite().nonnegative().optional(),
+  learnerSpeechStartedAtMs: z.number().finite().nonnegative().nullable().optional(),
+  learnerSpeechEndedAtMs: z.number().finite().nonnegative().nullable().optional(),
+  callerPlaybackActive: z.boolean().optional(),
+  noResponse: z.boolean().optional(),
+}).strict().superRefine((fixture, context) => {
+  if (fixture.callerAudioStartedAtMs !== undefined && fixture.callerAudioEndedAtMs !== undefined
+    && fixture.callerAudioEndedAtMs < fixture.callerAudioStartedAtMs) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["callerAudioEndedAtMs"], message: "Caller playback end cannot precede its start." });
+  }
+  if (fixture.learnerSpeechStartedAtMs != null && fixture.learnerSpeechEndedAtMs != null
+    && fixture.learnerSpeechEndedAtMs < fixture.learnerSpeechStartedAtMs) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["learnerSpeechEndedAtMs"], message: "Learner speech end cannot precede its start." });
+  }
+  if (fixture.noResponse && (fixture.learnerSpeechStartedAtMs != null || fixture.learnerSpeechEndedAtMs != null)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["noResponse"], message: "A no-response fixture cannot include learner speech timing." });
+  }
+});
+export type AudioTimingFixture = z.infer<typeof AudioTimingFixtureSchema>;
+
 export const LatencyMeasurementSchema = z.object({
   operation: z.string().min(1),
   stage: z.string().min(1).optional(),
@@ -178,8 +205,12 @@ export const SessionStateSchema = z.object({
   recordingEnabled: z.boolean(),
   consentVersion: z.string().min(1),
   consent: ConsentStateSchema,
+  scenarioRuntimeStatus: ScenarioRuntimeStatusSchema.default("DRAFT"),
   observedEvents: z.array(DebriefEventSchema),
   currentTacticId: z.string().min(1).nullable(),
+  currentResponseId: z.string().min(1).nullable().default(null),
+  currentTacticCategory: z.enum(["URGENCY", "AUTHORITY", "ISOLATION", "FEAR_CONSEQUENCE", "REWARD_FAKE_HELP"]).nullable().default(null),
+  currentTacticPromptedDummySecret: z.boolean().default(false),
   currentPressureLevel: z.number().int().min(0).max(5),
   previousTacticIds: z.array(z.string().min(1)),
   maxPressureLevel: z.number().int().min(0).max(5),
@@ -189,6 +220,7 @@ export const SessionStateSchema = z.object({
   baselineSpeechRateWpm: z.number().finite().positive().nullable(),
   baselineSpeechRateSampleCount: z.number().int().nonnegative(),
   timelineEvents: z.array(LearnerTurnEventSchema),
+  pressureTimeline: z.array(PressureTimelinePointSchema).default([]),
   terminalState: SessionTerminalStateSchema.nullable(),
   mode: z.enum(["safe", "demo"]),
   cache: z.object({ hits: z.number().int().nonnegative(), misses: z.number().int().nonnegative() }),
@@ -202,19 +234,30 @@ export const CreateSessionRequestSchema = z.object({
 }).strict();
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
 export const ConsentRequestSchema = z.object({ consentVersion: z.string().min(1) }).strict();
-export const MockTurnRequestSchema = z.object({ text: z.string() }).strict();
+export const MockTurnRequestSchema = z.object({ text: z.string(), timingFixture: AudioTimingFixtureSchema.optional() }).strict().superRefine((request, context) => {
+  if (!request.text.trim() && request.timingFixture?.noResponse !== true) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["text"], message: "Mock text must not be empty unless the timing fixture explicitly represents no response." });
+  }
+  if (request.timingFixture?.noResponse === true && request.text.trim()) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["timingFixture", "noResponse"], message: "A no-response fixture cannot include learner text." });
+  }
+});
 export const EndSessionRequestSchema = z.object({}).strict();
 
 export const SafeSessionSchema = z.object({
   sessionId: z.string().min(1), scenarioId: z.string().min(1), scenarioVersion: z.string().min(1),
   language: z.string().min(1), state: SessionLifecycleStateSchema, consent: ConsentStateSchema,
+  scenarioRuntimeStatus: ScenarioRuntimeStatusSchema.default("DRAFT"),
   turnNumber: z.number().int().nonnegative(), currentNodeId: z.string().min(1),
   currentTacticId: z.string().min(1).nullable(), currentPressureLevel: z.number().int().min(0).max(5),
+  currentResponseId: z.string().min(1).nullable().default(null),
+  currentTacticCategory: z.enum(["URGENCY", "AUTHORITY", "ISOLATION", "FEAR_CONSEQUENCE", "REWARD_FAKE_HELP"]).nullable().default(null),
+  currentTacticPromptedDummySecret: z.boolean().default(false),
   previousTacticIds: z.array(z.string().min(1)), maxPressureLevel: z.number().int().min(0).max(5),
   maxTurns: z.number().int().positive(), safeWordState: z.enum(["armed", "triggered"]),
   behaviorHistory: z.array(BehaviorClassificationSchema),
   baselineSpeechRateWpm: z.number().finite().positive().nullable(), baselineSpeechRateSampleCount: z.number().int().nonnegative(),
-  timelineEvents: z.array(LearnerTurnEventSchema), terminalState: SessionTerminalStateSchema.nullable(),
+  timelineEvents: z.array(LearnerTurnEventSchema), pressureTimeline: z.array(PressureTimelinePointSchema).default([]), terminalState: SessionTerminalStateSchema.nullable(),
   pressureDebrief: DeterministicDebriefSchema.nullable(),
   mode: z.enum(["safe", "demo"]), recordingEnabled: z.boolean(),
   cache: z.object({ hits: z.number().int().nonnegative(), misses: z.number().int().nonnegative() }),
@@ -227,9 +270,15 @@ export const SessionCreateResponseSchema = z.object({ session: SafeSessionSchema
 export const TurnApiResponseSchema = z.object({
   session: SafeSessionSchema,
   transcript: z.object({ eventId: z.string(), turnNumber: z.number().int(), text: z.string(), language: z.string(), normalizationStatus: z.string() }),
-  branch: z.object({ id: z.string().nullable(), responseId: z.string(), matched: z.boolean(), reason: z.string() }),
+  branch: z.object({
+    id: z.string().nullable(), responseId: z.string(), matched: z.boolean(), reason: z.string(),
+    policyDecisionCode: z.string().min(1).default("DRAFT_SAFE_FALLBACK"),
+    nextPressureLevel: z.number().int().min(0).max(5).default(0),
+    terminalState: SessionTerminalStateSchema.nullable().default(null),
+  }),
   response: z.object({ mediaType: z.string(), cacheKey: z.string(), cacheHit: z.boolean(), playable: z.literal(false), fallback: z.boolean(), durationMs: z.number().optional() }),
   debriefEvent: DebriefEventSchema,
+  learnerTurnEvent: LearnerTurnEventSchema,
   latency: z.array(LatencyMeasurementSchema),
   creditMode: z.enum(["none", "demo"]),
 });

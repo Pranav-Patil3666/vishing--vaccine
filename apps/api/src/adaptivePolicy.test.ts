@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { validateScenarioDocument, type ScenarioDocument } from "@vaccine/scenario-schema";
-import { selectAdaptiveAction } from "./adaptivePolicy.js";
+import { ApprovedResponseResolver, selectAdaptiveAction } from "./adaptivePolicy.js";
 
 const scenario = validateScenarioDocument({
-  scenario_id: "S-97", version: "1.0.0", language: "en", voice_id: "reviewed-voice",
+  scenario_id: "S-97", version: "1.0.0", lifecycle_status: "RUNTIME_ELIGIBLE", language: "en", voice_id: "reviewed-voice",
   fictional_organization: { name: "Fictional Safety Circle", training_only: true }, simulation: true,
   opening_line: "This is a training simulation.", learning_objectives: ["Pause and verify."], red_flag_ids: ["RF-01"],
   responses: {
@@ -18,10 +18,10 @@ const scenario = validateScenarioDocument({
     max_turns: 3,
     safe_word: "stop simulation",
     escalation_behaviors: ["COMPLIED", "DISCLOSED_DUMMY_SECRET"],
-    terminal_states: ["SAFE_WORD", "LEARNER_ENDED", "VERIFIED_INDEPENDENTLY", "DUMMY_SECRET_DISCLOSED", "MAX_TURNS"],
+    terminal_states: ["SAFE_WORD", "LEARNER_ENDED", "SAFE_VERIFIED", "DUMMY_SECRET_DISCLOSED", "MAX_TURNS"],
     tactics: [
-      { tactic_id: "calm-check", pressure_level: 0, behavior_targets: ["UNKNOWN", "REFUSED", "STALLED", "VERIFIED_INDEPENDENTLY"], response_ids: ["calm"] },
-      { tactic_id: "bounded-follow-up", pressure_level: 1, behavior_targets: ["COMPLIED", "DISCLOSED_DUMMY_SECRET"], response_ids: ["bounded"] },
+      { tactic_id: "calm-check", category: "AUTHORITY", pressure_level: 0, prompts_dummy_secret: false, behavior_targets: ["UNKNOWN", "REFUSED", "STALLED"], response_ids: ["calm"] },
+      { tactic_id: "bounded-follow-up", category: "URGENCY", pressure_level: 1, prompts_dummy_secret: false, behavior_targets: ["COMPLIED"], response_ids: ["bounded"] },
     ],
   },
   safety_metadata: {
@@ -55,6 +55,9 @@ test("approved tactic selection is deterministic and returns only scenario respo
   assert.equal(action.response.text, scenario.responses.calm?.text);
   assert.equal(action.response.safetyStatus, "reviewed_safe");
   assert.equal(action.terminalState, null);
+  assert.equal(action.tacticCategory, "AUTHORITY");
+  assert.equal(action.responseId, "calm");
+  assert.equal(action.decisionCode, "SELECTED_TACTIC");
 });
 
 test("escalation is bounded by max pressure and selects an approved response", () => {
@@ -65,8 +68,8 @@ test("escalation is bounded by max pressure and selects an approved response", (
 });
 
 test("safe-word, independent verification, disclosure, max turns, and learner end use safe terminal paths", () => {
-  assert.deepEqual([select({ learnerText: "STOP SIMULATION!" }).reason, select({ learnerText: "STOP SIMULATION!" }).terminalState], ["safe_word", "SAFE_WORD"]);
-  assert.deepEqual([select({ behavior: "VERIFIED_INDEPENDENTLY" }).reason, select({ behavior: "VERIFIED_INDEPENDENTLY" }).terminalState], ["verified_independently", "VERIFIED_INDEPENDENTLY"]);
+  assert.deepEqual([select({ learnerText: "Please stop simulation now." }).reason, select({ learnerText: "Please stop simulation now." }).terminalState], ["safe_word", "SAFE_WORD"]);
+  assert.deepEqual([select({ behavior: "VERIFIED_INDEPENDENTLY" }).reason, select({ behavior: "VERIFIED_INDEPENDENTLY" }).terminalState], ["verified_independently", "SAFE_VERIFIED"]);
   assert.deepEqual([select({ behavior: "DISCLOSED_DUMMY_SECRET" }).reason, select({ behavior: "DISCLOSED_DUMMY_SECRET" }).terminalState], ["dummy_secret_disclosed", "DUMMY_SECRET_DISCLOSED"]);
   assert.deepEqual([select({ turnNumber: 3 }).reason, select({ turnNumber: 3 }).terminalState], ["max_turns", "MAX_TURNS"]);
   assert.deepEqual([select({ learnerEnded: true }).reason, select({ learnerEnded: true }).terminalState], ["learner_ended", "LEARNER_ENDED"]);
@@ -86,4 +89,21 @@ test("unapproved scenarios cannot enter their adaptive tactic pool", () => {
   assert.equal(action.tacticId, null);
   assert.equal(action.response.responseId, "system.safe-fallback");
   assert.equal(action.response.approvalReference, "system-template:system.safe-fallback");
+});
+
+test("human-approved but not runtime-eligible content stays on the developer-safe fallback path", () => {
+  const approvedButNotEligible = { ...scenario, lifecycle_status: "APPROVED" as const };
+  const action = select({ scenario: approvedButNotEligible });
+  assert.equal(action.tacticId, null);
+  assert.equal(action.decisionCode, "DRAFT_SAFE_FALLBACK");
+  assert.equal(action.terminalState, null);
+});
+
+test("response resolver rejects missing references, wrong language, and excessive policy pressure", () => {
+  const resolver = new ApprovedResponseResolver();
+  const action = select();
+  assert.equal(resolver.resolve({ scenario, language: "en", action }).responseId, "calm");
+  assert.throws(() => resolver.resolve({ scenario, language: "hi", action }), /language/);
+  assert.throws(() => resolver.resolve({ scenario, language: "en", action: { ...action, responseId: "missing" } }), /attached to the selected tactic|identity/);
+  assert.throws(() => resolver.resolve({ scenario, language: "en", action: { ...action, pressureLevel: 5, nextPressureLevel: 5 } }), /maximum/);
 });

@@ -7,6 +7,7 @@ import type { ScenarioDocument } from "@vaccine/scenario-schema";
 const scenario: ScenarioDocument = {
   scenario_id: "S-99",
   version: "0.1.0",
+  lifecycle_status: "RUNTIME_ELIGIBLE",
   language: "en",
   voice_id: "test-only",
   fictional_organization: { name: "Example Fictional Cooperative", training_only: true },

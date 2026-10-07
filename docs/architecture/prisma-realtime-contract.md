@@ -1,6 +1,6 @@
 # Prisma realtime STT contract
 
-This document records the design facts supplied for Phase 2A; it is a contract for a later backend adapter, not evidence of a live integration. The documented realtime endpoint is `wss://api.vachana.ai/stt/v3/stream`. Authentication and configuration use WebSocket upgrade headers. Any provider credentials stay server-side. The product path uses a raw backend-proxied WebSocket, not the Python SDK. No request is made by this repository today.
+This document records the Phase 2A design contract, not evidence of a live integration. `MockPrismaRealtimeTransport` models `CONNECT → CONNECTED → AUDIO_FRAME → PROCESSING → TRANSCRIPT → ERROR/CLOSE`, validates the 1,024-byte PCM frame and audio metadata, and discards frame bytes after recording safe metadata. Its deterministic transcript fixture can include segment identity, audio duration, provider latency, processing time, and provider timestamp. It makes no network request. A future real adapter would use a backend-proxied WebSocket and keep credentials server-side.
 
 ## Audio and pacing
 

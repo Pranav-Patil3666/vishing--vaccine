@@ -30,6 +30,12 @@ export const TimingValueSchema = z.object({
 }).strict();
 export type TimingValue = z.infer<typeof TimingValueSchema>;
 
+export const TimingMarkerTypeSchema = z.enum([
+  "CALLER_AUDIO_START", "CALLER_AUDIO_END", "LEARNER_SPEECH_START", "LEARNER_SPEECH_END",
+]);
+export const TimingMarkerSchema = z.object({ type: TimingMarkerTypeSchema, at: TimingInstantSchema }).strict();
+export type TimingMarker = z.infer<typeof TimingMarkerSchema>;
+
 export const BehaviorLabelSchema = z.enum([
   "REFUSED",
   "STALLED",
@@ -40,15 +46,39 @@ export const BehaviorLabelSchema = z.enum([
 ]);
 export type BehaviorLabel = z.infer<typeof BehaviorLabelSchema>;
 
+export const TacticCategorySchema = z.enum(["URGENCY", "AUTHORITY", "ISOLATION", "FEAR_CONSEQUENCE", "REWARD_FAKE_HELP"]);
+export type TacticCategory = z.infer<typeof TacticCategorySchema>;
+
 export const BehaviorClassificationSchema = z.object({
   label: BehaviorLabelSchema,
   evidenceRuleIds: z.array(z.string().min(1)),
   source: z.enum(["deterministic_rules", "human_review", "unknown"]),
+  context: z.object({
+    activeTacticId: z.string().min(1).nullable(),
+    activeTacticCategory: TacticCategorySchema.nullable(),
+    relevantRedFlagIds: z.array(z.string().min(1)),
+  }).strict().default({ activeTacticId: null, activeTacticCategory: null, relevantRedFlagIds: [] }),
+  safetySignals: z.array(z.enum([
+    "CHALLENGED_URGENCY_OR_VERIFIED",
+    "REFUSED_REMOTE_ACCESS",
+    "REFUSED_PAYMENT_CREDENTIAL",
+    "TERMINATED_OR_ESCALATED_SAFELY",
+  ])).default([]),
 }).strict();
 export type BehaviorClassification = z.infer<typeof BehaviorClassificationSchema>;
 
-export const FillerWordSchema = z.enum(["um", "uh", "erm", "hmm", "like", "you_know"]);
+export const FillerWordSchema = z.enum([
+  "um", "uh", "erm", "hmm", "like", "you_know", "uhm",
+  "hindi_matlab", "hindi_haan", "hindi_achha", "hindi_arey", "hindi_hmm",
+  "hinglish_matlab", "hinglish_haan", "hinglish_achha", "hinglish_toh", "hinglish_yaar",
+]);
 export type FillerWord = z.infer<typeof FillerWordSchema>;
+
+export const PolicyDecisionCodeSchema = z.enum([
+  "SAFE_WORD", "LEARNER_ENDED", "SAFE_VERIFIED", "DUMMY_SECRET_DISCLOSED",
+  "MAX_TURNS", "SELECTED_TACTIC", "NO_APPROVED_TACTIC", "DRAFT_SAFE_FALLBACK",
+]);
+export type PolicyDecisionCode = z.infer<typeof PolicyDecisionCodeSchema>;
 
 export const FillerEvidenceSchema = z.object({
   token: FillerWordSchema,
@@ -62,15 +92,32 @@ export type BaselineStatus = z.infer<typeof BaselineStatusSchema>;
 export const InterruptionStatusSchema = z.enum(["detected", "not_detected", "unknown"]);
 export type InterruptionStatus = z.infer<typeof InterruptionStatusSchema>;
 
+export const SessionTerminalStateSchema = z.enum([
+  "SAFE_WORD",
+  "LEARNER_ENDED",
+  "SAFE_VERIFIED",
+  "DUMMY_SECRET_DISCLOSED",
+  "MAX_TURNS",
+  "SCENARIO_COMPLETED",
+  "SAFE_FALLBACK",
+]);
+export type SessionTerminalState = z.infer<typeof SessionTerminalStateSchema>;
+
 export const ComplianceMomentSchema = z.object({
+  turnId: z.string().min(1),
+  segmentId: z.string().min(1).optional(),
   segmentIndex: z.number().int().nonnegative(),
-  localSegmentStart: TimingInstantSchema,
-  localSegmentEnd: TimingInstantSchema,
+  localSegmentStart: TimingInstantSchema.optional(),
+  localSegmentEnd: TimingInstantSchema.optional(),
   timingSource: TimingSourceSchema,
+  source: z.literal("synthetic_dummy_secret_detector"),
   precision: z.literal("segment"),
   approximate: z.literal(true),
 }).strict().superRefine((moment, context) => {
-  if (moment.localSegmentEnd.monotonicMs < moment.localSegmentStart.monotonicMs) {
+  if ((moment.localSegmentStart === undefined) !== (moment.localSegmentEnd === undefined)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["localSegmentEnd"], message: "Segment timing must include both local boundaries or neither." });
+  }
+  if (moment.localSegmentEnd && moment.localSegmentStart && moment.localSegmentEnd.monotonicMs < moment.localSegmentStart.monotonicMs) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["localSegmentEnd"], message: "Segment end cannot precede segment start." });
   }
 });
@@ -85,24 +132,39 @@ export const LearnerTurnEventSchema = z.object({
   language: z.string().min(1),
   callerTacticId: z.string().min(1).nullable(),
   callerResponseId: z.string().min(1).nullable(),
+  callerTacticCategory: TacticCategorySchema.nullable().default(null),
   callerPressureLevel: z.number().int().min(0).max(5),
+  selectedNextTacticId: z.string().min(1).nullable().default(null),
+  selectedNextResponseId: z.string().min(1).nullable().default(null),
+  nextPressureLevel: z.number().int().min(0).max(5).default(0),
+  policyDecisionCode: PolicyDecisionCodeSchema.default("DRAFT_SAFE_FALLBACK"),
+  terminalState: SessionTerminalStateSchema.nullable().default(null),
+  cacheHit: z.boolean().nullable().default(null),
+  ttsFallback: z.boolean().nullable().default(null),
+  ttsMediaType: z.string().min(1).nullable().default(null),
+  dummySecretPrompted: z.boolean().default(false),
   callerAudioStartedAt: TimingInstantSchema.optional(),
   callerAudioEndedAt: TimingInstantSchema.optional(),
   learnerSpeechStartedAt: TimingInstantSchema.optional(),
   learnerSpeechEndedAt: TimingInstantSchema.optional(),
-  responseLatency: TimingValueSchema.optional(),
-  preSpeechSilence: TimingValueSchema.optional(),
+  timingEvents: z.array(TimingMarkerSchema).default([]),
+  responseLatency: TimingValueSchema.nullable().default(null),
+  responseLatencySource: TimingSourceSchema.default("UNKNOWN"),
+  responseLatencyPrecision: TimingPrecisionSchema.default("unknown"),
+  preSpeechSilence: TimingValueSchema.nullable().default(null),
   fillerWords: z.array(FillerEvidenceSchema),
   fillerCount: z.number().int().nonnegative(),
-  speechDuration: TimingValueSchema.optional(),
+  speechDuration: TimingValueSchema.nullable().default(null),
   recognizedWordCount: z.number().int().nonnegative().optional(),
   speechRateWpm: z.number().finite().nonnegative().nullable(),
   baselineSpeechRateWpm: z.number().finite().positive().nullable(),
+  baselineSpeechRateSampleCount: z.number().int().nonnegative().default(0),
   speechRateDeltaPercent: z.number().finite().nullable(),
   baselineStatus: BaselineStatusSchema,
   interruption: z.object({
     status: InterruptionStatusSchema,
     at: TimingInstantSchema.optional(),
+    offsetMs: z.number().finite().nonnegative().nullable().default(null),
     source: TimingSourceSchema,
     playbackTimingCertain: z.boolean(),
   }).strict(),
@@ -131,18 +193,14 @@ export const LearnerTurnEventSchema = z.object({
   if (event.interruption.status === "detected" && !event.interruption.at) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["interruption", "at"], message: "Detected interruption requires an observed learner speech-start time." });
   }
+  if ((event.responseLatency === null) !== (event.responseLatencySource === "UNKNOWN")) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["responseLatencySource"], message: "Unavailable latency must have UNKNOWN timing source; measured latency must retain its source." });
+  }
+  if ((event.responseLatency === null) !== (event.responseLatencyPrecision === "unknown")) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["responseLatencyPrecision"], message: "Unavailable latency must have unknown precision; measured latency must retain its precision." });
+  }
 });
 export type LearnerTurnEvent = z.infer<typeof LearnerTurnEventSchema>;
-
-export const SessionTerminalStateSchema = z.enum([
-  "SAFE_WORD",
-  "LEARNER_ENDED",
-  "VERIFIED_INDEPENDENTLY",
-  "DUMMY_SECRET_DISCLOSED",
-  "MAX_TURNS",
-  "SAFE_FALLBACK",
-]);
-export type SessionTerminalState = z.infer<typeof SessionTerminalStateSchema>;
 
 /** TTS accepts only text carried by an explicitly reviewed scenario response or system-safe template. */
 export const ApprovedCallerResponseSchema = z.object({
@@ -199,10 +257,21 @@ export type ApprovedCallerResponseReference = z.infer<typeof ApprovedCallerRespo
 
 export const PressureTimelinePointSchema = z.object({
   turnId: z.string().min(1),
+  callerTacticId: z.string().min(1).nullable().default(null),
+  callerResponseId: z.string().min(1).nullable().default(null),
   callerPressureLevel: z.number().int().min(0).max(5),
+  selectedNextTacticId: z.string().min(1).nullable().default(null),
+  nextPressureLevel: z.number().int().min(0).max(5).default(0),
+  policyDecisionCode: PolicyDecisionCodeSchema.default("DRAFT_SAFE_FALLBACK"),
   responseLatency: TimingValueSchema.nullable(),
+  responseLatencySource: TimingSourceSchema.default("UNKNOWN"),
+  responseLatencyPrecision: TimingPrecisionSchema.default("unknown"),
+  preSpeechSilence: TimingValueSchema.nullable().default(null),
+  fillerCount: z.number().int().nonnegative().default(0),
+  speechRateWpm: z.number().finite().nonnegative().nullable().default(null),
   learnerBehavior: BehaviorClassificationSchema,
   interruptedCaller: InterruptionStatusSchema,
+  interruptionOffsetMs: z.number().finite().nonnegative().nullable().default(null),
   complianceMoment: ComplianceMomentSchema.nullable(),
   approximateTiming: z.boolean(),
   timeReference: z.literal("session-local monotonic milliseconds"),
@@ -224,5 +293,24 @@ export const DeterministicDebriefSchema = z.object({
   pressureTimeline: z.array(PressureTimelinePointSchema),
   firstComplianceMoment: ComplianceMomentSchema.nullable(),
   sourceTurnIds: z.array(z.string().min(1)),
+  turnSummaries: z.array(z.object({
+    turnId: z.string().min(1),
+    callerTacticId: z.string().min(1).nullable(),
+    callerPressureLevel: z.number().int().min(0).max(5),
+    learnerBehavior: BehaviorClassificationSchema,
+    responseLatencyMs: z.number().finite().nonnegative().nullable(),
+    preSpeechSilenceMs: z.number().finite().nonnegative().nullable(),
+    fillerCount: z.number().int().nonnegative(),
+    speechRateWpm: z.number().finite().nonnegative().nullable(),
+    interruption: InterruptionStatusSchema,
+    complianceMoment: ComplianceMomentSchema.nullable(),
+  }).strict()).default([]),
+  recommendedNextBehavior: z.string().min(1).default("Pause and verify through an independently known official channel."),
+  observableScoring: z.object({
+    pointsAwarded: z.number().int().min(0).max(5),
+    pointsPossible: z.literal(5),
+    evidence: z.array(z.string().min(1)),
+    unavailableRubricItems: z.array(z.string().min(1)),
+  }).strict().default({ pointsAwarded: 0, pointsPossible: 5, evidence: [], unavailableRubricItems: [] }),
 }).strict();
 export type DeterministicDebrief = z.infer<typeof DeterministicDebriefSchema>;

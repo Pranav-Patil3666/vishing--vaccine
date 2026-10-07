@@ -136,7 +136,7 @@ test("cache lookup failure degrades to synthesis without exposing cache errors",
 
 test("approved adaptive scenario drives bounded pressure policy and sends only response identity to TTS", async () => {
   const adaptiveScenario = validateScenarioDocument({
-    scenario_id: "S-96", version: "1.0.0", language: "en", voice_id: "reviewed-voice",
+    scenario_id: "S-96", version: "1.0.0", lifecycle_status: "RUNTIME_ELIGIBLE", language: "en", voice_id: "reviewed-voice",
     fictional_organization: { name: "Fictional Practice Group", training_only: true }, simulation: true,
     opening_line: "This is a training simulation.", learning_objectives: ["Verify independently."], red_flag_ids: ["RF-01"],
     responses: {
@@ -147,10 +147,10 @@ test("approved adaptive scenario drives bounded pressure policy and sends only r
     nodes: [{ id: "start", parent_node_id: null, trigger_rules: [], response_id: "calm", learner_expected_behavior: ["Verify independently."], next_node_id: null, safe_fallback_response_id: "system.safe-fallback", debrief_tags: ["RF-01"], safety_constraints: ["No personal data."], branch_status: "approved" }],
     adaptive_policy: {
       max_pressure_level: 1, max_turns: 3, safe_word: "stop simulation", escalation_behaviors: ["COMPLIED"],
-      terminal_states: ["SAFE_WORD", "LEARNER_ENDED", "VERIFIED_INDEPENDENTLY", "DUMMY_SECRET_DISCLOSED", "MAX_TURNS"],
+      terminal_states: ["SAFE_WORD", "LEARNER_ENDED", "SAFE_VERIFIED", "DUMMY_SECRET_DISCLOSED", "MAX_TURNS"],
       tactics: [
-        { tactic_id: "calm-check", pressure_level: 0, behavior_targets: ["UNKNOWN", "REFUSED"], response_ids: ["calm"] },
-        { tactic_id: "bounded-follow-up", pressure_level: 1, behavior_targets: ["COMPLIED"], response_ids: ["bounded"] },
+        { tactic_id: "calm-check", category: "AUTHORITY", pressure_level: 0, prompts_dummy_secret: false, behavior_targets: ["UNKNOWN", "REFUSED"], response_ids: ["calm"] },
+        { tactic_id: "bounded-follow-up", category: "URGENCY", pressure_level: 1, prompts_dummy_secret: false, behavior_targets: ["COMPLIED"], response_ids: ["bounded"] },
       ],
     },
     safety_metadata: {
@@ -161,7 +161,7 @@ test("approved adaptive scenario drives bounded pressure policy and sends only r
   }) as ScenarioDocument;
   const state = transitionConsent(createSessionState({
     sessionId: "adaptive-turn", scenarioId: adaptiveScenario.scenario_id, scenarioVersion: adaptiveScenario.version,
-    language: "en", startingNodeId: "start", maxPressureLevel: 1, maxTurns: 3,
+    language: "en", startingNodeId: "start", mode: "safe", scenarioRuntimeStatus: "RUNTIME_ELIGIBLE", maxPressureLevel: 1, maxTurns: 3,
   }), "granted", new Date());
   const store = new InMemorySessionStore(); store.create(state);
   let request: SpeechSynthesisRequest | undefined;
@@ -176,7 +176,9 @@ test("approved adaptive scenario drives bounded pressure policy and sends only r
   assert.equal(result.session.currentPressureLevel, 1);
   assert.deepEqual(result.session.previousTacticIds, ["bounded-follow-up"]);
   assert.equal(result.session.behaviorHistory[0]?.label, "COMPLIED");
-  assert.equal(result.session.timelineEvents[0]?.callerPressureLevel, 1);
+  assert.equal(result.session.timelineEvents[0]?.callerPressureLevel, 0);
+  assert.equal(result.session.timelineEvents[0]?.nextPressureLevel, 1);
+  assert.equal(result.session.timelineEvents[0]?.selectedNextTacticId, "bounded-follow-up");
   assert.equal(result.session.timelineEvents[0]?.interruption.status, "unknown");
   assert.equal(request?.responseId, "bounded");
   assert.equal("text" in (request ?? {}), false);

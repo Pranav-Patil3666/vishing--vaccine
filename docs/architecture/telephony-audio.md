@@ -1,6 +1,6 @@
 # Telephony audio foundation
 
-`TelephonyTransformPlan` describes deterministic caller playback and learner-to-STT test paths. Both target 8 kHz call-like audio in this foundation. The plan includes a versioned mild-compression setting, optional noise or call-centre background, a fixed seed whenever noise is enabled, and reproducibility metadata. This is a configuration/interface only; no signal processing algorithm or speaker/microphone echo correction is implemented.
+`TelephonyTransformPlan` describes deterministic caller playback and learner-to-STT test paths targeting 8 kHz. `DeterministicTelephonyAudioTransformer` performs nearest-sample resampling, optional mild compression, seeded low-level noise, and a simple deterministic background loop for fixtures. This small transform exists for reproducible tests; it is not a production telephony codec and does not implement speaker/microphone echo correction.
 
 Lower-rate or degraded learner-audio tests must be configured and recorded as test conditions before they are sent to a future recognizer adapter. A successful transform does not establish real-world telephony equivalence.
 

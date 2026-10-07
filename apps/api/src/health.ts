@@ -5,7 +5,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { ApiHealthResponseSchema, ConsentRequestSchema, CreateSessionRequestSchema, EndSessionRequestSchema, MockTurnRequestSchema, type ApiHealthResponse } from "@vaccine/contracts";
-import { validateScenarioDocument, type ScenarioDocument } from "@vaccine/scenario-schema";
+import { isScenarioRuntimeEligible, validateScenarioDocument, type ScenarioDocument } from "@vaccine/scenario-schema";
 import { MockPrismaRecognizer } from "./providers/prisma/mockPrisma.js";
 import { MockTimbreSynthesizer } from "./providers/timbre/mockTimbre.js";
 import { createSessionState, endSession, transitionConsent } from "./session.js";
@@ -80,7 +80,8 @@ export function createApiServer(options: HealthServerOptions): Server {
       const scenario = scenarios.get(input.scenarioId);
       if (!scenario) throw new ApplicationError("SCENARIO_NOT_FOUND", "Scenario was not found.");
       if (scenario.version !== input.scenarioVersion || scenario.simulation !== true) throw new ApplicationError("INVALID_SCENARIO", "Scenario version or simulation metadata is invalid.");
-      if (scenario.review_status === "approved") {
+      const runtimeEligible = isScenarioRuntimeEligible(scenario);
+      if (runtimeEligible) {
         if (!scenario.language || input.language !== scenario.language) throw new ApplicationError("INVALID_SCENARIO", "Language is not approved for this scenario.");
         if (input.voiceId !== undefined && input.voiceId !== scenario.voice_id) throw new ApplicationError("INVALID_SCENARIO", "Voice is not approved for this scenario.");
       } else {
@@ -93,13 +94,14 @@ export function createApiServer(options: HealthServerOptions): Server {
         language: input.language, startingNodeId: scenario.nodes.find((node) => node.parent_node_id === null)?.id ?? "start",
         consentVersion: CONSENT_VERSION,
         mode: input.demoMode ? "demo" : "safe",
+        scenarioRuntimeStatus: scenario.lifecycle_status,
         maxPressureLevel: scenario.adaptive_policy?.max_pressure_level ?? 5,
         maxTurns: scenario.adaptive_policy?.max_turns ?? 12,
       });
       const endedAt = (options.now ?? (() => new Date()))();
       const state = { ...initial, metrics: [{ operation: "session_creation", stage: "session_creation", sessionId: initial.sessionId, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString(), durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()), measuredAt: endedAt.toISOString(), success: true }] };
       store.create(state);
-      sendJson(response, 201, { session: safeSession(state), simulationOnly: true, draftFallbackOnly: scenario.review_status !== "approved" });
+      sendJson(response, 201, { session: safeSession(state), simulationOnly: true, draftFallbackOnly: !runtimeEligible });
       return;
     }
 
@@ -131,7 +133,10 @@ export function createApiServer(options: HealthServerOptions): Server {
       const body = await readBody(request);
       const parsed = MockTurnRequestSchema.safeParse(body);
       if (!parsed.success) throw new ApplicationError("INVALID_REQUEST", "Mock turn request must contain a text string.");
-      const result = await orchestrator.processTurn(sessionId, parsed.data.text);
+      if (parsed.data.timingFixture && options.environment !== "development" && options.environment !== "test") {
+        throw new ApplicationError("INVALID_REQUEST", "Timing fixtures are available only in development and test environments.");
+      }
+      const result = await orchestrator.processTurn(sessionId, parsed.data.text, parsed.data.timingFixture);
       sendJson(response, 200, { ...result, session: safeSession(result.session) });
       return;
     }
@@ -167,12 +172,15 @@ function safeSession(state: ReturnType<typeof createSessionState>) {
   return {
     sessionId: state.sessionId, scenarioId: state.scenarioId, scenarioVersion: state.scenarioVersion,
     language: state.language, state: state.state, consent: state.consent, turnNumber: state.turnNumber,
+    scenarioRuntimeStatus: state.scenarioRuntimeStatus,
     currentNodeId: state.currentNodeId, mode: state.mode, recordingEnabled: state.recordingEnabled,
-    currentTacticId: state.currentTacticId, currentPressureLevel: state.currentPressureLevel,
+    currentTacticId: state.currentTacticId, currentResponseId: state.currentResponseId,
+    currentTacticCategory: state.currentTacticCategory, currentTacticPromptedDummySecret: state.currentTacticPromptedDummySecret,
+    currentPressureLevel: state.currentPressureLevel,
     previousTacticIds: state.previousTacticIds, maxPressureLevel: state.maxPressureLevel, maxTurns: state.maxTurns,
     safeWordState: state.safeWordState, behaviorHistory: state.behaviorHistory,
     baselineSpeechRateWpm: state.baselineSpeechRateWpm, baselineSpeechRateSampleCount: state.baselineSpeechRateSampleCount,
-    timelineEvents: state.timelineEvents, terminalState: state.terminalState,
+    timelineEvents: state.timelineEvents, pressureTimeline: state.pressureTimeline, terminalState: state.terminalState,
     pressureDebrief: debriefForSession(state),
     cache: state.cache, debriefEvents: state.observedEvents,
     metrics: state.metrics,

@@ -41,7 +41,7 @@ Strict body: `{ "consentVersion": "training-consent-v1" }`. Only a session await
 
 ### `POST /api/sessions/:sessionId/turn`
 
-Development-only strict body: `{ "text": "I will verify independently." }`. Requires granted consent and `READY`, `LISTENING`, or recoverable `FALLBACK` state. Empty text is rejected. Processing is `mock text → SpeechRecognizer interface → TranscriptEvent validation → deterministic behavior classification → adaptive policy → approved response reference → credit preflight → cache lookup → SpeechSynthesizer interface on authorized miss → turn event`. The result explicitly marks generated audio as non-playable. In draft mode policy always resolves to the system-safe fallback.
+Development-only strict body accepts mock text and, only in `development` or `test`, an optional `timingFixture` with caller/learner monotonic millisecond anchors or an explicit no-response marker. It requires granted consent and `READY`, `LISTENING`, or recoverable `FALLBACK` state. Processing is `timing capture → mock text recognizer → transcript normalization → safe-word/synthetic-secret checks → deterministic behavior classification → adaptive policy → approved response resolution → credit preflight → cache lookup → mock synthesis on authorized miss → learner-turn event → pressure timeline point → session update`. The result explicitly marks audio as non-playable. Draft/demo mode resolves only to the system-safe fallback.
 
 ### `POST /api/sessions/:sessionId/end`
 
@@ -59,7 +59,7 @@ Consent is explicit and versioned. Page load and session creation are not consen
 
 Errors use `{ "error": { "code", "message", "retryAfterSeconds?", "fallbackMode?" } }`; known codes map consistently to 400, 404, 409, 422, 429, 502, or 500. A rejected configured credit request includes `fallbackMode: "demo-safe"`. Stack traces and environment values are never returned. Development limits allow five session creates and twelve turns per minute per remote address; the in-memory limiter is replaceable. Request bodies are capped at 16 KiB.
 
-The credit guard checks configured project units before recognizer and TTS provider operations. These are not Prisma credits. TTS preflight precedes cache resolution; cache hits avoid billable synthesis. API stage duration/timestamps are operational telemetry and do not drive pressure-curve latency. Learner response latency uses only a local monotonic timeline. No raw transcript is stored in the new event timeline.
+The credit guard checks configured project units before recognizer and TTS provider operations. These are not Prisma credits. TTS preflight precedes cache resolution; cache hits avoid synthesis. API stage duration/timestamps are operational telemetry and do not drive pressure-curve latency. Learner response latency uses only a local monotonic timeline. The new event log stores no transcript text or audio; only the active mock turn response returns redacted transcript text.
 
 ## Storage and provider replacement
 

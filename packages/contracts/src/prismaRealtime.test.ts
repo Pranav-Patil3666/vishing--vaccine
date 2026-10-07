@@ -20,11 +20,14 @@ test("PCM configuration constrains encoding, mono sample rates, and exact binary
   assert.equal(pcmFrameDurationMs(8_000), 64);
   assert.equal(PcmFrameSchema.safeParse(new Uint8Array(1_024)).success, true);
   assert.equal(PcmFrameSchema.safeParse(new Uint8Array(1_023)).success, false);
+  assert.equal(PcmFrameSchema.safeParse(new Uint8Array(512)).success, false);
+  assert.equal(PcmFrameSchema.safeParse(new Uint8Array(2_048)).success, false);
   assert.equal(PcmFrameSchema.safeParse(new Uint8Array(1_025)).success, false);
   assert.equal(createPcmFrame(new Uint8Array(1_024)).byteLength, 1_024);
   assert.throws(() => createPcmFrame(new Uint8Array(12)), /exactly 1,024 bytes/);
   assert.equal(PcmAudioConfigurationSchema.safeParse({ ...configuration, sampleRateHz: 22_050 }).success, false);
   assert.equal(PcmAudioConfigurationSchema.safeParse({ ...configuration, channels: 2 }).success, false);
+  assert.equal(PcmAudioConfigurationSchema.safeParse({ ...configuration, encoding: "PCM_S16BE" }).success, false);
 });
 
 test("unverified segment-duration capability remains metadata and pacing follows frame cadence", () => {
