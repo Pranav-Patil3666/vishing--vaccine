@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const clientEnvironmentSchema = z.object({
-  VITE_PUBLIC_APP_NAME: z.string().min(1).default("Vishing Vaccine — development shell"),
+  VITE_PUBLIC_APP_NAME: z.string().min(1).default("Vishing Vaccine — Voice Security Lab"),
   VITE_API_BASE_URL: z.string().default(""),
 }).strict();
 

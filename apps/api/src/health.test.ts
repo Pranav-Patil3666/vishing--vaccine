@@ -44,6 +44,39 @@ test("health version is omitted when unavailable and non-health paths are not ex
   assert.equal(unknown.status, 404);
 });
 
+test("mock authoring endpoint returns a contract-validated draft only in development environments", async (context) => {
+  const server = createApiServer({ environment: "test" });
+  context.after(() => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const base = `http://127.0.0.1:${address.port}`;
+  const response = await fetch(`${base}/api/authoring/mock`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ scenarioId: "S-90", learningObjective: "Practice independent verification.", redFlags: ["RF-01"], language: "hi-en" }),
+  });
+  assert.equal(response.status, 200);
+  const draft = await response.json() as { status: string; runtimeEligible: boolean; scenario: { lifecycle_status: string }; tacticPool: Array<{ status: string }>; candidateApprovedResponses: Array<{ status: string }> };
+  assert.equal(draft.status, "DRAFT");
+  assert.equal(draft.runtimeEligible, false);
+  assert.equal(draft.scenario.lifecycle_status, "DRAFT");
+  assert.ok(draft.tacticPool.every((tactic) => tactic.status === "DRAFT"));
+  assert.ok(draft.candidateApprovedResponses.every((candidate) => candidate.status === "DRAFT"));
+
+  const productionServer = createApiServer({ environment: "production" });
+  context.after(() => new Promise<void>((resolve, reject) => productionServer.close((error) => error ? reject(error) : resolve())));
+  productionServer.listen(0, "127.0.0.1");
+  await once(productionServer, "listening");
+  const productionAddress = productionServer.address();
+  assert.ok(productionAddress && typeof productionAddress !== "string");
+  const productionResponse = await fetch(`http://127.0.0.1:${productionAddress.port}/api/authoring/mock`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ scenarioId: "S-90", learningObjective: "Practice independent verification.", redFlags: ["RF-01"], language: "hi-en" }),
+  });
+  assert.equal(productionResponse.status, 409);
+});
+
 test("mock turn API accepts development timing fixtures and exposes structured pressure events", async (context) => {
   const server = createApiServer({ environment: "test" });
   context.after(() => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));

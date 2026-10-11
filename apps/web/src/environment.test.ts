@@ -4,7 +4,7 @@ import { parseClientEnvironment } from "./environment.js";
 
 test("client environment exposes only documented public variables", () => {
   assert.deepEqual(parseClientEnvironment({}), {
-    VITE_PUBLIC_APP_NAME: "Vishing Vaccine — development shell",
+    VITE_PUBLIC_APP_NAME: "Vishing Vaccine — Voice Security Lab",
     VITE_API_BASE_URL: "",
   });
 });

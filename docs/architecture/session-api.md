@@ -16,6 +16,10 @@ The checked-in scenario files remain drafts and have no verified language or voi
 
 Returns `{ status, environment, version?, timestamp }`.
 
+### `POST /api/authoring/mock`
+
+Available only in `development` and `test`. Accepts the shared `ScenarioBrief` contract and calls the existing `MockEvonAuthoringAdapter`. The response is a contract-validated `DRAFT` package with synthetic examples and `runtimeEligible: false`; it is not persisted and cannot enter a call session. Other environments reject this route.
+
 ### `POST /api/sessions`
 
 Strict JSON body:

@@ -1,4 +1,5 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 const root = resolve(process.cwd());
@@ -16,7 +17,9 @@ const failures = [];
 const gitignorePath = join(root, ".gitignore");
 const gitignore = await readFile(gitignorePath, "utf8").catch(() => "");
 if (!/^\.env\s*$/m.test(gitignore)) failures.push(".env is not explicitly ignored by .gitignore");
-if (await stat(join(root, ".env")).then(() => true).catch(() => false)) failures.push("A local .env file exists; remove it before committing and keep secrets outside the repository.");
+if (execFileSync("git", ["ls-files", "--", ".env"], { cwd: root, encoding: "utf8" }).trim()) {
+  failures.push(".env is tracked by Git; keep local server configuration untracked.");
+}
 
 const examplePath = join(root, ".env.example");
 const example = await readFile(examplePath, "utf8").catch(() => "");

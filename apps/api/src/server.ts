@@ -1,10 +1,8 @@
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { loadRootEnvironment } from "./loadRootEnvironment.js";
 import { parseServerEnvironment } from "./environment.js";
 import { createApiServer } from "./health.js";
 
-const envFilePath = fileURLToPath(new URL("../../.env", import.meta.url));
-if (existsSync(envFilePath)) process.loadEnvFile(envFilePath);
+loadRootEnvironment();
 
 const environment = parseServerEnvironment(process.env);
 const server = createApiServer({

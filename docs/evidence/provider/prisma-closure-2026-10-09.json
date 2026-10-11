@@ -1,0 +1,228 @@
+[
+  {
+    "eventType": "fixture-reviewed",
+    "probe": "COMBINED",
+    "durationMs": 3394.6875,
+    "parts": [
+      {
+        "phrase": "okay",
+        "startMs": 0,
+        "endMs": 534.9375
+      },
+      {
+        "phrase": "haan",
+        "startMs": 1734.9375,
+        "endMs": 2304.75
+      },
+      {
+        "phrase": "one second",
+        "startMs": 2504.75,
+        "endMs": 3394.6875
+      }
+    ],
+    "voiceName": "Microsoft David Desktop",
+    "voiceCulture": "en-US"
+  },
+  {
+    "eventType": "probe-start",
+    "probe": "COMBINED",
+    "attempt": 1,
+    "projectUsedUnitsBefore": 0,
+    "projectReservedUnits": 1
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "eventType": "credit-approved",
+      "receivedAtMonotonicMs": 0.08800000000002228
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "eventType": "socket-open",
+      "receivedAtMonotonicMs": 280.9934
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "receivedAtMonotonicMs": 355.3594,
+      "knownFields": {
+        "type": "string",
+        "timestamp": "string",
+        "config": "object",
+        "message": "string"
+      },
+      "unknownFieldCount": 1,
+      "eventType": "connected",
+      "providerTimestamp": "2026-10-09T12:07:53.416000+00:00",
+      "reportedSampleRateHz": 16000,
+      "reportedChunkSize": 512
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "receivedAtMonotonicMs": 635.0187000000001,
+      "knownFields": {
+        "type": "string",
+        "timestamp": "string"
+      },
+      "unknownFieldCount": 1,
+      "eventType": "speech_start",
+      "providerTimestamp": "2026-10-09T12:07:53.704929+00:00"
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "receivedAtMonotonicMs": 1720.2239,
+      "knownFields": {
+        "type": "string",
+        "timestamp": "string",
+        "text": "string",
+        "audio_duration_ms": "number",
+        "segment_id": "string",
+        "segment_index": "number",
+        "latency": "number"
+      },
+      "unknownFieldCount": 3,
+      "eventType": "transcript",
+      "providerTimestamp": "2026-10-09T12:07:54.789080+00:00",
+      "characterCount": 3,
+      "hasLatin": false,
+      "hasDevanagari": true,
+      "digitCount": 0,
+      "matchesSyntheticPhrase": false,
+      "matchedSyntheticPartIndexes": [],
+      "segmentFingerprint": "73015b9b09eeed0c",
+      "segmentIndex": 1,
+      "audioDurationMs": 1024,
+      "providerLatencyMs": 76
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "receivedAtMonotonicMs": 2680.7757,
+      "knownFields": {
+        "type": "string",
+        "timestamp": "string"
+      },
+      "unknownFieldCount": 1,
+      "eventType": "speech_start",
+      "providerTimestamp": "2026-10-09T12:07:55.749551+00:00"
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "receivedAtMonotonicMs": 5045.7829,
+      "knownFields": {
+        "type": "string",
+        "timestamp": "string",
+        "text": "string",
+        "audio_duration_ms": "number",
+        "segment_id": "string",
+        "segment_index": "number",
+        "latency": "number"
+      },
+      "unknownFieldCount": 3,
+      "eventType": "transcript",
+      "providerTimestamp": "2026-10-09T12:07:58.115199+00:00",
+      "characterCount": 6,
+      "hasLatin": false,
+      "hasDevanagari": true,
+      "digitCount": 2,
+      "matchesSyntheticPhrase": false,
+      "matchedSyntheticPartIndexes": [],
+      "segmentFingerprint": "fb818a6de6aa35bf",
+      "segmentIndex": 2,
+      "audioDurationMs": 2548,
+      "providerLatencyMs": 65
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "eventType": "audio-sent",
+      "receivedAtMonotonicMs": 6915.3179,
+      "frameCount": 169,
+      "minFrameBytes": 1024,
+      "maxFrameBytes": 1024,
+      "sentAudioDurationMs": 5408
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "eventType": "close-requested",
+      "receivedAtMonotonicMs": 9927.7165
+    }
+  },
+  {
+    "probe": "COMBINED",
+    "diagnostic": {
+      "eventType": "socket-closed",
+      "receivedAtMonotonicMs": 10038.0559,
+      "closeCode": 1000
+    }
+  },
+  {
+    "eventType": "probe-result",
+    "probe": "COMBINED",
+    "result": {
+      "transcriptCount": 2,
+      "frameCount": 169,
+      "closeCode": 1000,
+      "localElapsedMs": 10038.2776
+    }
+  },
+  {
+    "eventType": "probe-start",
+    "probe": "ERROR",
+    "attempt": 2,
+    "projectUsedUnitsBefore": 1,
+    "projectReservedUnits": 1
+  },
+  {
+    "probe": "ERROR",
+    "diagnostic": {
+      "eventType": "credit-approved",
+      "receivedAtMonotonicMs": 0.2136000000009517
+    }
+  },
+  {
+    "probe": "ERROR",
+    "diagnostic": {
+      "eventType": "upgrade-rejected",
+      "receivedAtMonotonicMs": 272.4930000000004,
+      "httpStatus": 401
+    }
+  },
+  {
+    "probe": "ERROR",
+    "diagnostic": {
+      "eventType": "socket-closed",
+      "receivedAtMonotonicMs": 276.40920000000006,
+      "closeCode": 1006
+    }
+  },
+  {
+    "eventType": "probe-result",
+    "probe": "ERROR",
+    "result": {
+      "result": "expected-auth-rejection",
+      "httpStatus": 401
+    }
+  },
+  {
+    "eventType": "closure-run-summary",
+    "attempts": 2,
+    "failures": 0,
+    "projectUsedUnitsBefore": 0,
+    "projectReservedUnitsAfter": 2,
+    "billing": "UNVERIFIED; local configured units only"
+  }
+]

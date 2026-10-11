@@ -14,10 +14,12 @@
     "@vaccine/credit-guard": "0.1.0",
     "@vaccine/scenario-router": "0.1.0",
     "@vaccine/scenario-schema": "0.1.0",
+    "ws": "8.22.0",
     "zod": "3.25.76"
   },
   "devDependencies": {
     "@types/node": "22.19.17",
+    "@types/ws": "8.18.2",
     "tsx": "4.23.15",
     "typescript": "5.9.3"
   }

@@ -4,8 +4,9 @@ import { resolve } from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { ApiHealthResponseSchema, ConsentRequestSchema, CreateSessionRequestSchema, EndSessionRequestSchema, MockTurnRequestSchema, type ApiHealthResponse } from "@vaccine/contracts";
-import { isScenarioRuntimeEligible, validateScenarioDocument, type ScenarioDocument } from "@vaccine/scenario-schema";
+import { ApiHealthResponseSchema, ConsentRequestSchema, CreateSessionRequestSchema, EndSessionRequestSchema, MockTurnRequestSchema, ScenarioBriefSchema, type ApiHealthResponse } from "@vaccine/contracts";
+import { DraftScenarioPackageSchema, isScenarioRuntimeEligible, validateScenarioDocument, type ScenarioDocument } from "@vaccine/scenario-schema";
+import { MockEvonAuthoringAdapter } from "./providers/evon/mockEvon.js";
 import { MockPrismaRecognizer } from "./providers/prisma/mockPrisma.js";
 import { MockTimbreSynthesizer } from "./providers/timbre/mockTimbre.js";
 import { createSessionState, endSession, transitionConsent } from "./session.js";
@@ -68,6 +69,17 @@ export function createApiServer(options: HealthServerOptions): Server {
     const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
     if (request.method === "GET" && pathname === "/health") {
       sendJson(response, 200, createHealthResponse(options));
+      return;
+    }
+    if (request.method === "POST" && pathname === "/api/authoring/mock") {
+      if (options.environment !== "development" && options.environment !== "test") {
+        throw new ApplicationError("INVALID_STATE", "Mock authoring is available only in development and test environments.");
+      }
+      const body = await readBody(request);
+      const brief = ScenarioBriefSchema.safeParse(body);
+      if (!brief.success) throw new ApplicationError("INVALID_REQUEST", "Authoring brief did not match the shared scenario brief contract.");
+      const draft = await new MockEvonAuthoringAdapter().generateDraftScenarioPackage(brief.data);
+      sendJson(response, 200, DraftScenarioPackageSchema.parse(draft));
       return;
     }
     if (request.method === "POST" && pathname === "/api/sessions") {
