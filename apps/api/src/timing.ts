@@ -60,6 +60,8 @@ export interface CapturedAudioTiming {
   callerPlaybackActive?: boolean;
   noResponse: boolean;
   timingCertain: boolean;
+  /** Browser overlap remains a candidate until separate echo/bleed QA passes. */
+  interruptionReportingEligible?: boolean;
 }
 
 /** Minimal adapter boundary for future browser audio clocks and deterministic mock fixtures. */
@@ -94,7 +96,8 @@ export class DeterministicAudioTimingClock implements AudioTimingClock {
 }
 
 export function deriveElapsed(start?: TimingInstant, end?: TimingInstant): TimingValue | undefined {
-  if (!start || !end || !isOnLocalTimeline(start.source) || !isOnLocalTimeline(end.source) || end.monotonicMs < start.monotonicMs) return undefined;
+  if (!start || !end || !isOnLocalTimeline(start.source) || !isOnLocalTimeline(end.source)
+    || start.audioClockId !== end.audioClockId || end.monotonicMs < start.monotonicMs) return undefined;
   return {
     valueMs: end.monotonicMs - start.monotonicMs,
     source: "DERIVED",
@@ -196,7 +199,7 @@ export function detectInterruption(input: InterruptionInput): { status: Interrup
     return { status: "unknown", source: "UNKNOWN", playbackTimingCertain };
   }
   const sourceInstants = [callerAudioStartedAt, learnerSpeechStartedAt, ...(callerAudioEndedAt ? [callerAudioEndedAt] : [])];
-  if (!sourceInstants.every((instant) => isOnLocalTimeline(instant.source))) {
+  if (!sourceInstants.every((instant) => isOnLocalTimeline(instant.source) && instant.audioClockId === callerAudioStartedAt.audioClockId)) {
     return { status: "unknown", source: "UNKNOWN", playbackTimingCertain };
   }
   const startMs = callerAudioStartedAt.monotonicMs;

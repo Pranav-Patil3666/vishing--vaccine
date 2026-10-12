@@ -16,6 +16,7 @@ import { TurnOrchestrator } from "./turnOrchestrator.js";
 import { ApplicationError, errorResponse } from "./errors.js";
 import { debriefForSession } from "./debriefEngine.js";
 import type { CreditBudget } from "@vaccine/credit-guard";
+import { BrowserAudioIngress } from "./browserAudioIngress.js";
 
 export interface HealthServerOptions {
   environment: string;
@@ -45,6 +46,7 @@ export function createHealthResponse(options: HealthServerOptions): ApiHealthRes
 export function createApiServer(options: HealthServerOptions): Server {
   const scenarios = loadScenarios(options.scenarioDirectory ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../../content/scenarios"));
   const store = options.sessionStore ?? new InMemorySessionStore();
+  const browserAudio = new BrowserAudioIngress(options.environment, store);
   const apiBudget = options.budget ?? { mode: "development" as const, developmentCap: 100, publicDemoCap: 100, reserveCap: 0, usedUnits: 0 };
   const orchestrator = new TurnOrchestrator({
     store, scenarios,
@@ -117,6 +119,12 @@ export function createApiServer(options: HealthServerOptions): Server {
       return;
     }
 
+    const audioRoute = pathname.match(/^\/api\/sessions\/([^/]+)\/audio\/(start|frame|finish|cancel)$/);
+    if (request.method === "POST" && audioRoute) {
+      if (audioRoute[2] === "start") rate(turnLimiter, request, "browser-audio");
+      await browserAudio.handle(request, response, decodeURIComponent(audioRoute[1]!), audioRoute[2]!);
+      return;
+    }
     const sessionRoute = pathname.match(/^\/api\/sessions\/([^/]+)(?:\/(consent|turn|end))?$/);
     if (!sessionRoute) { sendJson(response, 404, { error: { code: "NOT_FOUND", message: "Route not found." } }); return; }
     const sessionId = decodeURIComponent(sessionRoute[1] ?? "");
@@ -141,6 +149,7 @@ export function createApiServer(options: HealthServerOptions): Server {
       return;
     }
     if (request.method === "POST" && action === "turn") {
+      browserAudio.cancelSession(sessionId);
       rate(turnLimiter, request);
       const body = await readBody(request);
       const parsed = MockTurnRequestSchema.safeParse(body);
@@ -153,6 +162,7 @@ export function createApiServer(options: HealthServerOptions): Server {
       return;
     }
     if (request.method === "POST" && action === "end") {
+      browserAudio.cancelSession(sessionId);
       const body = await readBody(request, true);
       if (!EndSessionRequestSchema.safeParse(body).success) throw new ApplicationError("INVALID_REQUEST", "End-session does not accept arbitrary fields.");
       const state = store.get(sessionId);

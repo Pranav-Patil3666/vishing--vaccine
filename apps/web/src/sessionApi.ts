@@ -9,6 +9,8 @@ import {
 } from "@vaccine/contracts";
 import { DraftScenarioPackageSchema } from "@vaccine/scenario-schema";
 import { z } from "zod";
+import { DevelopmentAudioForwarder, type AudioForwarder } from "./audio/transport.js";
+import type { BrowserAudioError } from "./audio/errors.js";
 
 type SafeSession = z.infer<typeof SafeSessionSchema>;
 type TurnApiResponse = z.infer<typeof TurnApiResponseSchema>;
@@ -27,6 +29,7 @@ const SessionEnvelopeSchema = z.object({
 }).strict();
 
 export interface ApiClient {
+  createAudioForwarder(sessionId: string, onError: (error: BrowserAudioError) => void): AudioForwarder;
   createDemoSession(input: { scenarioId: string; scenarioVersion: string; language: string }): Promise<SafeSession>;
   grantConsent(sessionId: string): Promise<SafeSession>;
   submitMockTurn(sessionId: string, text: string, timingFixture?: AudioTimingFixture): Promise<TurnApiResponse>;
@@ -62,6 +65,7 @@ export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): Ap
   }
 
   return {
+    createAudioForwarder: (sessionId, onError) => new DevelopmentAudioForwarder(sessionId, baseUrl, fetcher, onError),
     async createDemoSession(input) {
       const created = await request("/api/sessions", SessionCreateResponseSchema, { ...input, demoMode: true });
       return SafeSessionSchema.parse(created.session);

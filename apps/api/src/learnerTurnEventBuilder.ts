@@ -134,6 +134,9 @@ export class LearnerTurnEventBuilder {
 }
 
 function detectInterruptionForEvent(timing: CapturedAudioTiming) {
+  if (timing.interruptionReportingEligible === false) {
+    return { status: "unknown" as const, source: "UNKNOWN" as const, playbackTimingCertain: false };
+  }
   const callerAudioStartedAt = timing.callerAudioStartedAt;
   const callerAudioEndedAt = timing.callerAudioEndedAt;
   const learnerSpeechStartedAt = timing.learnerSpeechStartedAt;

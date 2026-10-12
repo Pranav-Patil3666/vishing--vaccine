@@ -57,7 +57,11 @@ Accepts an empty body. Ends the session, disables recording, withdraws consent f
 
 An approved tree may finish at `COMPLETED`. Errors can move to recoverable `FALLBACK`/`ERROR` paths. Any active state may end at `ENDED_BY_LEARNER` where meaningful. Invalid transitions are rejected. A restored serialized session is forced back to `CONSENT_REQUIRED` with recording off; session snapshots do not restore active consent.
 
-Consent is explicit and versioned. Page load and session creation are not consent. Microphone recording is not implemented in this mock phase. The text mock input is processed only for the current request. Sensitive-looking values are redacted in returned transcript/debrief evidence; raw input is not kept in session state. No raw audio is written to disk, cache, or session storage.
+Consent is explicit and versioned. Page load and session creation are not consent. Phase 4B adds a separate explicit development microphone check; no audio recording is retained. The text mock input is processed only for the current request. Sensitive-looking values are redacted in returned transcript/debrief evidence; raw input is not kept in session state. No raw audio is written to disk, cache, or session storage.
+
+### Development audio check
+
+`POST /api/sessions/:sessionId/audio/start` accepts `{ audioClockId, turnNumber }` and issues a sixty-second in-memory token. `/frame` accepts exactly1024 raw PCM bytes with `x-audio-token`, `x-audio-sequence` and `x-audio-produced-at`. `/finish` accepts strict browser timing facts and returns counts plus canonical latency/silence/duration/overlap previews. `/cancel` releases the window. These routes are loopback-only, development/test-only, consent/state/turn gated, origin checked, bounded and non-billable. Received PCM is immediately cleared/discarded; facts do not append transcript-free synthetic turns to the event log. Interruption remains unavailable. See [the complete limits and contracts](browser-audio.md).
 
 ## Errors and limits
 

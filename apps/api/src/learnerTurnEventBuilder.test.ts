@@ -8,14 +8,14 @@ import { selectAdaptiveAction } from "./adaptivePolicy.js";
 import { LearnerTurnEventBuilder } from "./learnerTurnEventBuilder.js";
 import { appendLearnerTurnEvent } from "./eventLog.js";
 import { createSessionState } from "./session.js";
-import { DeterministicAudioTimingClock } from "./timing.js";
+import { DeterministicAudioTimingClock, type CapturedAudioTiming } from "./timing.js";
 
 const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenarios/S-01-urgent-account-verification.json"), "utf8")) as unknown) as ScenarioDocument;
 const behavior: BehaviorClassification = { label: "UNKNOWN", evidenceRuleIds: [], source: "unknown", context: { activeTacticId: null, activeTacticCategory: null, relevantRedFlagIds: [] }, safetySignals: [] };
 
-function build(input: { text?: string; fixture?: Parameters<DeterministicAudioTimingClock["capture"]>[0]; session?: ReturnType<typeof createSessionState> }) {
+function build(input: { text?: string; fixture?: Parameters<DeterministicAudioTimingClock["capture"]>[0]; session?: ReturnType<typeof createSessionState>; timing?: CapturedAudioTiming }) {
   const session = input.session ?? createSessionState({ sessionId: "event-builder", scenarioId: scenario.scenario_id, scenarioVersion: scenario.version, language: "pending-verification", startingNodeId: "start" });
-  const timing = new DeterministicAudioTimingClock().capture(input.fixture);
+  const timing = input.timing ?? new DeterministicAudioTimingClock().capture(input.fixture);
   const text = input.text ?? "";
   const observedBehavior: BehaviorClassification = text.includes("SYNTHETIC-SECRET-EXAMPLE")
     ? { label: "DISCLOSED_DUMMY_SECRET", evidenceRuleIds: ["behavior.synthetic_dummy_secret_match"], source: "deterministic_rules", context: { activeTacticId: null, activeTacticCategory: null, relevantRedFlagIds: [] }, safetySignals: [] }
@@ -67,6 +67,18 @@ test("no response and unavailable timing stay null instead of manufacturing late
   assert.equal(event.speechRateWpm, null);
   assert.equal(event.baselineStatus, "insufficient_data");
   assert.equal(event.interruption.status, "unknown");
+});
+
+test("browser timing enters the existing learner builder with interruption claims disabled", () => {
+  const clockId = "00000000-0000-4000-8000-000000000001";
+  const instant = (monotonicMs: number) => ({ monotonicMs, audioClockId: clockId, source: "LOCAL_VAD" as const, precision: "instant" as const });
+  const event = build({ text: "I will pause and verify independently.", timing: {
+    callerAudioStartedAt: instant(0), callerAudioEndedAt: instant(1000), learnerSpeechStartedAt: instant(500), learnerSpeechEndedAt: instant(1500),
+    noResponse: false, timingCertain: true, interruptionReportingEligible: false,
+  } });
+  assert.equal(event.responseLatency, null); assert.equal(event.speechDuration?.valueMs, 1000);
+  assert.equal(event.interruption.status, "unknown"); assert.equal(event.baselineStatus, "available");
+  assert.equal(event.learnerSpeechStartedAt?.audioClockId, clockId);
 });
 
 test("synthetic disclosure is first-per-session and logs only segment metadata, never the token", () => {

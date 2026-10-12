@@ -16,6 +16,7 @@ export type TimingPrecision = z.infer<typeof TimingPrecisionSchema>;
 
 export const TimingInstantSchema = z.object({
   monotonicMs: z.number().finite().nonnegative(),
+  audioClockId: z.string().uuid().optional(),
   source: TimingSourceSchema,
   precision: TimingPrecisionSchema.default("instant"),
   providerTimestamp: z.string().datetime().optional(),
