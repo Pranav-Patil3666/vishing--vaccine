@@ -1,5 +1,13 @@
 # Timing model
 
+## Phase4C.2 caller playback
+
+Real caller output records HTMLAudioElement first playing/successful ended callbacks in the existing capture controller's performance.now()−origin/audioClockId shared with VAD. Provider/cache/fetch/decode completion and duration arithmetic never supply caller end. TTS48k mono PCM WAV is independent of unchanged learner16k/frame settings. Participant WAV streaming-size fields are finalized without changing samples. Failure/cancel stops capture without fake end; overlap/null latency/interruption gates are unchanged. Offline full-chain end5000/start7200 yields canonical2200ms. Physical acceptance remains pending; see [Phase4C.2 evidence](../evidence/phase4c2-real-caller-voice.md).
+
+## Phase 4C.1 consumption
+
+The real voice route consumes existing Phase 4B browser timing facts and clock identity through `captureBrowserAudioTiming`, then uses the existing canonical learner event builder. Provider timestamp, speech_start, latency and audio_duration remain reference metadata. Response latency still uses local learner start minus local caller end; overlap stays null latency. Whole-response duration uses first local start and last available local end, without provider duration substitution. Service connection/first-transcript elapsed times are measured independently on the backend and never enter learner timing. Interruption eligibility, filler rules and the fixed speech-rate baseline remain unchanged. See [one-turn runtime](real-voice-turn.md).
+
 ## Master reference
 
 `TimingInstant.monotonicMs` belongs to its local monotonic timeline. `TimingSource` says where an observation originated: `LOCAL_MONOTONIC_CLOCK`, `LOCAL_VAD`, `CLIENT_AUDIO_CLOCK`, `PROVIDER_TIMESTAMP`, `PROVIDER_SEGMENT`, `DERIVED`, or `UNKNOWN`. Independent wall-clock values are not subtracted. Phase 4B browser instants additionally carry an ephemeral `audioClockId`; calculations require matching clock IDs. Browser values stay in their browser domain and are never mapped by subtracting a server timestamp. Legacy untagged mock fixtures remain compatible with each other, not with tagged browser facts.
@@ -17,4 +25,4 @@ Caller playback start/end, learner speech start/end, interruption, and local VAD
 
 `AudioTimingClock` is the backend boundary for local timing; `DeterministicAudioTimingClock` accepts validated development/test fixtures and labels them `LOCAL_VAD`. Without a fixture, the text mock has no local VAD or playback clock and keeps latency, speech duration, rate, and interruption timing unavailable. API stage durations use `performance.now()` and ISO timestamps separately; neither is used as learner response latency.
 
-Phase 4B adds `captureBrowserAudioTiming` for strictly validated local browser facts. The development diagnostic preview reuses these same derivations; no formulas move into React. Local VAD emits confirmation boundaries, so durations include the documented activation/hangover limits. Overlap is a candidate only; `interruptionReportingEligible=false` keeps browser facts from becoming interruption claims. See [browser audio instrumentation](browser-audio.md).
+Phase 4B adds `captureBrowserAudioTiming` for strictly validated local browser facts. The development diagnostic preview reuses these same derivations; no formulas move into React. Final Phase 4C.1 preflight corrected VAD emissions from confirmation times to estimated first-candidate/last-active block boundaries, excluding activation/hangover confirmation delay without tuning those windows. Estimates remain on the same browser clock and reflect callback/block granularity, not hardware timestamps. Completed real responses aggregate first start to the final segment's end; an unfinished final segment leaves whole-turn duration unavailable. Overlap is a candidate only; `interruptionReportingEligible=false` keeps browser facts from becoming interruption claims. See [browser audio instrumentation](browser-audio.md).

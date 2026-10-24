@@ -1,6 +1,10 @@
 # Session API — Phase 2 development mock
 
-All endpoints are local development interfaces. The API binds to loopback, returns `Cache-Control: no-store`, and calls only the repository's mock Prisma/Timbre adapters. No browser credential or provider configuration is returned.
+All endpoints are local development interfaces. The API binds to loopback and returns `Cache-Control: no-store`. Existing mock routes keep their mock Prisma/Timbre adapters. Phase 4C.1 adds explicitly gated first-turn runtime routes using the backend recognizer; no provider credential or auth configuration is returned to the browser.
+
+## Phase 4C.1 runtime extension
+
+Session creation accepts optional `runtimeMode` (default `MOCK`). `REAL_STT` requires `demoMode=false`, runtime-eligible reviewed S-01 with adaptive policy, hi-IN and development/test use. Current DRAFT content is rejected. The separate `GET .../real-audio/status` opens no connection. `POST .../real-audio/start` requires microphone consent, existing simulation consent and browser clock/turn identity; `frame`, `finish` and `cancel` require its ephemeral header token. Credit is reserved before one recognizer stream is opened. Valid Finish returns a real-source turn, approved text, optional provider segment reference metadata, service timings and backend audio counts; the existing event/pressure builders append exactly once. Typed turns cannot be submitted to a REAL_STT session. See [full runtime contract and limits](real-voice-turn.md). Live acceptance is blocked by the missing approved content, as [explicitly recorded](../evidence/phase4c1-real-turn.md).
 
 ## Runtime boundary
 
@@ -74,3 +78,9 @@ The credit guard checks configured project units before recognizer and TTS provi
 In-memory session storage is currently a development implementation. Production persistence choice remains intentionally deferred.
 
 The session/orchestration layer depends on the existing `SpeechRecognizer` and `SpeechSynthesizer` contracts. A future provider adapter must be built only after its request schema, authentication, response fields, voice/language support, billing units, errors, retention, and rate limits are verified. No real Prisma, Timbre, or Evon integration exists in this phase.
+
+## Phase 4C.3 credit diagnostics and typed technical failures
+
+The earlier sections describe the foundation phase; the current bounded real-runtime route is documented in [the Phase 4C.3 report](../evidence/phase4c3-multiturn-s01.md). GET `/api/runtime/credit` is read-only and restricted by the same development/test, loopback peer/Host and same-origin checks as real audio. It exposes loaded numeric cap/reserve/costs, process/boot identity, separate runtime STT/TTS and simulation balances, runtime attempt counts and at most 64 sanitized reservation decisions. It performs no provider work. The automatic panel shows it under Technical audio facts.
+
+Errors can additionally carry strict `technical` metadata: an allowlisted stage/cause, nullable provider-attempt flag, optional cache result and numeric guard decision. The client preserves these facts without retaining arbitrary provider/server messages. A local credit denial remains HTTP 429 / CREDIT_LIMIT_REACHED; RATE_LIMITED or a provider error is not identified as credit by HTTP status alone. Automatic failure records this metadata on the conversation while preserving committed learner events/pressure points for partial debrief. No raw audio, transcript, headers, key or stack is added to diagnostics.

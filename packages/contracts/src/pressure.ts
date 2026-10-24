@@ -290,6 +290,9 @@ export type DebriefStatement = z.infer<typeof DebriefStatementSchema>;
 
 export const DeterministicDebriefSchema = z.object({
   sessionId: z.string().min(1),
+  completionKind: z.enum(["complete", "partial", "in_progress"]).optional(),
+  terminalOutcome: SessionTerminalStateSchema.nullable().optional(),
+  reviewedEntries: z.array(z.object({ turnId: z.string().min(1), templateId: z.string().min(1), text: z.string().min(1) }).strict()).optional(),
   statements: z.array(DebriefStatementSchema),
   pressureTimeline: z.array(PressureTimelinePointSchema),
   firstComplianceMoment: ComplianceMomentSchema.nullable(),

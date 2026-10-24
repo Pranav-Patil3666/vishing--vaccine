@@ -85,7 +85,7 @@ test("mock turn API accepts development timing fixtures and exposes structured p
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}`;
-  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
+  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-02", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
   assert.equal(created.status, 201);
   const createdBody = await created.json() as { session: { sessionId: string } };
   const sessionId = createdBody.session.sessionId;
@@ -112,7 +112,7 @@ test("mock turn API rejects timing fixtures outside development and arbitrary ca
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}`;
-  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
+  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-02", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
   const createdBody = await created.json() as { session: { sessionId: string } };
   const sessionId = createdBody.session.sessionId;
   await fetch(`${base}/api/sessions/${sessionId}/consent`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ consentVersion: "training-consent-v1" }) });

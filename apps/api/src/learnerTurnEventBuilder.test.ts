@@ -10,7 +10,7 @@ import { appendLearnerTurnEvent } from "./eventLog.js";
 import { createSessionState } from "./session.js";
 import { DeterministicAudioTimingClock, type CapturedAudioTiming } from "./timing.js";
 
-const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenarios/S-01-urgent-account-verification.json"), "utf8")) as unknown) as ScenarioDocument;
+const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenario-candidates/history/S-01-0.1.0-draft.json"), "utf8")) as unknown) as ScenarioDocument;
 const behavior: BehaviorClassification = { label: "UNKNOWN", evidenceRuleIds: [], source: "unknown", context: { activeTacticId: null, activeTacticCategory: null, relevantRedFlagIds: [] }, safetySignals: [] };
 
 function build(input: { text?: string; fixture?: Parameters<DeterministicAudioTimingClock["capture"]>[0]; session?: ReturnType<typeof createSessionState>; timing?: CapturedAudioTiming }) {

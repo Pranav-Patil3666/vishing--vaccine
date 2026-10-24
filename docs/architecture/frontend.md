@@ -1,5 +1,9 @@
 # Frontend integration — Phase 3
 
+## Phase 4C.1 addition
+
+Development pre-call controls now explicitly distinguish `MOCK` and `REAL_STT`. The real mode is limited to the first S-01 hi-IN turn and remains blocked for the checked-in draft. The existing capture hook/controller is reused with runtime forwarding, mock cue timing and local VAD completion; the development discard check remains separate. The real-turn panel displays a transient redacted transcript, existing classifier/policy result, approved next response text, local timing and provider reference metadata. It updates the existing session/event/pressure view without navigating to a fabricated full-session outcome. End simulation stops capture immediately. No provider credentials, new storage or TTS are added. See [runtime architecture](real-voice-turn.md) and [acceptance status](../evidence/phase4c1-real-turn.md).
+
 The React/Vite client is a simulation-only workspace for the existing contracts and local API. It uses a small hash router so the repository does not need another routing dependency. Its routes cover the command center, scenario library and scenario inspection, mock authoring, pre-call disclosure, the typed mock call console, session inspection, and debrief.
 
 ## User flow

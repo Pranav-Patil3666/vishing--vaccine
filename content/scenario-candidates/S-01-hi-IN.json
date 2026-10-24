@@ -1,0 +1,185 @@
+{
+  "scenario_id": "S-01",
+  "version": "0.2.0",
+  "lifecycle_status": "RUNTIME_ELIGIBLE",
+  "language": "hi-IN",
+  "voice_id": "mock-only",
+  "fictional_organization": {
+    "name": "Northstar Cooperative Bank",
+    "training_only": true
+  },
+  "simulation": true,
+  "opening_line": "Namaste, Northstar Cooperative Bank ke verification desk se bol raha hoon. Aapke demo account ka verification pending hai.",
+  "learning_objectives": [
+    "Urgent account verification ke pressure ko pehchaan kar known official channel se independently verify karna."
+  ],
+  "red_flag_ids": [
+    "RF-01",
+    "RF-02",
+    "RF-03",
+    "RF-05",
+    "RF-07"
+  ],
+  "responses": {
+    "system.opening": {
+      "text": "Namaste, Northstar Cooperative Bank ke verification desk se bol raha hoon. Aapke demo account ka verification pending hai.",
+      "safety_status": "reviewed_safe"
+    },
+    "urgency": {
+      "text": "Is demo verification ko jaldi close kar lete hain; sirf practice token DUMMY-4821 bolna hai.",
+      "safety_status": "reviewed_safe"
+    },
+    "authority": {
+      "text": "Northstar Cooperative Bank ki demo verification team se hoon; is practice step ka status confirm kar dijiye.",
+      "safety_status": "reviewed_safe"
+    },
+    "isolation": {
+      "text": "Is practice step mein abhi kisi aur ko include na karein; aap chahein toh independently verify kar sakte hain.",
+      "safety_status": "reviewed_safe"
+    },
+    "fear": {
+      "text": "Is simulated verification ke pending rehne par demo access thodi der hold ho sakta hai.",
+      "safety_status": "reviewed_safe"
+    },
+    "reward": {
+      "text": "Is practice step ko abhi close karein toh demo service review mein priority mil sakti hai.",
+      "safety_status": "reviewed_safe"
+    },
+    "system.safe-fallback": {
+      "text": "Baat clear nahi hui; pressure badhaye bina practice call yahin rokte hain. Aap known official app ya number se independently verify karein.",
+      "safety_status": "system_safe_template"
+    },
+    "system.safe-ending": {
+      "text": "Independently verify karna safe kadam hai. Is practice call ko yahin khatam karte hain; ab apne response ka debrief dekhein.",
+      "safety_status": "system_safe_template"
+    }
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "parent_node_id": null,
+      "trigger_rules": [],
+      "response_id": "system.opening",
+      "learner_expected_behavior": [
+        "Pause and independently verify through a known official channel."
+      ],
+      "next_node_id": null,
+      "safe_fallback_response_id": "system.safe-fallback",
+      "debrief_tags": [
+        "RF-01",
+        "RF-02"
+      ],
+      "safety_constraints": [
+        "Fictional simulation; no real credentials or personal data.",
+        "Learner may stop or independently verify at any time."
+      ],
+      "branch_status": "approved"
+    }
+  ],
+  "adaptive_policy": {
+    "max_pressure_level": 2,
+    "max_turns": 3,
+    "safe_word": "stop simulation",
+    "escalation_behaviors": [
+      "COMPLIED"
+    ],
+    "terminal_states": [
+      "SAFE_WORD",
+      "LEARNER_ENDED",
+      "SAFE_VERIFIED",
+      "DUMMY_SECRET_DISCLOSED",
+      "MAX_TURNS",
+      "SAFE_FALLBACK"
+    ],
+    "tactics": [
+      {
+        "tactic_id": "urgency",
+        "category": "URGENCY",
+        "pressure_level": 1,
+        "prompts_dummy_secret": true,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "urgency"
+        ]
+      },
+      {
+        "tactic_id": "authority",
+        "category": "AUTHORITY",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "authority"
+        ]
+      },
+      {
+        "tactic_id": "isolation",
+        "category": "ISOLATION",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "isolation"
+        ]
+      },
+      {
+        "tactic_id": "fear",
+        "category": "FEAR_CONSEQUENCE",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "fear"
+        ]
+      },
+      {
+        "tactic_id": "reward",
+        "category": "REWARD_FAKE_HELP",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "reward"
+        ]
+      }
+    ]
+  },
+  "safety_metadata": {
+    "visible_simulation_label": true,
+    "ai_voice_disclosure_required": true,
+    "consent_before_recording": true,
+    "audio_retention": "none_by_default",
+    "dummy_data_mode": "synthetic_only",
+    "safe_ending_response_id": "system.safe-ending"
+  },
+  "safety_constraints": [
+    "Only fictional training interactions.",
+    "Only whole DUMMY-0000 format synthetic tokens may be used.",
+    "No operational fraud guidance or real-world transactions.",
+    "Independent verification, explicit end and the configured safe word override pressure.",
+    "Only existing deterministic behavior rules; no emotion or personality inference."
+  ],
+  "review_status": "approved",
+  "reviewed_by": "user:explicit-chat-approval",
+  "reviewed_at": "2026-10-14T05:53:12Z"
+}

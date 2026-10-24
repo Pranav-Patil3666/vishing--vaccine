@@ -40,3 +40,20 @@ test("VAD rejects decreasing clocks and invalid input/configuration", () => {
   const vad = new LocalVad(); vad.process(0, 20, 20); assert.throws(() => vad.process(0, 20, 19));
   assert.throws(() => vad.process(NaN, 20, 40)); assert.throws(() => vad.process(0, 0, 40));
 });
+
+test("VAD boundaries estimate first candidate start and last active end without debounce or hangover", () => {
+  const { feed, events } = fixture(); feed(0.002, 38); // Calibration ends at 760 ms.
+  feed(0.1, 5); assert.equal(events.length, 0);
+  feed(0.1, 1); assert.deepEqual(events, [{ kind: "start", monotonicMs: 760 }]); // Confirmed at 880.
+  feed(0.1, 4); feed(0, 14); assert.equal(events.length, 1);
+  feed(0, 1); assert.deepEqual(events[1], { kind: "end", monotonicMs: 960 }); // Confirmed at 1260.
+  assert.equal(events[1]!.monotonicMs - events[0]!.monotonicMs, 200);
+});
+
+test("failed candidates reset their start and a brief pause does not replace the final active end", () => {
+  const { feed, events } = fixture(); feed(0.002, 38); feed(0.1, 4); feed(0, 1);
+  feed(0.1, 6); assert.equal(events[0]?.monotonicMs, 860);
+  feed(0, 5); feed(0.1, 2); feed(0, 15);
+  assert.equal(events[1]?.monotonicMs, 1120);
+  feed(0.1, 6); assert.equal(events[2]?.monotonicMs, 1420);
+});

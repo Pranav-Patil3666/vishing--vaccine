@@ -8,6 +8,7 @@ export interface NewSessionInput {
   startingNodeId: string;
   consentVersion?: string;
   mode?: "safe" | "demo";
+  runtimeMode?: "MOCK" | "REAL_STT" | "REAL_CONVERSATION";
   maxPressureLevel?: number;
   maxTurns?: number;
   scenarioRuntimeStatus?: ScenarioRuntimeStatus;
@@ -44,6 +45,8 @@ export function createSessionState(input: NewSessionInput): SessionState {
     pressureTimeline: [],
     terminalState: null,
     mode: input.mode ?? "demo",
+    runtimeMode: input.runtimeMode ?? "MOCK",
+    ...(input.runtimeMode === "REAL_CONVERSATION" ? { conversation: { phase: "IDLE" as const } } : {}),
     cache: { hits: 0, misses: 0 },
     metrics: [],
   };
@@ -117,6 +120,7 @@ export function endSession(state: SessionState, endedAt: Date): SessionState {
     recordingEnabled: false,
     consent: { ...state.consent, status: "withdrawn", updatedAt: endedAt.toISOString() },
     terminalState: "LEARNER_ENDED",
+    ...(state.conversation ? { conversation: { ...state.conversation, phase: "STOPPED" as const } } : {}),
   };
 }
 

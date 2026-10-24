@@ -1,25 +1,56 @@
 {
   "scenario_id": "S-01",
-  "version": "0.1.0-draft",
-  "language": null,
-  "voice_id": null,
+  "version": "0.2.0",
+  "lifecycle_status": "RUNTIME_ELIGIBLE",
+  "language": "hi-IN",
+  "voice_id": "mock-only",
   "fictional_organization": {
     "name": "Northstar Cooperative Bank",
     "training_only": true
   },
   "simulation": true,
-  "opening_line": "Draft placeholder only. No simulated caller script has been approved.",
+  "opening_line": "Namaste, Northstar Cooperative Bank ke verification desk se bol raha hoon. Aapke demo account ka verification pending hai.",
   "learning_objectives": [
-    "Practice pausing under urgency and independently verifying a caller."
+    "Urgent account verification ke pressure ko pehchaan kar known official channel se independently verify karna."
   ],
-  "red_flag_ids": ["RF-01", "RF-02"],
+  "red_flag_ids": [
+    "RF-01",
+    "RF-02",
+    "RF-03",
+    "RF-05",
+    "RF-07"
+  ],
   "responses": {
-    "draft.opening": {
-      "text": "Draft placeholder only. No caller line is approved.",
-      "safety_status": "draft"
+    "system.opening": {
+      "text": "Namaste, Northstar Cooperative Bank ke verification desk se bol raha hoon. Aapke demo account ka verification pending hai.",
+      "safety_status": "reviewed_safe"
+    },
+    "urgency": {
+      "text": "Is demo verification ko jaldi close kar lete hain; sirf practice token DUMMY-4821 bolna hai.",
+      "safety_status": "reviewed_safe"
+    },
+    "authority": {
+      "text": "Northstar Cooperative Bank ki demo verification team se hoon; is practice step ka status confirm kar dijiye.",
+      "safety_status": "reviewed_safe"
+    },
+    "isolation": {
+      "text": "Is practice step mein abhi kisi aur ko include na karein; aap chahein toh independently verify kar sakte hain.",
+      "safety_status": "reviewed_safe"
+    },
+    "fear": {
+      "text": "Is simulated verification ke pending rehne par demo access thodi der hold ho sakta hai.",
+      "safety_status": "reviewed_safe"
+    },
+    "reward": {
+      "text": "Is practice step ko abhi close karein toh demo service review mein priority mil sakti hai.",
+      "safety_status": "reviewed_safe"
     },
     "system.safe-fallback": {
-      "text": "This is a fictional training simulation. You can end now and verify any claim independently.",
+      "text": "Baat clear nahi hui; pressure badhaye bina practice call yahin rokte hain. Aap known official app ya number se independently verify karein.",
+      "safety_status": "system_safe_template"
+    },
+    "system.safe-ending": {
+      "text": "Independently verify karna safe kadam hai. Is practice call ko yahin khatam karte hain; ab apne response ka debrief dekhein.",
       "safety_status": "system_safe_template"
     }
   },
@@ -28,93 +59,127 @@
       "id": "start",
       "parent_node_id": null,
       "trigger_rules": [],
-      "response_id": "draft.opening",
-      "learner_expected_behavior": ["Pause and verify independently."],
+      "response_id": "system.opening",
+      "learner_expected_behavior": [
+        "Pause and independently verify through a known official channel."
+      ],
       "next_node_id": null,
       "safe_fallback_response_id": "system.safe-fallback",
-      "debrief_tags": ["RF-01", "RF-02"],
-      "safety_constraints": ["Draft metadata only; do not use as a caller script."],
-      "branch_status": "draft"
-    },
-    {
-      "id": "challenge-urgency",
-      "parent_node_id": "start",
-      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will slow down and verify independently."] }],
-      "response_id": "system.safe-fallback",
-      "learner_expected_behavior": ["Pause under urgency and verify independently."],
-      "next_node_id": "verification-follow-up",
-      "safe_fallback_response_id": "system.safe-fallback",
-      "debrief_tags": ["RF-01", "RF-02"],
-      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
-      "branch_status": "draft"
-    },
-    {
-      "id": "refuse-secrecy",
-      "parent_node_id": "start",
-      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will not keep this secret."] }],
-      "response_id": "system.safe-fallback",
-      "learner_expected_behavior": ["Refuse secrecy and use an official channel."],
-      "next_node_id": null,
-      "safe_fallback_response_id": "system.safe-fallback",
-      "debrief_tags": ["RF-03"],
-      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
-      "branch_status": "draft"
-    },
-    {
-      "id": "refuse-remote-access",
-      "parent_node_id": "start",
-      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I refuse remote access installation."] }],
-      "response_id": "system.safe-fallback",
-      "learner_expected_behavior": ["Refuse remote-access installation."],
-      "next_node_id": null,
-      "safe_fallback_response_id": "system.safe-fallback",
-      "debrief_tags": ["RF-04"],
-      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
-      "branch_status": "draft"
-    },
-    {
-      "id": "refuse-credential-disclosure",
-      "parent_node_id": "start",
-      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will never share my OTP."] }],
-      "response_id": "system.safe-fallback",
-      "learner_expected_behavior": ["Do not disclose a secret or credential."],
-      "next_node_id": null,
-      "safe_fallback_response_id": "system.safe-fallback",
-      "debrief_tags": ["RF-05"],
-      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
-      "branch_status": "draft"
-    },
-    {
-      "id": "verification-follow-up",
-      "parent_node_id": "challenge-urgency",
-      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will contact official support."] }],
-      "response_id": "system.safe-fallback",
-      "learner_expected_behavior": ["Use a known official support channel."],
-      "next_node_id": "safe-close",
-      "safe_fallback_response_id": "system.safe-fallback",
-      "debrief_tags": ["RF-02"],
-      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
-      "branch_status": "draft"
-    },
-    {
-      "id": "safe-close",
-      "parent_node_id": "verification-follow-up",
-      "trigger_rules": [{ "type": "exact_phrase", "phrases": ["I will end the simulation and contact official support."] }],
-      "response_id": "system.safe-fallback",
-      "learner_expected_behavior": ["End the simulation and escalate through an official channel."],
-      "next_node_id": null,
-      "safe_fallback_response_id": "system.safe-fallback",
-      "debrief_tags": ["RF-02"],
-      "safety_constraints": ["Draft safe-learning branch only; do not present as approved content."],
-      "branch_status": "draft"
+      "debrief_tags": [
+        "RF-01",
+        "RF-02"
+      ],
+      "safety_constraints": [
+        "Fictional simulation; no real credentials or personal data.",
+        "Learner may stop or independently verify at any time."
+      ],
+      "branch_status": "approved"
     }
   ],
+  "adaptive_policy": {
+    "max_pressure_level": 2,
+    "max_turns": 3,
+    "safe_word": "stop simulation",
+    "escalation_behaviors": [
+      "COMPLIED"
+    ],
+    "terminal_states": [
+      "SAFE_WORD",
+      "LEARNER_ENDED",
+      "SAFE_VERIFIED",
+      "DUMMY_SECRET_DISCLOSED",
+      "MAX_TURNS",
+      "SAFE_FALLBACK"
+    ],
+    "tactics": [
+      {
+        "tactic_id": "urgency",
+        "category": "URGENCY",
+        "pressure_level": 1,
+        "prompts_dummy_secret": true,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "urgency"
+        ]
+      },
+      {
+        "tactic_id": "authority",
+        "category": "AUTHORITY",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "authority"
+        ]
+      },
+      {
+        "tactic_id": "isolation",
+        "category": "ISOLATION",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "isolation"
+        ]
+      },
+      {
+        "tactic_id": "fear",
+        "category": "FEAR_CONSEQUENCE",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "fear"
+        ]
+      },
+      {
+        "tactic_id": "reward",
+        "category": "REWARD_FAKE_HELP",
+        "pressure_level": 1,
+        "prompts_dummy_secret": false,
+        "behavior_targets": [
+          "REFUSED",
+          "STALLED",
+          "COMPLIED"
+        ],
+        "response_ids": [
+          "reward"
+        ]
+      }
+    ]
+  },
+  "safety_metadata": {
+    "visible_simulation_label": true,
+    "ai_voice_disclosure_required": true,
+    "consent_before_recording": true,
+    "audio_retention": "none_by_default",
+    "dummy_data_mode": "synthetic_only",
+    "safe_ending_response_id": "system.safe-ending"
+  },
   "safety_constraints": [
-    "Fictional training simulation only.",
-    "Do not request or enter real credentials or personal data.",
-    "Do not provide operational instructions for real-world deception."
+    "Only fictional training interactions.",
+    "Only whole DUMMY-0000 format synthetic tokens may be used.",
+    "No operational fraud guidance or real-world transactions.",
+    "Independent verification, explicit end and the configured safe word override pressure.",
+    "Only existing deterministic behavior rules; no emotion or personality inference."
   ],
-  "review_status": "draft",
-  "reviewed_by": null,
-  "reviewed_at": null
+  "review_status": "approved",
+  "reviewed_by": "user:explicit-chat-approval",
+  "reviewed_at": "2026-10-14T05:53:12Z"
 }

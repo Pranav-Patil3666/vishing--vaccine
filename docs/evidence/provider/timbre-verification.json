@@ -1,0 +1,67 @@
+{
+  "observedAt": "2026-10-18T07:05:29.948Z",
+  "attemptCount": 1,
+  "status": "VERIFIED_STREAMING_WAV",
+  "endpoint": "https://api.vachana.ai/api/v1/tts/inference",
+  "authHeader": "X-API-Key-ID",
+  "credentialEnvironment": "GNANI_API_KEY",
+  "scenarioId": "S-01",
+  "scenarioVersion": "0.2.0",
+  "responseId": "system.opening",
+  "approvedText": "Namaste, Northstar Cooperative Bank ke verification desk se bol raha hoon. Aapke demo account ka verification pending hai.",
+  "request": {
+    "model": "timbre-v2.5",
+    "voice": "Nalini",
+    "language": "hi-IN",
+    "speed": 1,
+    "audio_config": {
+      "sample_rate": 48000,
+      "num_channels": 1,
+      "sample_width": 2,
+      "encoding": "linear_pcm",
+      "container": "wav"
+    }
+  },
+  "projectUnitsReserved": 1,
+  "priorTtsProjectUnits": 0,
+  "httpStatus": 200,
+  "responseMediaType": "audio/wav",
+  "synthesisMs": 1976,
+  "byteLength": 645164,
+  "sha256": "5ec6f2f86268b0ed60ddc86d4bdd9a1e7423fe7773c867b043875d0908dcaa5f",
+  "elapsedMs": 1983,
+  "initialHarnessStatus": "FAILED_NO_RETRY",
+  "audio": {
+    "durationMs": 6720,
+    "sampleRateHz": 48000,
+    "channels": 1,
+    "byteLength": 645164
+  },
+  "offlineReanalysis": "RIFF/data lengths are 0xFFFFFFFF; bounded final data payload inspected and length fields finalized offline without changing PCM. No second provider request.",
+  "browserDecode": "PENDING",
+  "physicalPlayback": "PENDING",
+  "offlineCacheSeed": {
+    "cacheKey": "tts-5d7b09b0a0e3d59e213258907698998c377a3c91350a64aad8902f963a9e9cec",
+    "hit": true,
+    "byteLength": 645164,
+    "providerCalls": 0,
+    "finalizedSha256": "0e1546d48f317b7e62326e3a0c63b5ba0d5a0b4ded1d8cd6e8d24daf16bb47fe"
+  },
+  "backendCacheDelivery": {
+    "cacheHit": true,
+    "providerAttempts": 0,
+    "providerTransportCalls": 0,
+    "mediaType": "audio/wav",
+    "durationMs": 6720,
+    "sampleRateHz": 48000,
+    "channels": 1,
+    "byteLength": 645164,
+    "recordingEnabled": false,
+    "sessionState": "ENDED_BY_LEARNER",
+    "learnerEventCount": 0,
+    "pressurePointCount": 0,
+    "physicalMicrophoneCaptures": 0,
+    "browserPlayback": "PENDING",
+    "protocol": "Real saved participant asset served through local API; provider transport forbidden and miss credit denied."
+  }
+}

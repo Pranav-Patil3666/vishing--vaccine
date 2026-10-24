@@ -13,6 +13,8 @@ import {
   type SessionState,
   type SpeechRecognizer,
   type SpeechSynthesizer,
+  type TranscriptEvent,
+  type RuntimeCreditReservation,
 } from "@vaccine/contracts";
 import { evaluateCreditRequest, type CreditBudget } from "@vaccine/credit-guard";
 import { isScenarioRuntimeEligible, type ScenarioDocument } from "@vaccine/scenario-schema";
@@ -25,6 +27,7 @@ import { LearnerTurnEventBuilder } from "./learnerTurnEventBuilder.js";
 import { ApplicationError } from "./errors.js";
 import { transitionSession } from "./session.js";
 import { InMemorySessionStore } from "./sessionStore.js";
+import { RuntimeCreditLedger } from "./runtimeCredit.js";
 import {
   DeterministicAudioTimingClock,
   detectDummySecretDisclosure,
@@ -41,6 +44,7 @@ export interface TurnPipelineOptions {
   budget: CreditBudget;
   sttUnits: number;
   ttsUnits: number;
+  initialTtsUsedUnits?: number;
   cache?: TtsMetadataCache;
   now?: () => Date;
   audioTimingClock?: AudioTimingClock;
@@ -68,6 +72,7 @@ export interface TurnResult {
   learnerTurnEvent: LearnerTurnEvent;
   latency: readonly LatencyMeasurement[];
   creditMode: "none" | "demo";
+  approvedResponseText: string;
 }
 
 export class TurnOrchestrator {
@@ -79,14 +84,31 @@ export class TurnOrchestrator {
   private readonly audioTimingClock: AudioTimingClock;
   private readonly pendingSyntheses = new Map<string, Promise<{ mediaType: string; durationMs?: number }>>();
   private readonly turnTails = new Map<string, Promise<void>>();
-  private readonly usedUnits = new Map<string, number>();
+  private readonly credits: RuntimeCreditLedger;
 
   constructor(private readonly options: TurnPipelineOptions) {
     this.audioCache = options.cache ?? new Map();
     this.audioTimingClock = options.audioTimingClock ?? new DeterministicAudioTimingClock();
+    this.credits = new RuntimeCreditLedger(options.budget, { stt: options.sttUnits, tts: options.ttsUnits }, options.initialTtsUsedUnits, () => this.time());
   }
 
   async processTurn(sessionId: string, learnerText: string, timingFixture?: AudioTimingFixture): Promise<TurnResult> {
+    return this.enqueue(sessionId, () => this.processTurnNow(sessionId, learnerText, timingFixture));
+  }
+
+  /** Reserve once before a runtime provider connection; never charge again on finalization. */
+  creditDiagnostics() { return this.credits.snapshot(); }
+  reserveRecognition(sessionId: string): RuntimeCreditReservation { return this.credits.reserve("stt", sessionId); }
+  reserveCallerSynthesis(sessionId: string): RuntimeCreditReservation {
+    if (!(this.options.ttsUnits > 0)) throw new ApplicationError("TTS_UNAVAILABLE", "Positive configured TTS project units are required.");
+    return this.credits.reserve("tts", sessionId);
+  }
+
+  async processRecognizedTurn(sessionId: string, transcript: TranscriptEvent, timing: CapturedAudioTiming, isActive: () => boolean = () => true): Promise<TurnResult> {
+    return this.enqueue(sessionId, () => this.processTurnNow(sessionId, transcript.text, undefined, { transcript, timing, isActive }));
+  }
+
+  private async enqueue(sessionId: string, run: () => Promise<TurnResult>): Promise<TurnResult> {
     const previous = this.turnTails.get(sessionId) ?? Promise.resolve();
     let release: () => void = () => {};
     const gate = new Promise<void>((resolve) => { release = resolve; });
@@ -94,25 +116,31 @@ export class TurnOrchestrator {
     this.turnTails.set(sessionId, tail);
     await previous;
     try {
-      return await this.processTurnNow(sessionId, learnerText, timingFixture);
+      return await run();
     } finally {
       release();
       if (this.turnTails.get(sessionId) === tail) this.turnTails.delete(sessionId);
     }
   }
 
-  private async processTurnNow(sessionId: string, learnerText: string, timingFixture?: AudioTimingFixture): Promise<TurnResult> {
+  private async processTurnNow(sessionId: string, learnerText: string, timingFixture?: AudioTimingFixture,
+    runtime?: { transcript: TranscriptEvent; timing: CapturedAudioTiming; isActive: () => boolean }): Promise<TurnResult> {
     let session = this.options.store.get(sessionId);
     if (session.consent.status !== "granted" || !session.recordingEnabled) throw new ApplicationError("CONSENT_REQUIRED", "Explicit consent is required before processing a turn.");
     if (session.state !== "READY" && session.state !== "LISTENING" && session.state !== "FALLBACK") throw new ApplicationError("INVALID_STATE", "Session is not ready to accept a learner turn.");
     const noResponse = timingFixture?.noResponse === true;
+    if (runtime && (runtime.transcript.sessionId !== sessionId || runtime.transcript.turnNumber !== session.turnNumber + 1
+      || (session.runtimeMode === "REAL_STT" ? session.turnNumber !== 0 : session.runtimeMode !== "REAL_CONVERSATION" || session.turnNumber >= session.maxTurns)
+      || runtime.transcript.language !== session.language)) {
+      throw new ApplicationError("INVALID_STATE", "Stale or mismatched real learner turn.");
+    }
     if (!learnerText.trim() && !noResponse) throw new ApplicationError("INVALID_REQUEST", "Mock text input must not be empty.");
     const scenario = this.options.scenarios.get(session.scenarioId);
     if (!scenario || scenario.simulation !== true || scenario.version !== session.scenarioVersion) throw new ApplicationError("INVALID_SCENARIO", "Scenario is unavailable or invalid for this session.");
     if (scenario.lifecycle_status !== session.scenarioRuntimeStatus) throw new ApplicationError("INVALID_SCENARIO", "Scenario lifecycle changed after session creation.");
     if (session.mode !== "demo" && !isScenarioRuntimeEligible(scenario)) throw new ApplicationError("INVALID_SCENARIO", "Only runtime-eligible content can use normal runtime behavior.");
     let timing: CapturedAudioTiming;
-    try { timing = this.audioTimingClock.capture(timingFixture); }
+    try { timing = runtime?.timing ?? this.audioTimingClock.capture(timingFixture); }
     catch { throw new ApplicationError("INVALID_TIMING", "Timing fixture did not match the development timing contract."); }
 
     const turnSession = session;
@@ -122,11 +150,18 @@ export class TurnOrchestrator {
     const totalStartedMono = performance.now();
     let selectedBranchId: string | null = null;
     let cacheHit: boolean | undefined;
-    const step = (state: SessionLifecycleState) => { session = transitionSession(session, state); this.options.store.update(session); };
+    const stillActive = () => {
+      if (!runtime) return;
+      const latest = this.options.store.get(sessionId);
+      if (!runtime.isActive() || !latest.recordingEnabled || latest.consent.status !== "granted" || latest.turnNumber !== turnSession.turnNumber || latest.terminalState) {
+        throw new ApplicationError("STT_CANCELLED", "The real learner turn was cancelled.");
+      }
+    };
+    const step = (state: SessionLifecycleState) => { stillActive(); session = transitionSession(session, state); this.options.store.update(session); };
     try {
       if (session.state === "READY") { step("CALLER_SPEAKING"); step("LISTENING"); }
       step("TRANSCRIBING");
-      const candidateTranscript = noResponse
+      const candidateTranscript = runtime ? TranscriptEventSchema.parse(runtime.transcript) : noResponse
         ? { eventId: `no-response-${sessionId}-${turnNumber}`, sessionId, turnNumber, text: "", language: session.language, normalizationStatus: "unchanged" as const }
         : await this.measure(stageMeasurements, sessionId, turnNumber, "transcription", async () => {
           this.authorizeBillable("stt", this.options.sttUnits, sessionId, false);
@@ -137,12 +172,13 @@ export class TurnOrchestrator {
           if (!parsed.data.text.trim()) throw new ApplicationError("INVALID_REQUEST", "Mock transcription was empty.");
           return parsed.data;
         });
-      const normalizedText = normalizeTranscriptText(candidateTranscript.text);
+      const normalizedText = runtime ? candidateTranscript.text.replace(/\s+/gu, " ").trim() : normalizeTranscriptText(candidateTranscript.text);
       const transcript = { ...candidateTranscript, text: normalizedText };
 
       step("ROUTING");
       const turnId = `${session.sessionId}:turn-${turnNumber}`;
-      const syntheticMatch = normalizedText.length > 0 && detectDummySecretDisclosure({
+      const runtimeDummyTokens = runtime ? normalizedText.match(/(?<![\p{L}\p{N}-])DUMMY-\d{4}(?![\p{L}\p{N}-])/gu) ?? [] : undefined;
+      const syntheticMatch = runtime ? Boolean(runtimeDummyTokens?.length) : normalizedText.length > 0 && detectDummySecretDisclosure({
         turnId,
         text: normalizedText,
         segmentIndex: 0,
@@ -190,6 +226,9 @@ export class TurnOrchestrator {
             learnerText: normalizedText,
             safeWordDetected,
             runtimeAllowed: session.mode === "safe",
+            sessionState: { scenarioId: session.scenarioId, scenarioVersion: session.scenarioVersion, currentNodeId: session.currentNodeId,
+              turnNumber: session.turnNumber, terminalState: session.terminalState, state: session.state,
+              currentTacticId: session.currentTacticId, currentResponseId: session.currentResponseId },
           });
           const response = this.responseResolver.resolve({ scenario, language: session.language, action });
           return { ...action, response };
@@ -215,14 +254,14 @@ export class TurnOrchestrator {
       });
 
       step("GENERATING_RESPONSE");
-      const ttsApproved = await this.measure(stageMeasurements, sessionId, turnNumber, "tts_credit_check", async () =>
+      const ttsApproved = runtime ? false : await this.measure(stageMeasurements, sessionId, turnNumber, "tts_credit_check", async () =>
         this.preflightBillable("tts", this.options.ttsUnits, sessionId, cacheKey));
       let cached: { mediaType: string; durationMs?: number } | undefined;
-      try { cached = await this.measure(stageMeasurements, sessionId, turnNumber, "cache_lookup", async () => this.audioCache.get(cacheKey)); }
+      try { if (!runtime) cached = await this.measure(stageMeasurements, sessionId, turnNumber, "cache_lookup", async () => this.audioCache.get(cacheKey)); }
       catch { cached = undefined; }
       cacheHit = cached !== undefined;
-      stageMeasurements.at(-1)!.cacheHit = cacheHit;
-      let audioMetadata = cached;
+      if (!runtime) stageMeasurements.at(-1)!.cacheHit = cacheHit;
+      let audioMetadata = runtime ? { mediaType: "text/plain" } : cached;
       let fallbackUsed = false;
       if (!audioMetadata && !ttsApproved) {
         fallbackUsed = true;
@@ -245,7 +284,10 @@ export class TurnOrchestrator {
         scenario,
         turnNumber,
         timing,
-        transcript: { text: normalizedText, segmentIndex: 0, segmentId: `${session.sessionId}:segment:${turnNumber}` },
+        transcript: { text: normalizedText,
+          segmentIndex: runtime?.transcript.segments?.find((segment) => /\bDUMMY-\d{4}\b/u.test(segment.text))?.segmentIndex ?? 0,
+          segmentId: runtime?.transcript.segments?.find((segment) => /\bDUMMY-\d{4}\b/u.test(segment.text))?.segmentId ?? `${session.sessionId}:segment:${turnNumber}` },
+        ...(runtime ? { inputSource: "REAL_STT" as const, dummySecretTokens: runtimeDummyTokens ?? [] } : {}),
         behavior,
         policy: policyAction,
         tts: { cacheHit, fallback: fallbackUsed, mediaType: audioMetadata.mediaType },
@@ -267,7 +309,7 @@ export class TurnOrchestrator {
         baselineSpeechRateWpm: learnerTurnEvent.baselineSpeechRateWpm,
         baselineSpeechRateSampleCount: learnerTurnEvent.baselineSpeechRateSampleCount,
         terminalState: policyAction.terminalState ?? session.terminalState,
-        cache: { hits: session.cache.hits + (cacheHit ? 1 : 0), misses: session.cache.misses + (cacheHit ? 0 : 1) },
+        cache: runtime ? session.cache : { hits: session.cache.hits + (cacheHit ? 1 : 0), misses: session.cache.misses + (cacheHit ? 0 : 1) },
       };
       session = appendLearnerTurnEvent(session, learnerTurnEvent);
       session = { ...session, pressureTimeline: [...session.pressureTimeline, buildPressureTimelinePoint(learnerTurnEvent)] };
@@ -277,7 +319,18 @@ export class TurnOrchestrator {
       const debriefEvent = makeDebriefEvent(turnNumber, normalizedText, callerTesting);
       session = { ...session, observedEvents: [...session.observedEvents, debriefEvent] };
       const terminal = policyAction.terminalState !== null;
-      session = transitionSession(session, fallbackUsed ? "FALLBACK" : terminal ? "COMPLETED" : "LISTENING");
+      if (session.runtimeMode === "REAL_CONVERSATION" && session.conversation) {
+        if (policyAction.terminalState === "SAFE_WORD") {
+          session = { ...transitionSession(session, "ENDED_BY_LEARNER"), recordingEnabled: false,
+            conversation: { ...session.conversation, phase: "STOPPED" },
+            consent: { ...session.consent, status: "withdrawn", updatedAt: this.time().toISOString() } };
+        } else {
+          const { caller: _previousCaller, ...conversation } = session.conversation;
+          session = { ...session, recordingEnabled: false,
+            conversation: { ...conversation, phase: terminal ? "TERMINAL_CALLER_PREPARING" : "CALLER_PREPARING" } };
+          // PLAYING_RESPONSE is already reached above. Terminal completion awaits actual browser ended.
+        }
+      } else session = transitionSession(session, fallbackUsed ? "FALLBACK" : terminal ? "COMPLETED" : "LISTENING");
       const totalEndedAt = this.time();
       session = {
         ...session,
@@ -295,6 +348,7 @@ export class TurnOrchestrator {
       this.options.store.update(session);
       return {
         session,
+        approvedResponseText: approvedResponse.text,
         transcript: { eventId: transcript.eventId, turnNumber, text: redactSensitiveText(transcript.text), language: transcript.language, normalizationStatus: transcript.normalizationStatus },
         branch: {
           id: route.branchId, responseId: route.responseId, matched: route.matched, reason: route.reason,
@@ -308,6 +362,8 @@ export class TurnOrchestrator {
         creditMode: fallbackUsed || session.mode === "demo" ? "demo" : "none",
       };
     } catch (error) {
+      if (runtime && (this.options.store.get(sessionId).state === "ENDED_BY_LEARNER"
+        || ["ERROR", "STOPPED"].includes(this.options.store.get(sessionId).conversation?.phase ?? ""))) throw error;
       if (session.state !== "ENDED_BY_LEARNER" && session.state !== "COMPLETED") {
         const recoverable = session.state === "TRANSCRIBING" || session.state === "ROUTING" || session.state === "GENERATING_RESPONSE";
         try {
@@ -335,15 +391,12 @@ export class TurnOrchestrator {
   }
 
   private authorizeBillable(operation: string, units: number, sessionId: string, cacheAvailable: boolean): void {
-    const usedUnits = this.usedUnits.get(operation) ?? this.options.budget.usedUnits;
-    const decision = evaluateCreditRequest({ ...this.options.budget, usedUnits }, { operation, estimatedUnits: units, cacheAvailable, sessionId }, this.time());
-    if (!decision.allowed) throw new ApplicationError("CREDIT_LIMIT_REACHED", `Configured ${operation} project-unit cap reached.`);
-    if (units > 0) this.usedUnits.set(operation, usedUnits + units);
+    this.credits.chargeSimulated(operation, units, sessionId, cacheAvailable);
   }
 
   private preflightBillable(operation: string, units: number, sessionId: string, cacheKey: string): boolean {
     if (this.pendingSyntheses.has(cacheKey)) return true;
-    const usedUnits = this.usedUnits.get(operation) ?? this.options.budget.usedUnits;
+    const usedUnits = this.credits.simulatedUsedUnits(operation);
     return evaluateCreditRequest(
       { ...this.options.budget, usedUnits },
       { operation, estimatedUnits: units, cacheAvailable: true, sessionId },
@@ -423,6 +476,6 @@ function makeDebriefEvent(turnNumber: number, text: string, callerTesting: strin
   };
 }
 
-function redactSensitiveText(text: string): string {
+export function redactSensitiveText(text: string): string {
   return text.replace(/\b(?:otp|pin|cvv|password|card number|account number)\b\s*[:#=-]?\s*[\d -]{3,20}/gi, "[redacted sensitive value]").replace(/\b\d{6,19}\b/g, "[redacted number]");
 }

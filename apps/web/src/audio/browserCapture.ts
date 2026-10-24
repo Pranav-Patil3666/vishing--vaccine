@@ -7,11 +7,16 @@ export const REQUESTED_AUDIO_CONSTRAINTS = {
 export interface AppliedAudioSettings {
   sampleRate?: number; channelCount?: number; echoCancellation?: boolean; noiseSuppression?: boolean; autoGainControl?: boolean;
 }
+export interface CaptureHealth {
+  streamActive: boolean; audioTrackCount: number; tracksLive: boolean; tracksEnabled: boolean;
+  audioContextState: AudioContextState; workletState: "prepared" | "running" | "flushed" | "failed" | "stopped";
+}
 export interface CaptureConnection {
   sampleRate: number; settings: AppliedAudioSettings;
   start(onSamples: (samples: Float32Array) => void, onError: (error: BrowserAudioError) => void): Promise<void>;
   playMockCaller(onStart: () => void, onEnd: () => void): void;
-  flush(): Promise<void>;
+  flush(options?: { keepAlive: boolean }): Promise<void>;
+  health?(): CaptureHealth;
   stop(): void;
 }
 
@@ -35,11 +40,12 @@ export async function acquireBrowserMicrophone(signal: AbortSignal, trace?: Audi
   let caller: AudioBufferSourceNode | undefined;
   let active = false;
   let stopped = false;
+  let workletState: CaptureHealth["workletState"] = "prepared";
   let resolveFlush: (() => void) | undefined;
   const disposers: Array<() => void> = [];
   const stop = () => {
     if (stopped) return;
-    stopped = true; active = false;
+    stopped = true; active = false; workletState = "stopped";
     resolveFlush?.(); resolveFlush = undefined;
     for (const dispose of disposers) dispose();
     if (caller) { caller.onended = null; try { caller.stop(); } catch { /* Already ended. */ } caller.disconnect(); caller = undefined; }
@@ -74,10 +80,18 @@ export async function acquireBrowserMicrophone(signal: AbortSignal, trace?: Audi
     const audioContext = context, input = source, processor = worklet, silentOutput = mute;
     return {
       sampleRate: audioContext.sampleRate, settings,
+      health() {
+        const tracks = stream.getAudioTracks();
+        return { streamActive: stream.active, audioTrackCount: tracks.length,
+          tracksLive: tracks.length > 0 && tracks.every((track) => track.readyState === "live"),
+          tracksEnabled: tracks.length > 0 && tracks.every((track) => track.enabled),
+          audioContextState: audioContext.state, workletState };
+      },
       async start(onSamples, onError) {
         enter("CAPTURE_START");
         try {
         const fatal = (error: BrowserAudioError) => {
+          if (error.code === "BACKPRESSURE" || error.code === "PCM_PIPELINE_FAILED") workletState = "failed";
           trace?.context(audioContext.state, audioContext.sampleRate);
           if (active) onError(error.detail ? error : audioFailure(error, error.code, stage));
         };
@@ -104,8 +118,8 @@ export async function acquireBrowserMicrophone(signal: AbortSignal, trace?: Audi
             }
           }
         };
-        const onProcessorError = (event: Event) => fatal(audioFailure(event instanceof ErrorEvent && event.error instanceof Error
-          ? event.error : new Error(event instanceof ErrorEvent && event.message ? event.message : "AudioWorklet processorerror event (browser supplied no exception detail)."), "PCM_PIPELINE_FAILED", "PROCESSOR_CALLBACK"));
+        const onProcessorError = (event: Event) => { workletState = "failed"; fatal(audioFailure(event instanceof ErrorEvent && event.error instanceof Error
+          ? event.error : new Error(event instanceof ErrorEvent && event.message ? event.message : "AudioWorklet processorerror event (browser supplied no exception detail)."), "PCM_PIPELINE_FAILED", "PROCESSOR_CALLBACK")); };
         const onTrackEnded = () => fatal(audioFailure(new BrowserAudioError("TRACK_ENDED"), "TRACK_ENDED", "TRACK_LIFECYCLE"));
         const onVisibility = () => { if (document.hidden) fatal(audioFailure(new BrowserAudioError("TIMING_UNAVAILABLE"), "TIMING_UNAVAILABLE", "PAGE_VISIBILITY")); };
         const onContext = () => { trace?.context(audioContext.state, audioContext.sampleRate); if (audioContext.state !== "running") fatal(audioFailure(new BrowserAudioError("TIMING_UNAVAILABLE"), "TIMING_UNAVAILABLE", "AUDIO_CONTEXT_RESUME")); };
@@ -119,7 +133,7 @@ export async function acquireBrowserMicrophone(signal: AbortSignal, trace?: Audi
         try { await audioContext.resume(); } catch (cause) { throw audioFailure(cause, "AUDIO_CONTEXT_FAILED", stage); }
         trace?.context(audioContext.state, audioContext.sampleRate);
         if (stopped || document.hidden || audioContext.state !== "running") throw new BrowserAudioError("TIMING_UNAVAILABLE");
-        active = true;
+        active = true; workletState = "running";
         audioContext.addEventListener("statechange", onContext);
         enter("AUDIO_GRAPH_CONNECTION");
         try { input.connect(processor); processor.connect(silentOutput); silentOutput.connect(audioContext.destination); }
@@ -142,13 +156,13 @@ export async function acquireBrowserMicrophone(signal: AbortSignal, trace?: Audi
         playback.onended = () => { playback.disconnect(); caller = undefined; if (active) onEnd(); };
         onStart(); playback.start();
       },
-      flush() {
+      flush(options) {
         enter("CAPTURE_FLUSH");
         if (!active) return Promise.resolve();
         return new Promise<void>((resolve, reject) => {
           const timer = setTimeout(() => { resolveFlush = undefined; reject(new BrowserAudioError("TIMING_UNAVAILABLE")); }, 100);
-          resolveFlush = () => { clearTimeout(timer); resolve(); };
-          processor.port.postMessage("flush");
+          resolveFlush = () => { clearTimeout(timer); if (!options?.keepAlive && !stopped) workletState = "flushed"; resolve(); };
+          processor.port.postMessage(options?.keepAlive ? "flush-turn" : "flush");
         });
       },
       stop,

@@ -5,6 +5,13 @@ export function appendLearnerTurnEvent(session: SessionState, input: LearnerTurn
   const event = LearnerTurnEventSchema.parse(input);
   if (event.sessionId !== session.sessionId) throw new Error("Learner event belongs to another session.");
   if (session.timelineEvents.some((prior) => prior.turnId === event.turnId)) throw new Error("Duplicate learner turn event.");
+  if (session.runtimeMode === "REAL_CONVERSATION") {
+    if (event.turnId !== `${session.sessionId}:turn-${session.timelineEvents.length + 1}` || event.callerResponseId !== session.conversation?.caller?.responseId) throw new Error("Conversation event identity or order is invalid.");
+    if (event.callerAudioStartedAt?.audioClockId !== session.conversation?.audioClockId
+      || event.learnerSpeechStartedAt?.audioClockId !== session.conversation?.audioClockId) throw new Error("Conversation events must share their session browser clock.");
+    const previous = session.timelineEvents.at(-1);
+    if (previous?.learnerSpeechEndedAt && event.callerAudioStartedAt && event.callerAudioStartedAt.monotonicMs < previous.learnerSpeechEndedAt.monotonicMs) throw new Error("Conversation event chronology moved backwards.");
+  }
   if (event.callerPressureLevel > session.maxPressureLevel) throw new Error("Event pressure exceeds this session's configured maximum.");
   if (event.nextPressureLevel > session.maxPressureLevel) throw new Error("Next pressure exceeds this session's configured maximum.");
   const firstMomentAlreadyLogged = session.timelineEvents.some((prior) => prior.complianceMoment !== null);

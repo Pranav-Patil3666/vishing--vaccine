@@ -3,11 +3,12 @@ import test from "node:test";
 import type { BrowserAudioTimingFacts, PcmFrameMetadata } from "@vaccine/contracts";
 import { summarizeBrowserAudio } from "../../../api/src/browserAudioTiming.js";
 import type { CaptureConnection } from "./browserCapture.js";
-import { BrowserAudioController, type AudioDiagnostics } from "./controller.js";
+import { BrowserAudioController, type AudioDiagnostics, type AudioControllerOptions } from "./controller.js";
 import { BrowserAudioError } from "./errors.js";
 import { DevelopmentAudioForwarder, type AudioForwarder } from "./transport.js";
+import { callerAudioAssetFixture } from "../../../api/src/testing/callerAudioAssetFixture.js";
 
-function harness(options: { permissionError?: BrowserAudioError; frameError?: BrowserAudioError; transport?: AudioForwarder } = {}) {
+function harness(options: { permissionError?: BrowserAudioError; frameError?: BrowserAudioError; transport?: AudioForwarder; controllerOptions?: Partial<AudioControllerOptions> } = {}) {
   let time = 0, stopped = 0, cancelled = 0, acquired = 0, openCount = 0, eligible = true;
   let onSamples: (samples: Float32Array) => void = () => {};
   let onError: (error: BrowserAudioError) => void = () => {};
@@ -31,6 +32,7 @@ function harness(options: { permissionError?: BrowserAudioError; frameError?: Br
     acquire: async () => { acquired++; if (options.permissionError) throw options.permissionError; return connection; },
     forwarder: () => options.transport ?? forwarder, readClock: () => time, newClockId: () => "00000000-0000-4000-8000-000000000001",
     onChange: (snapshot) => states.push(snapshot), setDeadline: () => 1 as unknown as ReturnType<typeof setTimeout>, clearDeadline: () => {},
+    ...options.controllerOptions,
   });
   const feed = (level: number, count: number) => { for (let i = 0; i < count; i++) { time += 20; onSamples(new Float32Array(320).fill(level)); } };
   return { controller, states, frames, feed, connection, onFatal: (error: BrowserAudioError) => onError(error),
@@ -42,6 +44,62 @@ test("capture requires explicit prepare and eligibility before requesting permis
   const h = harness(); h.controller.requirePermission(); assert.equal(h.counts().acquired, 0);
   h.revoke(); await h.controller.prepare(); assert.equal(h.counts().acquired, 0);
   assert.equal(h.controller.diagnostics.error?.code, "SESSION_NOT_ELIGIBLE");
+});
+
+test("real-turn options reuse capture, play a cue after calibration and finish once on local VAD end", async () => {
+  const h = harness({ controllerOptions: { autoPlayCaller: true, finishOnSpeechEnd: true } });
+  await h.controller.prepare(); assert.equal(h.controller.diagnostics.callerPlayed, false);
+  h.feed(0.002, 38); assert.equal(h.controller.diagnostics.callerPlaying, true);
+  h.endCaller(); h.feed(0.1, 8); h.feed(0, 15);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.controller.diagnostics.state, "COMPLETED"); assert.equal(h.counts().stopped, 1);
+  assert.deepEqual(h.facts()?.events.map((event) => event.kind), ["CALLER_AUDIO_START", "CALLER_AUDIO_END", "LEARNER_SPEECH_START", "LEARNER_SPEECH_END"]);
+  assert.ok(h.controller.diagnostics.summary?.observations[0]?.speechDurationMs);
+});
+test("real-turn overlap waits for actual cue end before finalizing local facts", async () => {
+  const h = harness({ controllerOptions: { autoPlayCaller: true, finishOnSpeechEnd: true } });
+  await h.controller.prepare(); h.feed(0, 38); h.feed(0.1, 8); h.feed(0, 15);
+  await new Promise((resolve) => setImmediate(resolve)); assert.equal(h.facts(), undefined);
+  h.endCaller(); await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.controller.diagnostics.state, "COMPLETED"); assert.equal(h.controller.diagnostics.summary?.observations[0]?.overlapCandidate, true);
+  assert.equal(h.controller.diagnostics.summary?.observations[0]?.responseLatencyMs, null);
+});
+
+test("speech confirmed after cue end keeps its earlier boundary and null overlap latency", async () => {
+  const h = harness({ controllerOptions: { autoPlayCaller: true, finishOnSpeechEnd: true } });
+  await h.controller.prepare(); h.feed(0.002, 38); h.feed(0.1, 3); h.endCaller();
+  h.feed(0.1, 5); h.feed(0, 15); await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.controller.diagnostics.state, "COMPLETED");
+  const events = h.facts()!.events;
+  assert.deepEqual(events.map((event) => event.kind), ["CALLER_AUDIO_START", "LEARNER_SPEECH_START", "CALLER_AUDIO_END", "LEARNER_SPEECH_END"]);
+  assert.equal(events[1]!.at.monotonicMs, 760); assert.equal(events[2]!.at.monotonicMs, 820);
+  const observation = h.controller.diagnostics.summary!.observations[0]!;
+  assert.equal(observation.responseLatencyMs, null); assert.equal(observation.overlapCandidate, true);
+  assert.equal(observation.speechDurationMs, 160); assert.equal(observation.interruptionStatus, "unknown");
+});
+
+test("end confirmed after caller callback retains the earlier last active boundary in valid fact order", async () => {
+  const h = harness(); await h.controller.prepare(); h.feed(0.002, 38); h.controller.playMockCaller();
+  h.feed(0.1, 8); h.feed(0, 5); h.endCaller(); h.feed(0, 10); await h.controller.finish();
+  const events = h.facts()!.events;
+  assert.deepEqual(events.map((event) => event.kind), ["CALLER_AUDIO_START", "LEARNER_SPEECH_START", "LEARNER_SPEECH_END", "CALLER_AUDIO_END"]);
+  assert.equal(events[2]!.at.monotonicMs, 920); assert.equal(events[3]!.at.monotonicMs, 1020);
+  assert.equal(h.controller.diagnostics.summary?.observations[0]?.speechDurationMs, 160);
+});
+test("real-turn no-speech timeout is bounded and cancelled with capture resources", async () => {
+  const deadlines = new Map<number, () => void>();
+  const h = harness({ controllerOptions: { autoPlayCaller: true, noSpeechTimeoutMs: 10000, maxCaptureMs: 30000,
+    setDeadline: (callback, ms) => { deadlines.set(ms, callback); return ms as unknown as ReturnType<typeof setTimeout>; },
+    clearDeadline: (timer) => { deadlines.delete(timer as unknown as number); } } });
+  await h.controller.prepare(); h.feed(0, 38); h.endCaller(); assert.ok(deadlines.has(10000)); assert.ok(deadlines.has(30000));
+  deadlines.get(10000)!(); await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.facts()?.events.some((event) => event.kind === "LEARNER_SPEECH_START"), false); assert.equal(deadlines.size, 0);
+});
+test("queued VAD finish from a stopped window cannot finish a freshly prepared check", async () => {
+  const h = harness({ controllerOptions: { autoPlayCaller: true, finishOnSpeechEnd: true } });
+  await h.controller.prepare(); h.feed(0, 38); h.endCaller(); h.feed(0.1, 8); h.feed(0, 15);
+  h.controller.stop(); await h.controller.prepare(); await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.controller.diagnostics.state, "CALIBRATING"); assert.equal(h.facts(), undefined); h.controller.stop();
 });
 
 test("successful finish retains the parsed summary and final local facts in a completed state", async () => {
@@ -214,4 +272,48 @@ test("late open from a stopped attempt cannot stop a newer microphone preparatio
   const oldPrepare = controller.prepare(); await new Promise((resolve) => setImmediate(resolve));
   controller.stop(); await controller.prepare(); assert.equal(controller.diagnostics.state, "CALIBRATING");
   resolveOpen(); await oldPrepare; assert.equal(controller.diagnostics.state, "CALIBRATING"); controller.stop();
+});
+
+test("real caller playing/ended use the same local clock as VAD: 5000 → 7200 gives 2200ms", async () => {
+  let onStart = () => {}, onEnd = () => {}, played = 0, prepared = 0;
+  const h = harness({ controllerOptions: { autoPlayCaller: true, prepareCaller: async () => {
+    prepared++; return { asset: callerAudioAssetFixture(), stop() {}, play(start, end) { played++; onStart = start; onEnd = end; } };
+  } } });
+  await Promise.all([h.controller.prepare(), h.controller.prepare()]); h.feed(0, 38);
+  assert.equal(prepared, 1); assert.equal(played, 1); assert.equal(h.controller.diagnostics.callerStartMs, undefined);
+  onStart(); h.feed(0, 212); onEnd(); assert.equal(h.controller.diagnostics.callerEndMs, 5000);
+  h.feed(0, 110); h.feed(0.1, 10); h.feed(0, 20); await h.controller.finish();
+  const summary = summarizeBrowserAudio(h.facts()!, h.frames.length);
+  assert.equal(summary.observations[0]?.responseLatencyMs, 2200); assert.equal(h.controller.diagnostics.callerEndMs, 5000);
+  assert.ok(h.facts()!.events.every((fact) => fact.at.audioClockId === h.controller.diagnostics.audioClockId));
+});
+
+test("real caller overlap retains null latency and unchanged interruption gate", async () => {
+  let onStart = () => {}, onEnd = () => {};
+  const h = harness({ controllerOptions: { autoPlayCaller: true, prepareCaller: async () => ({ asset: callerAudioAssetFixture(), stop() {}, play(start, end) { onStart = start; onEnd = end; } }) } });
+  await h.controller.prepare(); h.feed(0, 38); onStart(); h.feed(0.1, 10); onEnd(); h.feed(0, 20); await h.controller.finish();
+  const summary = summarizeBrowserAudio(h.facts()!, h.frames.length);
+  assert.equal(summary.observations[0]?.overlapCandidate, true); assert.equal(summary.observations[0]?.responseLatencyMs, null);
+  assert.equal(summary.interruptionReportingEnabled, false);
+});
+
+test("caller load failure opens neither microphone nor STT; no fake playback end", async () => {
+  const h = harness({ controllerOptions: { prepareCaller: async () => { throw new Error("offline fetch failure"); } } }); await h.controller.prepare();
+  assert.equal(h.counts().acquired, 0); assert.equal(h.counts().openCount, 0);
+  assert.equal(h.controller.diagnostics.error?.code, "CALLER_AUDIO_FAILED"); assert.equal(h.controller.diagnostics.callerEndMs, undefined);
+});
+
+test("playback error stops capture and ignores stale completion", async () => {
+  let fail = () => {}, end = () => {}, stops = 0;
+  const h = harness({ controllerOptions: { autoPlayCaller: true, prepareCaller: async () => ({ asset: callerAudioAssetFixture(), stop() { stops++; }, play(_start, onEnd, onFailure) { end = onEnd; fail = onFailure; } }) } });
+  await h.controller.prepare(); h.feed(0, 38); fail(); end();
+  assert.equal(h.controller.diagnostics.error?.code, "CALLER_AUDIO_FAILED"); assert.equal(h.controller.diagnostics.callerEndMs, undefined);
+  assert.equal(h.counts().stopped, 1); assert.equal(h.counts().cancelled, 1); assert.equal(stops, 1);
+});
+
+test("end while caller loads cancels pending microphone preparation", async () => {
+  let resolve!: (value: { asset: ReturnType<typeof callerAudioAssetFixture>; stop(): void; play(): void }) => void, stopped = 0;
+  const h = harness({ controllerOptions: { prepareCaller: () => new Promise((done) => { resolve = done; }) } });
+  const pending = h.controller.prepare(); h.controller.stop(); resolve({ asset: callerAudioAssetFixture(), stop() { stopped++; }, play() {} }); await pending;
+  assert.equal(stopped, 1); assert.equal(h.counts().acquired, 0); assert.equal(h.counts().openCount, 0);
 });

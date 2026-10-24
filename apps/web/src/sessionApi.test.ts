@@ -13,7 +13,7 @@ test("web API client completes the disclosed mock session and authoring flow", a
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const api = createApiClient(`http://127.0.0.1:${address.port}`);
-  const scenario = scenarioById("S-01");
+  const scenario = scenarioById("S-02");
   assert.ok(scenario);
 
   const created = await api.createDemoSession({ scenarioId: scenario.scenario_id, scenarioVersion: scenario.version, language: "pending-verification" });
@@ -47,4 +47,24 @@ test("web API client reports contract failures without exposing payload content"
   const api = createApiClient("", async () => new Response(JSON.stringify({ secret: "raw body" }), { status: 200 }));
   await assert.rejects(api.createDemoSession({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification" }),
     (error: unknown) => error instanceof SessionApiError && error.message.includes("shared contract") && !error.message.includes("raw body"));
+});
+
+for (const [code, status, stage] of [
+  ["CREDIT_LIMIT_REACHED", 429, "TTS_CREDIT_GUARD"], ["RATE_LIMITED", 429, "CALLER_AUDIO_RESOLUTION"],
+  ["TTS_PROVIDER_FAILED", 502, "TTS_PROVIDER"], ["TTS_PROVIDER_FAILED", 502, "TTS_CACHE"],
+] as const) test(`caller client retains sanitized ${code} at ${stage}, regardless of HTTP status`, async () => {
+  const technical = { stage, causeCode: code, providerAttempted: code === "TTS_PROVIDER_FAILED", cacheResult: "MISS" };
+  const api = createApiClient("", async () => new Response(JSON.stringify({ error: { code, message: "PRIVATE provider payload", technical } }), { status }));
+  await assert.rejects(api.getCallerAudio!("session", 1, "authority", new AbortController().signal), (error: unknown) => {
+    assert.ok(error instanceof SessionApiError); assert.equal(error.code, code); assert.equal(error.technical?.stage, stage);
+    assert.doesNotMatch(JSON.stringify(error) + error.message, /PRIVATE|provider payload/u); return true;
+  });
+});
+
+test("caller client labels network failure at the correct stage without retaining raw exception text", async () => {
+  const api = createApiClient("", async () => { throw new Error("PRIVATE transport detail"); });
+  await assert.rejects(api.getCallerAudio!("session", 1, "authority", new AbortController().signal), (error: unknown) => {
+    assert.ok(error instanceof SessionApiError); assert.equal(error.technical?.causeCode, "NETWORK_ERROR");
+    assert.equal(error.technical?.stage, "CALLER_AUDIO_RESOLUTION"); assert.doesNotMatch(error.message, /PRIVATE/u); return true;
+  });
 });

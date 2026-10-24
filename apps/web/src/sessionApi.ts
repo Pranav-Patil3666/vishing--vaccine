@@ -4,23 +4,29 @@ import {
   type AudioTimingFixture,
   ScenarioBriefSchema,
   SessionCreateResponseSchema,
+  RealVoiceStatusSchema, RealVoiceTurnResultSchema, REAL_TURN_LIMITS,
   TurnApiResponseSchema,
   type ScenarioBrief,
+  type RealVoiceStatus, type RealVoiceTurnResult,
+  CallerAudioAssetSchema, CallerAudioStatusSchema, type CallerAudioAsset, type CallerAudioStatus,
+  RuntimeCreditSnapshotSchema, type RuntimeCreditSnapshot, type TechnicalFailure, type TechnicalStage,
 } from "@vaccine/contracts";
 import { DraftScenarioPackageSchema } from "@vaccine/scenario-schema";
 import { z } from "zod";
 import { DevelopmentAudioForwarder, type AudioForwarder } from "./audio/transport.js";
 import type { BrowserAudioError } from "./audio/errors.js";
+import { readTechnicalFailure } from "./audio/technicalFailure.js";
 
 type SafeSession = z.infer<typeof SafeSessionSchema>;
 type TurnApiResponse = z.infer<typeof TurnApiResponseSchema>;
 type DraftScenarioPackage = z.infer<typeof DraftScenarioPackageSchema>;
 
 export class SessionApiError extends Error {
-  constructor(message: string, readonly status?: number) {
+  constructor(message: string, readonly status?: number, readonly technical?: TechnicalFailure) {
     super(message);
     this.name = "SessionApiError";
   }
+  get code() { return this.technical?.causeCode; }
 }
 
 const SessionEnvelopeSchema = z.object({
@@ -30,7 +36,13 @@ const SessionEnvelopeSchema = z.object({
 
 export interface ApiClient {
   createAudioForwarder(sessionId: string, onError: (error: BrowserAudioError) => void): AudioForwarder;
-  createDemoSession(input: { scenarioId: string; scenarioVersion: string; language: string }): Promise<SafeSession>;
+  createDemoSession(input: { scenarioId: string; scenarioVersion: string; language: string; runtimeMode?: "REAL_STT" | "REAL_CONVERSATION" }): Promise<SafeSession>;
+  conversationAction?(sessionId: string, action: "start" | "caller-start" | "caller-ended" | "fail", body: unknown, signal?: AbortSignal): Promise<SafeSession>;
+  createRealAudioForwarder?(sessionId: string, onError: (error: BrowserAudioError) => void, onResult: (result: RealVoiceTurnResult) => void): AudioForwarder;
+  getRealVoiceStatus?(sessionId: string): Promise<RealVoiceStatus>;
+  getCallerAudioStatus?(sessionId: string): Promise<CallerAudioStatus>;
+  getCallerAudio?(sessionId: string, turnNumber: number, responseId: string, signal: AbortSignal): Promise<{ asset: CallerAudioAsset; blob: Blob }>;
+  getRuntimeCredit?(): Promise<RuntimeCreditSnapshot>;
   grantConsent(sessionId: string): Promise<SafeSession>;
   submitMockTurn(sessionId: string, text: string, timingFixture?: AudioTimingFixture): Promise<TurnApiResponse>;
   endSession(sessionId: string): Promise<SafeSession>;
@@ -39,13 +51,14 @@ export interface ApiClient {
 }
 
 export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): ApiClient {
-  async function request<S extends z.ZodTypeAny>(path: string, schema: S, body?: unknown, method = "POST"): Promise<z.output<S>> {
+  async function request<S extends z.ZodTypeAny>(path: string, schema: S, body?: unknown, method = "POST", signal?: AbortSignal): Promise<z.output<S>> {
     const base = baseUrl.trim();
     const url = base ? new URL(path, base.endsWith("/") ? base : `${base}/`).toString() : path;
     let response: Response;
     try {
       response = await fetcher(url, {
         method,
+        ...(signal ? { signal } : {}),
         headers: { accept: "application/json", ...(body === undefined ? {} : { "content-type": "application/json" }) },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
@@ -65,9 +78,47 @@ export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): Ap
   }
 
   return {
+    async conversationAction(sessionId, action, body, signal) {
+      const timeout = signal ? AbortSignal.any([signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000);
+      const result = await request(`/api/sessions/${encodeURIComponent(sessionId)}/conversation/${action}`, z.object({ session: SafeSessionSchema }).strict(), body, "POST", timeout);
+      return result.session;
+    },
     createAudioForwarder: (sessionId, onError) => new DevelopmentAudioForwarder(sessionId, baseUrl, fetcher, onError),
+    createRealAudioForwarder: (sessionId, onError, onResult) => new DevelopmentAudioForwarder(sessionId, baseUrl, fetcher, onError, {
+      route: "real-audio", startRequestMs: REAL_TURN_LIMITS.startRequestMs, finishRequestMs: REAL_TURN_LIMITS.finishRequestMs,
+      parseFinish: (value) => { const result = RealVoiceTurnResultSchema.parse(value); onResult(result); return result.audioSummary; },
+    }),
+    getRealVoiceStatus: (sessionId) => request(`/api/sessions/${encodeURIComponent(sessionId)}/real-audio/status`, RealVoiceStatusSchema, undefined, "GET"),
+    getCallerAudioStatus: (sessionId) => request(`/api/sessions/${encodeURIComponent(sessionId)}/caller-audio/status`, CallerAudioStatusSchema, undefined, "GET"),
+    getRuntimeCredit: () => request("/api/runtime/credit", RuntimeCreditSnapshotSchema, undefined, "GET", AbortSignal.timeout(3000)),
+    async getCallerAudio(sessionId, turnNumber, responseId, signal) {
+      const path = `/api/sessions/${encodeURIComponent(sessionId)}/caller-audio`, base = baseUrl.trim();
+      const url = (value: string) => base ? new URL(value, base).toString() : value;
+      const timeout = AbortSignal.any([signal, AbortSignal.timeout(32_000)]);
+      let stage: TechnicalStage = "CALLER_AUDIO_RESOLUTION";
+      try {
+      const response = await fetcher(url(path), { method: "POST", signal: timeout, cache: "no-store", redirect: "error",
+        headers: { "content-type": "application/json" }, body: JSON.stringify({ turnNumber, responseId }) });
+      if (!response.ok) throw new SessionApiError("Approved caller audio could not be prepared.", response.status, readTechnicalFailure(await response.json().catch(() => null), stage));
+      const parsed = CallerAudioAssetSchema.safeParse(await response.json().catch(() => null));
+      if (!parsed.success) throw new SessionApiError("Invalid caller audio metadata.", response.status, { stage, causeCode: "AUDIO_ASSET_INVALID", providerAttempted: null });
+      const asset = parsed.data;
+      if (asset.sessionId !== sessionId || asset.turnNumber !== turnNumber || asset.responseId !== responseId
+        || !asset.audioUrl.startsWith(`${path}/`)) throw new SessionApiError("Stale caller audio reference.", undefined, { stage, causeCode: "INVALID_STATE", providerAttempted: null });
+      stage = "CALLER_AUDIO_FETCH";
+      const audio = await fetcher(url(asset.audioUrl), { signal: timeout, cache: "no-store", redirect: "error" });
+      if (!audio.ok) throw new SessionApiError("Caller audio delivery failed.", audio.status, readTechnicalFailure(await audio.json().catch(() => null), stage));
+      if (audio.headers.get("content-type") !== "audio/wav") throw new SessionApiError("Caller audio media type is invalid.", audio.status, { stage, causeCode: "AUDIO_ASSET_INVALID", providerAttempted: null });
+      const blob = await audio.blob();
+      if (blob.size !== asset.byteLength || blob.size > 8 * 1024 * 1024) throw new SessionApiError("Caller audio size is invalid.", undefined, { stage, causeCode: "AUDIO_ASSET_INVALID", providerAttempted: null });
+      return { asset, blob };
+      } catch (error) {
+        if (error instanceof SessionApiError) throw error;
+        throw new SessionApiError("Caller audio request could not complete.", undefined, { stage, causeCode: "NETWORK_ERROR", providerAttempted: null });
+      }
+    },
     async createDemoSession(input) {
-      const created = await request("/api/sessions", SessionCreateResponseSchema, { ...input, demoMode: true });
+      const created = await request("/api/sessions", SessionCreateResponseSchema, { ...input, demoMode: input.runtimeMode === undefined });
       return SafeSessionSchema.parse(created.session);
     },
     async grantConsent(sessionId) {

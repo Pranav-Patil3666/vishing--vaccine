@@ -40,15 +40,15 @@ export function BrowserAudioPanel({ diagnostics, disabled, onPrepare, onStop, on
       <dt>Echo cancellation</dt><dd>Requested: yes; reported applied: {diagnostics?.settings.echoCancellation === undefined ? "unknown" : String(diagnostics.settings.echoCancellation)}; bleed validation: UNKNOWN</dd>
       <dt>VAD / noise floor</dt><dd>{diagnostics?.vadState ?? "idle"} / {diagnostics?.noiseFloor.toFixed(4) ?? "—"}</dd>
       <dt>Speech on / off thresholds</dt><dd>{diagnostics?.speechOn.toFixed(4) ?? "—"} / {diagnostics?.speechOff.toFixed(4) ?? "—"}</dd>
-      <dt>Local speech start / end</dt><dd>{ms(diagnostics?.latestStartMs)} / {ms(diagnostics?.latestEndMs)}</dd>
+      <dt>Latest segment local speech start / end</dt><dd>{ms(diagnostics?.latestStartMs)} / {ms(diagnostics?.latestEndMs)}</dd>
       <dt>Confirmed speech segments</dt><dd>{diagnostics?.segmentCount ?? 0}</dd>
       <dt>PCM format</dt><dd>Raw mono PCM16LE · 16000 Hz · 1024 bytes/frame</dd>
       <dt>Produced / backend received frames</dt><dd>{diagnostics?.frameCount ?? 0} / {summary?.frameCount ?? "Finish check to inspect"}</dd>
       <dt>Backend received bytes</dt><dd>{summary?.receivedBytes ?? "Unavailable"}</dd>
       <dt>Queued / backpressured frames</dt><dd>{diagnostics?.queuedFrames ?? 0} / {diagnostics?.backpressuredFrames ?? 0}</dd>
       <dt>Final zero padding</dt><dd>{diagnostics?.paddedSamples ?? 0} samples</dd>
-      <dt>Response latency / pre-speech silence</dt><dd>{ms(latest?.responseLatencyMs)} / {ms(latest?.preSpeechSilenceMs)}</dd>
-      <dt>Local speech duration</dt><dd>{ms(latest?.speechDurationMs)}</dd>
+      <dt>Latest segment response latency / pre-speech silence</dt><dd>{ms(latest?.responseLatencyMs)} / {ms(latest?.preSpeechSilenceMs)}</dd>
+      <dt>Latest segment local speech duration</dt><dd>{ms(latest?.speechDurationMs)}</dd>
       <dt>Overlap candidate</dt><dd>{latest?.overlapCandidate == null ? "Unavailable" : String(latest.overlapCandidate)}</dd>
       <dt>Interruption reporting</dt><dd>Unavailable · speaker-bleed QA has not passed</dd>
       <dt>Timing validity</dt><dd>{diagnostics?.timingValid === false ? "Unavailable" : "Local browser clock only"}</dd>

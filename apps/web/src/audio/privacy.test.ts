@@ -6,6 +6,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { BrowserAudioPanel } from "../components/BrowserAudioPanel.js";
 import { BrowserAudioController, type AudioDiagnostics } from "./controller.js";
+import { RealVoiceTurnPanel } from "../components/RealVoiceTurnPanel.js";
+import { SafeSessionSchema } from "@vaccine/contracts";
+import { createApiClient } from "../sessionApi.js";
+import { createSessionState } from "../../../api/src/session.js";
 
 test("audio implementation has no persistence, raw-buffer logging or provider access", () => {
   const directory = resolve("apps/web/src/audio");
@@ -18,7 +22,7 @@ test("audio implementation has no persistence, raw-buffer logging or provider ac
   assert.match(hook, /audio\.stop\(\)/u); assert.doesNotMatch(hook, /audio\.prepare\(\)/u);
   const app = readFileSync(resolve("apps/web/src/App.tsx"), "utf8");
   assert.match(app, /import\.meta\.env\.DEV && canUseFixtures/u);
-  assert.match(app, /audio\.stop\(\);\s*void onEnd\(\)/u);
+  assert.match(app, /audio\.stop\(\);\s*realStop\.current\?\.\(\);\s*void onEnd\(\)/u);
 });
 test("diagnostic panel starts with preparation disabled and interruption unavailable", () => {
   const markup = renderToStaticMarkup(BrowserAudioPanelElement());
@@ -55,8 +59,8 @@ test("completed panel visibly preserves local and backend counts with Finish and
   assert.match(markup, /Backend received bytes: 17408/u); assert.match(markup, /48000 \/ 16000 Hz/u);
   assert.doesNotMatch(markup, /Microphone check is inactive/u);
   assert.match(button(markup, "Finish check"), /disabled=""/u); assert.match(button(markup, "Stop mic now"), /disabled=""/u);
-  assert.match(markup, /Response latency \/ pre-speech silence<\/dt><dd>Unavailable \/ Unavailable/u);
-  assert.match(markup, /Local speech duration<\/dt><dd>500 ms/u);
+  assert.match(markup, /Latest segment response latency \/ pre-speech silence<\/dt><dd>Unavailable \/ Unavailable/u);
+  assert.match(markup, /Latest segment local speech duration<\/dt><dd>500 ms/u);
 });
 
 test("finishing panel disables duplicate Finish and Prepare while retaining the emergency hard stop", () => {
@@ -70,4 +74,23 @@ test("hard-stopped panel never masquerades as a completed check", () => {
   const markup = panelMarkup({ ...completedDiagnostics(), state: "STOPPED", summary: null });
   assert.match(markup, /Microphone check is inactive/u); assert.doesNotMatch(markup, /Microphone check complete/u);
   assert.match(markup, /Backend received bytes<\/dt><dd>Unavailable/u);
+});
+test("runtime implementation adds no audio persistence, transcript logging or browser credentials", () => {
+  const runtime = ["apps/api/src/runtimeAudioIngress.ts", "apps/api/src/providers/prisma/prismaRealtimeRecognizer.ts", "apps/api/src/providers/prisma/transcriptAssembly.ts"]
+    .map((path) => readFileSync(resolve(path), "utf8")).join("\n");
+  assert.doesNotMatch(runtime, /writeFile|appendFile|createWriteStream|console\.|localStorage|sessionStorage|indexedDB|MediaRecorder/u);
+  const browser = ["apps/web/src/components/RealVoiceTurnPanel.tsx", "apps/web/src/sessionApi.ts", "apps/web/src/audio/transport.ts", "apps/web/src/audio/useBrowserAudio.ts"]
+    .map((path) => readFileSync(resolve(path), "utf8")).join("\n");
+  assert.doesNotMatch(browser, /GNANI_API_KEY|x-api-key-id|api\.vachana|wss:|localStorage|sessionStorage|indexedDB|MediaRecorder/u);
+  const composition = readFileSync(resolve("apps/api/src/server.ts"), "utf8");
+  assert.match(composition, /loadRootEnvironment\(\)/u); assert.doesNotMatch(composition, /console\.log|headers:|VITE_GNANI/u);
+});
+test("real voice panel discloses Prisma and mock cue while startup remains inactive without consent", () => {
+  let requests = 0;
+  const api = createApiClient("http://offline.invalid", async () => { requests++; throw new Error("render cannot request"); });
+  const session = SafeSessionSchema.parse({ ...createSessionState({ sessionId: "offline", scenarioId: "S-01", scenarioVersion: "offline-test", language: "hi-IN", startingNodeId: "start", runtimeMode: "REAL_STT" }), pressureDebrief: null, debriefEvents: [] });
+  const markup = renderToStaticMarkup(createElement(RealVoiceTurnPanel, { session, api, onResult() {} }));
+  assert.equal(requests, 0); assert.match(markup, /mock tone cue/u); assert.match(markup, /sent to Prisma/u);
+  assert.match(button(markup, "Start real voice turn"), /disabled=""/u); assert.match(button(markup, "Finish real turn"), /disabled=""/u);
+  assert.doesNotMatch(markup, /Real learner turn complete/u);
 });

@@ -8,7 +8,7 @@ export const AudioCaptureStateSchema = z.enum([
 export type AudioCaptureState = z.infer<typeof AudioCaptureStateSchema>;
 export const BrowserAudioErrorCodeSchema = z.enum([
   "PERMISSION_DENIED", "NO_INPUT_DEVICE", "UNSUPPORTED_BROWSER", "AUDIO_CONTEXT_FAILED", "WORKLET_LOAD_FAILED",
-  "TRACK_ENDED", "PCM_PIPELINE_FAILED", "BACKPRESSURE", "SESSION_NOT_ELIGIBLE", "TIMING_UNAVAILABLE",
+  "TRACK_ENDED", "PCM_PIPELINE_FAILED", "BACKPRESSURE", "SESSION_NOT_ELIGIBLE", "TIMING_UNAVAILABLE", "CALLER_AUDIO_FAILED", "CREDIT_LIMIT_REACHED",
 ]);
 export type BrowserAudioErrorCode = z.infer<typeof BrowserAudioErrorCodeSchema>;
 export const BrowserAudioStartSchema = z.object({ audioClockId: z.string().uuid(), turnNumber: z.number().int().min(1) }).strict();
@@ -16,7 +16,7 @@ export const BrowserAudioWindowSchema = z.object({ token: z.string().uuid(), max
 const BrowserInstantSchema = TimingInstantSchema.extend({
   audioClockId: z.string().uuid(),
   source: z.enum(["CLIENT_AUDIO_CLOCK", "LOCAL_VAD"]),
-  monotonicMs: z.number().finite().min(0).max(120_000),
+  monotonicMs: z.number().finite().min(0).max(600_000),
 }).omit({ providerTimestamp: true });
 export const BrowserAudioFactSchema = z.object({
   sessionId: z.string().min(1).max(128), turnNumber: z.number().int().min(1),

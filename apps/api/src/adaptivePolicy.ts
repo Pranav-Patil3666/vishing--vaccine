@@ -1,14 +1,23 @@
 import {
   ApprovedCallerResponseSchema,
+  BehaviorLabelSchema,
+  PolicyDecisionCodeSchema,
+  SessionStateSchema,
   SpeechSynthesisRequestSchema,
   type ApprovedCallerResponse,
   type BehaviorLabel,
   type PolicyDecisionCode,
   type SessionTerminalState,
+  type SessionState,
   type SpeechSynthesisRequest,
   type TacticCategory,
 } from "@vaccine/contracts";
-import { isScenarioRuntimeEligible, type ScenarioDocument } from "@vaccine/scenario-schema";
+import { isScenarioRuntimeEligible, ScenarioDocumentSchema, type ScenarioDocument } from "@vaccine/scenario-schema";
+import { ApplicationError } from "./errors.js";
+
+const policySessionSchema = SessionStateSchema.pick({ scenarioId: true, scenarioVersion: true, currentNodeId: true,
+  turnNumber: true, terminalState: true, state: true, currentTacticId: true, currentResponseId: true }).strict();
+export type PolicySessionState = Pick<SessionState, "scenarioId" | "scenarioVersion" | "currentNodeId" | "turnNumber" | "terminalState" | "state" | "currentTacticId" | "currentResponseId">;
 
 export interface AdaptivePolicyInput {
   scenario: ScenarioDocument;
@@ -21,6 +30,8 @@ export interface AdaptivePolicyInput {
   learnerEnded?: boolean;
   safeWordDetected?: boolean;
   runtimeAllowed?: boolean;
+  /** Existing session facts; omitted only by legacy stateless/developer preview callers. */
+  sessionState?: PolicySessionState;
 }
 
 export interface AdaptivePolicyAction {
@@ -74,39 +85,75 @@ export class ApprovedResponseResolver {
     action: AdaptivePolicyAction;
   }): ApprovedCallerResponse {
     const { scenario, language, action } = input;
-    if (!Number.isInteger(action.pressureLevel) || action.pressureLevel < 0 || action.pressureLevel > 5) {
-      throw new Error("Policy pressure is outside the supported range.");
+    validateRuntimeScenario(scenario);
+    if (scenario.language !== null && language !== scenario.language) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Response language does not match the approved scenario language.");
+    if (!PolicyDecisionCodeSchema.safeParse(action.decisionCode).success || !ApprovedCallerResponseSchema.safeParse(action.response).success) {
+      throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy response metadata is invalid.");
     }
-    if (scenario.adaptive_policy && action.pressureLevel > scenario.adaptive_policy.max_pressure_level) {
-      throw new Error("Policy pressure exceeds the scenario maximum.");
+    if (![action.pressureLevel, action.nextPressureLevel].every((value) => Number.isInteger(value) && value >= 0 && value <= 5)) {
+      throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy pressure is outside the supported range.");
     }
+    if (scenario.adaptive_policy && Math.max(action.pressureLevel, action.nextPressureLevel) > scenario.adaptive_policy.max_pressure_level) {
+      throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy pressure exceeds the scenario maximum.");
+    }
+    if (action.nextPressureLevel !== action.pressureLevel) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy next pressure is inconsistent.");
     if (action.tacticId !== null) {
       const tactic = scenario.adaptive_policy?.tactics.find((candidate) => candidate.tactic_id === action.tacticId);
       if (!tactic || tactic.category !== action.tacticCategory || tactic.pressure_level !== action.pressureLevel
         || !tactic.response_ids.includes(action.responseId)) {
-        throw new Error("Policy response is not attached to the selected tactic.");
+        throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy response is not attached to the selected tactic.");
       }
-      if (!isScenarioRuntimeEligible(scenario)) throw new Error("Only runtime-eligible scenarios can resolve adaptive responses.");
-      if (scenario.language !== language) throw new Error("Response language does not match the approved scenario language.");
+      if (!isScenarioRuntimeEligible(scenario)) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Only runtime-eligible scenarios can resolve adaptive responses.");
+      if (scenario.language !== language) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Response language does not match the approved scenario language.");
     }
-    if (action.response.responseId !== action.responseId) throw new Error("Policy response identity is inconsistent.");
+    if (action.response.responseId !== action.responseId) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy response identity is inconsistent.");
     const source = scenario.responses[action.responseId];
-    if (!source || source.safety_status === "draft") throw new Error("Approved response is unavailable.");
+    if (!source || source.safety_status === "draft") throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Approved response is unavailable.");
     if (source.safety_status === "reviewed_safe" && (!isScenarioRuntimeEligible(scenario) || scenario.language !== language)) {
-      throw new Error("Reviewed response is unavailable for this runtime language.");
+      throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Reviewed response is unavailable for this runtime language.");
     }
     const resolved = approvedResponse(scenario, action.responseId, language);
-    if (!resolved) throw new Error("Approved response is unavailable.");
+    if (!resolved) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Approved response is unavailable.");
+    if ((Object.keys(resolved) as (keyof ApprovedCallerResponse)[]).some((key) => resolved[key] !== action.response[key])) {
+      throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy response identity, version or approved content is inconsistent.");
+    }
     return resolved;
+  }
+}
+
+/** Policy outcome validation is separate from reusable approved-asset lookup (including opening audio). */
+export function validatePolicyTransition(scenario: ScenarioDocument, action: AdaptivePolicyAction): void {
+  new ApprovedResponseResolver().resolve({ scenario, language: scenario.language ?? "pending-verification", action });
+  if (!hasApprovedPressure(scenario, action.nextPressureLevel)) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy pressure has no approved scenario content support.");
+  const terminalOutcomes: Partial<Record<PolicyDecisionCode, SessionTerminalState>> = {
+    SAFE_WORD: "SAFE_WORD", LEARNER_ENDED: "LEARNER_ENDED", SAFE_VERIFIED: "SAFE_VERIFIED",
+    DUMMY_SECRET_DISCLOSED: "DUMMY_SECRET_DISCLOSED", MAX_TURNS: "MAX_TURNS", NO_APPROVED_TACTIC: "SAFE_FALLBACK",
+  };
+  const expectedTerminal = terminalOutcomes[action.decisionCode] ?? null;
+  if (action.terminalState !== expectedTerminal || (action.decisionCode === "SELECTED_TACTIC") !== (action.tacticId !== null)
+    || (action.tacticId === null && action.tacticCategory !== null)) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy terminal/tactic metadata is inconsistent.");
+  if (action.terminalState && action.terminalState !== "SAFE_FALLBACK" && isScenarioRuntimeEligible(scenario)
+    && !scenario.adaptive_policy?.terminal_states.includes(action.terminalState)) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy terminal outcome is not declared by the scenario.");
+  if (action.tacticId === null) {
+    const expectedResponse = ["NO_APPROVED_TACTIC", "DRAFT_SAFE_FALLBACK"].includes(action.decisionCode) ? "system.safe-fallback"
+      : scenario.safety_metadata?.safe_ending_response_id ?? "system.safe-fallback";
+    if (action.responseId !== expectedResponse) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Policy terminal response identity is inconsistent.");
   }
 }
 
 /** Deterministic policy over runtime-eligible scenario IDs. It never generates caller speech text. */
 export function selectAdaptiveAction(input: AdaptivePolicyInput): AdaptivePolicyAction {
+  validatePolicyInput(input);
+  const action = selectApprovedAction(input);
+  validatePolicyTransition(input.scenario, action);
+  return action;
+}
+
+function selectApprovedAction(input: AdaptivePolicyInput): AdaptivePolicyAction {
   const policy = input.scenario.adaptive_policy;
   const eligible = isScenarioRuntimeEligible(input.scenario) && input.runtimeAllowed !== false;
   const fallback = approvedResponse(input.scenario, "system.safe-fallback", input.scenario.language ?? "pending-verification");
-  if (!fallback) throw new Error("Scenario is missing a valid system-safe fallback response.");
+  if (!fallback) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Scenario is missing a valid system-safe fallback response.");
   const safeEnding = policy?.terminal_states.some((state) => state === "SAFE_WORD" || state === "SAFE_VERIFIED")
     ? approvedResponse(input.scenario, input.scenario.safety_metadata?.safe_ending_response_id ?? "system.safe-fallback", input.scenario.language ?? "pending-verification") ?? fallback
     : fallback;
@@ -182,7 +229,7 @@ export function selectAdaptiveAction(input: AdaptivePolicyInput): AdaptivePolicy
 
 function approvedResponse(scenario: ScenarioDocument, responseId: string, language: string): ApprovedCallerResponse | undefined {
   const source = scenario.responses[responseId];
-  if (!source || source.safety_status === "draft") return undefined;
+  if (!source || source.safety_status === "draft" || !source.text.trim()) return undefined;
   const systemTemplate = source.safety_status === "system_safe_template";
   if (!systemTemplate && (!isScenarioRuntimeEligible(scenario) || scenario.language !== language)) return undefined;
   return ApprovedCallerResponseSchema.parse({
@@ -196,4 +243,53 @@ function approvedResponse(scenario: ScenarioDocument, responseId: string, langua
     scenarioReviewStatus: systemTemplate ? "not_applicable" : "approved",
     approvalReference: systemTemplate ? `system-template:${responseId}` : `${scenario.scenario_id}@${scenario.version}:${responseId}`,
   });
+}
+
+function validateRuntimeScenario(scenario: ScenarioDocument): void {
+  if (isScenarioRuntimeEligible(scenario) && (!ScenarioDocumentSchema.safeParse(scenario).success || Object.values(scenario.responses).some((response) => !response.text.trim()))) {
+    throw new ApplicationError("INVALID_SCENARIO", "Runtime policy content is structurally invalid or unapproved.");
+  }
+}
+
+/** Zero is the initial un-attributed caller state; other levels require approved tactic content. */
+function hasApprovedPressure(scenario: ScenarioDocument, pressure: number): boolean {
+  return !isScenarioRuntimeEligible(scenario) || !scenario.adaptive_policy || pressure === 0
+    || scenario.adaptive_policy.tactics.some((tactic) => tactic.pressure_level === pressure
+      && tactic.response_ids.some((id) => scenario.responses[id]?.safety_status === "reviewed_safe"));
+}
+
+function validatePolicyInput(input: AdaptivePolicyInput): void {
+  if (!input?.scenario || !Array.isArray(input.scenario.nodes) || !input.scenario.responses) throw new ApplicationError("INVALID_SCENARIO", "Policy scenario is unavailable.");
+  validateRuntimeScenario(input.scenario);
+  const strings = (value: unknown): value is string[] => Array.isArray(value) && value.every((entry) => typeof entry === "string" && entry.length > 0);
+  if (!BehaviorLabelSchema.safeParse(input.behavior).success || !Number.isInteger(input.turnNumber) || input.turnNumber < 1
+    || typeof input.learnerText !== "string" || !strings(input.previousTacticIds) || (input.previousResponseIds !== undefined && !strings(input.previousResponseIds))
+    || [input.learnerEnded, input.safeWordDetected, input.runtimeAllowed].some((value) => value !== undefined && typeof value !== "boolean")) {
+    throw new ApplicationError("INVALID_REQUEST", "Policy behavior, turn or history input is invalid.");
+  }
+  const policy = input.scenario.adaptive_policy;
+  if (!Number.isInteger(input.currentPressureLevel) || input.currentPressureLevel < 0 || input.currentPressureLevel > (policy?.max_pressure_level ?? 5)
+    || (policy && input.turnNumber > policy.max_turns)) throw new ApplicationError("INVALID_STATE", "Policy pressure or turn exceeds the scenario bounds.");
+  if (!hasApprovedPressure(input.scenario, input.currentPressureLevel)) throw new ApplicationError("INVALID_STATE", "Policy pressure has no approved scenario content support.");
+  if (policy && isScenarioRuntimeEligible(input.scenario) && (input.previousTacticIds.some((id) => !policy.tactics.some((tactic) => tactic.tactic_id === id))
+    || input.previousResponseIds?.some((id) => !input.scenario.responses[id]))) throw new ApplicationError("INVALID_STATE", "Policy history references unavailable content.");
+  if (input.sessionState !== undefined) {
+    const parsed = policySessionSchema.safeParse(input.sessionState);
+    if (!parsed.success) throw new ApplicationError("INVALID_STATE", "Policy session facts are invalid.");
+    const state = parsed.data, node = input.scenario.nodes.find((candidate) => candidate.id === state.currentNodeId);
+    if (state.terminalState !== null || ["COMPLETED", "ENDED_BY_LEARNER", "ERROR"].includes(state.state)
+      || state.scenarioId !== input.scenario.scenario_id || state.scenarioVersion !== input.scenario.version || state.turnNumber + 1 !== input.turnNumber || !node) {
+      throw new ApplicationError("INVALID_STATE", "Policy session is terminal, stale or mismatched.");
+    }
+    if (policy && isScenarioRuntimeEligible(input.scenario) && input.runtimeAllowed !== false) {
+      if (state.turnNumber > 0 && (input.previousTacticIds.at(-1) !== state.currentTacticId || input.previousResponseIds?.at(-1) !== state.currentResponseId)) {
+        throw new ApplicationError("INVALID_STATE", "Policy active state does not match its completed-turn history.");
+      }
+      const active = policy.tactics.find((tactic) => tactic.tactic_id === state.currentTacticId);
+      if (state.currentTacticId !== null ? !active || active.pressure_level !== input.currentPressureLevel || !active.response_ids.includes(state.currentResponseId ?? "")
+        : input.currentPressureLevel !== 0 || (state.currentResponseId !== null && state.currentResponseId !== node.response_id)) {
+        throw new ApplicationError("INVALID_STATE", "Policy active tactic, response or pressure is inconsistent.");
+      }
+    }
+  }
 }

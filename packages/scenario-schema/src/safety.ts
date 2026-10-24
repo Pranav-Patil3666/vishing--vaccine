@@ -17,7 +17,9 @@ export interface ScenarioSafetyResult {
 }
 
 const credentialPatterns: readonly RegExp[] = [
-  /\b(?:otp|one[- ]time\s+password|pin|cvv|cvc|card\s+number|account\s+number)\s*[:#=-]?\s*\d{3,19}\b/i,
+  /\bDUMMY-(?!\d{4}(?![\p{L}\p{N}-]))[\p{L}\p{N}-]+\b/iu,
+  /\b(?:otp|one[- ]time\s+password|pin|cvv|cvc|card\s+number|account\s+number)\s*(?:is\s+|[:#=-]\s*)?\d{3,19}\b/i,
+  /\b\d{6,19}\b/,
   /\b[A-Z]{5}\d{4}[A-Z]\b/i,
   /(?<!\d)(?:\d[ -]?){9,18}\d(?!\d)/,
   /\b(?:\+?\d{1,3}[ -]?)?(?:\d[ -]?){10}(?!\d)/,

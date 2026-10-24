@@ -1,5 +1,9 @@
 # Prisma realtime STT contract
 
+## Current Phase 4C.1 runtime boundary
+
+A separate backend `PrismaRealtimeSpeechRecognizer` now implements the observed baseline behind the provider-neutral recognizer interface. It accepts only the verified 16k/1024-byte/hi-IN participant path, recognizes connected/speech_start/transcript, preserves optional reference metadata and rejects unknown lifecycle semantics. It never calls the verification scripts, assumes finalness, or uses provider timing for learner metrics. The runtime is opt-in and local-only; approved S-01 content is absent, so live acceptance is intentionally deferred with zero new provider attempts. See [runtime architecture](real-voice-turn.md). The Phase 4A utility descriptions below document its historical closure behavior and remain independent of runtime implementation.
+
 Phase4A contract verification is **COMPLETE** under its explicit closure rule. The baseline and reviewed composite establish working backend connection/authentication, 16 kHz PCM/1,024-byte framing, segment events, one short utterance/segmentation/Hinglish case, requested close1000, and one omitted-auth HTTP401 rejection. These are scoped observations, not accuracy or reliability guarantees. See [the capability matrix and execution protocol](../evidence/provider/prisma-realtime-verification.md) for evidence, voice limits and remaining UNVERIFIED capabilities. The shared contract remains the Phase2A local mock design. `MockPrismaRealtimeTransport` and the production recognizer are unchanged; no live runtime adapter is activated.
 
 ## Audio and pacing

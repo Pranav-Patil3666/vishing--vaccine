@@ -279,7 +279,7 @@ function isOnLocalTimeline(source: TimingSource): boolean {
 }
 
 function isSyntheticFixtureToken(value: string): boolean {
-  return /^(?:SYNTHETIC|DUMMY|TEST|EXAMPLE)(?:-[A-Z]+){1,5}$/iu.test(value);
+  return /^DUMMY-\d{4}$/u.test(value) || /^(?:SYNTHETIC|DUMMY|TEST|EXAMPLE)(?:-[A-Z]+){1,5}$/iu.test(value);
 }
 
 function escapeRegExp(value: string): string {

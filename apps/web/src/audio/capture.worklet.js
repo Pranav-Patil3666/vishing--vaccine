@@ -11,8 +11,9 @@ class LocalCaptureProcessor extends AudioWorkletProcessor {
     this.port.onmessage = ({ data }) => {
       if (data === "ack") this.credits = Math.min(8, this.credits + 1);
       if (data === "stop") { this.live = false; this.block.fill(0); }
-      if (data === "flush" && this.live) {
-        this.live = false;
+      if ((data === "flush" || data === "flush-turn") && this.live) {
+        // A standalone capture ends here; a reusable session only drains/resets this turn.
+        if (data === "flush") this.live = false;
         const samples = this.block.slice(0, this.count);
         this.block.fill(0); this.count = 0;
         this.port.postMessage({ samples, flushed: true }, [samples.buffer]);

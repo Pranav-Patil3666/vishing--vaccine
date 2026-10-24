@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RuntimeConversationSchema } from "./conversation.js";
 import {
   ApprovedCallerResponseReferenceSchema,
   BehaviorClassificationSchema,
@@ -41,6 +42,17 @@ export type TriggerRule = z.infer<typeof TriggerRuleSchema>;
 export const NormalizationStatusSchema = z.enum(["normalized", "unchanged", "failed"]);
 export type NormalizationStatus = z.infer<typeof NormalizationStatusSchema>;
 
+/** Provider segment metadata is reference-only; it never supplies learner timing. */
+export const TranscriptSegmentSchema = z.object({
+  text: z.string().max(8192),
+  providerTimestamp: z.string().datetime({ offset: true }).optional(),
+  segmentId: z.string().min(1).max(256).optional(),
+  segmentIndex: z.number().int().nonnegative().optional(),
+  providerAudioDurationMs: z.number().finite().nonnegative().optional(),
+  providerLatencyMs: z.number().finite().nonnegative().optional(),
+}).strict();
+export type TranscriptSegment = z.infer<typeof TranscriptSegmentSchema>;
+
 export const TranscriptEventSchema = z.object({
   eventId: z.string().min(1),
   sessionId: z.string().min(1),
@@ -49,6 +61,7 @@ export const TranscriptEventSchema = z.object({
   language: z.string().min(1),
   normalizationStatus: NormalizationStatusSchema,
   providerMetadata: ProviderMetadataSchema.optional(),
+  segments: z.array(TranscriptSegmentSchema).max(64).optional(),
   timing: z.object({
     startedAt: z.string().datetime().optional(),
     completedAt: z.string().datetime().optional(),
@@ -223,6 +236,8 @@ export const SessionStateSchema = z.object({
   pressureTimeline: z.array(PressureTimelinePointSchema).default([]),
   terminalState: SessionTerminalStateSchema.nullable(),
   mode: z.enum(["safe", "demo"]),
+  runtimeMode: z.enum(["MOCK", "REAL_STT", "REAL_CONVERSATION"]).default("MOCK"),
+  conversation: RuntimeConversationSchema.optional(),
   cache: z.object({ hits: z.number().int().nonnegative(), misses: z.number().int().nonnegative() }),
   metrics: z.array(LatencyMeasurementSchema),
 });
@@ -231,6 +246,7 @@ export type SessionState = z.infer<typeof SessionStateSchema>;
 export const CreateSessionRequestSchema = z.object({
   scenarioId: z.string().min(1), scenarioVersion: z.string().min(1), language: z.string().min(1),
   voiceId: z.string().min(1).optional(), demoMode: z.boolean(),
+  runtimeMode: z.enum(["MOCK", "REAL_STT", "REAL_CONVERSATION"]).default("MOCK"),
 }).strict();
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
 export const ConsentRequestSchema = z.object({ consentVersion: z.string().min(1) }).strict();
@@ -260,6 +276,8 @@ export const SafeSessionSchema = z.object({
   timelineEvents: z.array(LearnerTurnEventSchema), pressureTimeline: z.array(PressureTimelinePointSchema).default([]), terminalState: SessionTerminalStateSchema.nullable(),
   pressureDebrief: DeterministicDebriefSchema.nullable(),
   mode: z.enum(["safe", "demo"]), recordingEnabled: z.boolean(),
+  runtimeMode: z.enum(["MOCK", "REAL_STT", "REAL_CONVERSATION"]).default("MOCK"),
+  conversation: RuntimeConversationSchema.optional(),
   cache: z.object({ hits: z.number().int().nonnegative(), misses: z.number().int().nonnegative() }),
   debriefEvents: z.array(DebriefEventSchema),
   metrics: z.array(LatencyMeasurementSchema),

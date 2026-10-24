@@ -11,7 +11,7 @@ import { InMemorySessionStore } from "./sessionStore.js";
 import { TurnOrchestrator } from "./turnOrchestrator.js";
 
 function setup(input?: { budget?: { developmentCap: number }; recognizer?: SpeechRecognizer; synthesizer?: SpeechSynthesizer }) {
-  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenarios/S-01-urgent-account-verification.json"), "utf8")) as unknown) as ScenarioDocument;
+  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenario-candidates/history/S-01-0.1.0-draft.json"), "utf8")) as unknown) as ScenarioDocument;
   const state = transitionConsent(createSessionState({ sessionId: "turn-test", scenarioId: "S-01", scenarioVersion: scenario.version, language: "pending-verification", startingNodeId: "start" }), "granted", new Date("2026-10-06T00:00:00.000Z"));
   const store = new InMemorySessionStore(); store.create(state);
   const orchestrator = new TurnOrchestrator({
@@ -59,7 +59,7 @@ test("concurrent turns for one session are serialized and coalesce repeated TTS 
 });
 
 test("TTS credit preflight precedes cache resolution and capped cache hits remain usable", async () => {
-  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenarios/S-01-urgent-account-verification.json"), "utf8")) as unknown) as ScenarioDocument;
+  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenario-candidates/history/S-01-0.1.0-draft.json"), "utf8")) as unknown) as ScenarioDocument;
   const store = new InMemorySessionStore();
   store.create(transitionConsent(createSessionState({ sessionId: "tts-capped", scenarioId: "S-01", scenarioVersion: scenario.version, language: "pending-verification", startingNodeId: "start" }), "granted", new Date()));
   let synthesisCalls = 0;
@@ -84,7 +84,7 @@ test("TTS credit preflight precedes cache resolution and capped cache hits remai
 test("credit guard rejects before recognizer is called", async () => {
   let calls = 0;
   const recognizer: SpeechRecognizer = { transcribe: async (_request: SpeechRecognitionRequest) => { calls += 1; return new MockPrismaRecognizer().transcribe(_request); } };
-  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenarios/S-01-urgent-account-verification.json"), "utf8")) as unknown) as ScenarioDocument;
+  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenario-candidates/history/S-01-0.1.0-draft.json"), "utf8")) as unknown) as ScenarioDocument;
   const store = new InMemorySessionStore();
   store.create(transitionConsent(createSessionState({ sessionId: "blocked", scenarioId: "S-01", scenarioVersion: scenario.version, language: "pending-verification", startingNodeId: "start" }), "granted", new Date()));
   const orchestrator = new TurnOrchestrator({ store, scenarios: new Map([["S-01", scenario]]), recognizer, synthesizer: new MockTimbreSynthesizer(), budget: { mode: "development", developmentCap: 0, publicDemoCap: 0, reserveCap: 0, usedUnits: 0 }, sttUnits: 1, ttsUnits: 1 });
@@ -122,7 +122,7 @@ test("malformed provider transcript is rejected before routing", async () => {
 test("cache lookup failure degrades to synthesis without exposing cache errors", async () => {
   let calls = 0;
   const synthesizer: SpeechSynthesizer = { synthesize: async (request) => { calls += 1; return new MockTimbreSynthesizer().synthesize(request); } };
-  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenarios/S-01-urgent-account-verification.json"), "utf8")) as unknown) as ScenarioDocument;
+  const scenario = validateScenarioDocument(JSON.parse(readFileSync(resolve(process.cwd(), "content/scenario-candidates/history/S-01-0.1.0-draft.json"), "utf8")) as unknown) as ScenarioDocument;
   const store = new InMemorySessionStore(); store.create(transitionConsent(createSessionState({ sessionId: "cache-failure", scenarioId: "S-01", scenarioVersion: scenario.version, language: "pending-verification", startingNodeId: "start" }), "granted", new Date()));
   const orchestrator = new TurnOrchestrator({
     store, scenarios: new Map([["S-01", scenario]]), recognizer: new MockPrismaRecognizer(), synthesizer,

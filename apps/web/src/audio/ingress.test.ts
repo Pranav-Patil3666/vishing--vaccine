@@ -11,7 +11,7 @@ async function setup(context: TestContext, environment = "test") {
   context.after(() => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}`, api = createApiClient(base);
-  const session = await api.createDemoSession({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification" });
+  const session = await api.createDemoSession({ scenarioId: "S-02", scenarioVersion: "0.1.0-draft", language: "pending-verification" });
   const path = `${base}/api/sessions/${session.sessionId}/audio/`;
   const start = () => fetch(`${path}start`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ audioClockId: clock, turnNumber: 1 }) });
   return { api, session, path, start };

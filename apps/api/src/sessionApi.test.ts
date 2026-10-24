@@ -9,7 +9,7 @@ test("mock session API requires consent and only serves the draft-safe fallback"
   server.listen(0, "127.0.0.1"); await once(server, "listening");
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}`;
-  const create = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
+  const create = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-02", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
   assert.equal(create.status, 201);
   const created = await create.json() as { session: { sessionId: string; state: string; recordingEnabled: boolean }; draftFallbackOnly: boolean };
   assert.equal(created.session.state, "CONSENT_REQUIRED");
@@ -75,7 +75,7 @@ test("unknown and credential-like mock input falls back safely without storing t
   server.listen(0, "127.0.0.1"); await once(server, "listening");
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}`;
-  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
+  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-02", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
   const { session } = await created.json() as { session: { sessionId: string } };
   await fetch(`${base}/api/sessions/${session.sessionId}/consent`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ consentVersion: "training-consent-v1" }) });
   const turn = await fetch(`${base}/api/sessions/${session.sessionId}/turn`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "My OTP is 123456, unrelated thing" }) });
@@ -91,7 +91,7 @@ test("session creation rate limit returns typed retry metadata", async (context)
   server.listen(0, "127.0.0.1"); await once(server, "listening");
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const endpoint = `http://127.0.0.1:${address.port}/api/sessions`;
-  const body = JSON.stringify({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true });
+  const body = JSON.stringify({ scenarioId: "S-02", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true });
   let last: Response | undefined;
   for (let index = 0; index < 6; index += 1) last = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body });
   assert.equal(last?.status, 429);
@@ -106,7 +106,7 @@ test("turn processing rate limit is enforced per remote address", async (context
   server.listen(0, "127.0.0.1"); await once(server, "listening");
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}`;
-  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-01", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
+  const created = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarioId: "S-02", scenarioVersion: "0.1.0-draft", language: "pending-verification", demoMode: true }) });
   const { session } = await created.json() as { session: { sessionId: string } };
   await fetch(`${base}/api/sessions/${session.sessionId}/consent`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ consentVersion: "training-consent-v1" }) });
   let last: Response | undefined;

@@ -1,4 +1,5 @@
-import type { AudioCaptureState, BrowserAudioFact, BrowserAudioSummary, BrowserAudioTimingFacts, PcmFrameMetadata } from "@vaccine/contracts";
+import type { AudioCaptureState, BrowserAudioFact, BrowserAudioSummary, BrowserAudioTimingFacts, PcmFrameMetadata, CallerAudioAsset } from "@vaccine/contracts";
+import type { CallerPlayback } from "./callerPlayback.js";
 import type { AppliedAudioSettings, CaptureConnection } from "./browserCapture.js";
 import { audioFailure, BrowserAudioError } from "./errors.js";
 import { AudioPipelineDiagnostics, sanitizeAudioException, type AudioFailureDiagnostic, type AudioPipelineSnapshot } from "./diagnostics.js";
@@ -13,6 +14,7 @@ export interface AudioDiagnostics {
   latestStartMs: number | null; latestEndMs: number | null; timingValid: boolean;
   summary: BrowserAudioSummary | null; callerPlaying: boolean; callerPlayed: boolean; segmentCount: number;
   pipeline: AudioPipelineSnapshot | null; failure: AudioFailureDiagnostic | null;
+  callerAsset?: CallerAudioAsset; audioClockId?: string; callerStartMs?: number; callerEndMs?: number; callerPlaybackDurationMs?: number;
 }
 export interface AudioControllerOptions {
   sessionId: string; turnNumber: number; eligible: () => boolean;
@@ -23,6 +25,13 @@ export interface AudioControllerOptions {
   readClock?: () => number; newClockId?: () => string;
   setDeadline?: (callback: () => void, ms: number) => ReturnType<typeof setTimeout>;
   clearDeadline?: (timer: ReturnType<typeof setTimeout>) => void;
+  autoPlayCaller?: boolean;
+  finishOnSpeechEnd?: boolean;
+  noSpeechTimeoutMs?: number;
+  maxCaptureMs?: number;
+  prepareCaller?: (signal: AbortSignal) => Promise<CallerPlayback>;
+  sessionClock?: { origin: number; audioClockId: string; callerStartedAtMs: number; callerEndedAtMs: number };
+  createVad?: () => LocalVad;
 }
 
 /** Owns transient resources. React receives throttled metadata only, never PCM or transcript bytes. */
@@ -34,6 +43,7 @@ export class BrowserAudioController {
     pipeline: null, failure: null,
   };
   private connection: CaptureConnection | undefined;
+  private callerPlayback: CallerPlayback | undefined;
   private forwarder: AudioForwarder | undefined;
   private resampler: StreamingResampler | undefined;
   private assembler: PcmFrameAssembler | undefined;
@@ -47,6 +57,7 @@ export class BrowserAudioController {
   private lastRender = -Infinity;
   private segment = 0;
   private deadline: ReturnType<typeof setTimeout> | undefined;
+  private noSpeechDeadline: ReturnType<typeof setTimeout> | undefined;
   private callerPlayed = false;
   private acquisitionAbort: AbortController | undefined;
   private finishing = false;
@@ -80,15 +91,26 @@ export class BrowserAudioController {
     this.diagnostics.callerPlayed = false; this.diagnostics.segmentCount = 0;
     this.segment = 0; this.callerPlayed = false; this.facts = []; this.lastBlock = undefined; this.lastClock = 0;
     this.finishing = false;
+    delete this.diagnostics.callerAsset; delete this.diagnostics.audioClockId; delete this.diagnostics.callerStartMs;
+    delete this.diagnostics.callerEndMs; delete this.diagnostics.callerPlaybackDurationMs;
     this.state("REQUESTING_PERMISSION");
     try {
       this.acquisitionAbort = new AbortController();
+      if (this.options.prepareCaller) {
+        let playback: CallerPlayback;
+        try { playback = await this.options.prepareCaller(this.acquisitionAbort.signal); }
+        catch { throw new BrowserAudioError("CALLER_AUDIO_FAILED"); }
+        if (generation !== this.generation || !this.options.eligible()) { playback.stop(); return; }
+        this.callerPlayback = playback;
+        this.diagnostics.callerAsset = this.callerPlayback.asset;
+      }
       const connection = await this.options.acquire(this.acquisitionAbort.signal, this.trace);
       if (generation !== this.generation || !this.options.eligible()) { connection.stop(); return; }
       this.connection = connection;
       this.diagnostics.sourceRate = connection.sampleRate; this.diagnostics.settings = connection.settings;
       this.state("READY");
-      this.trace.enter("LOCAL_TIMING"); this.clockId = (this.options.newClockId ?? (() => crypto.randomUUID()))();
+      this.trace.enter("LOCAL_TIMING"); this.clockId = this.options.sessionClock?.audioClockId ?? (this.options.newClockId ?? (() => crypto.randomUUID()))();
+      this.diagnostics.audioClockId = this.clockId;
       this.trace.enter("TRANSPORT_CREATION");
       const forwarder = this.options.forwarder((error) => { if (generation === this.generation) this.fail(error); });
       this.forwarder = forwarder;
@@ -98,11 +120,18 @@ export class BrowserAudioController {
       if (generation !== this.generation) { connection.stop(); forwarder.cancel(); return; }
       if (!this.options.eligible()) { this.fail(new BrowserAudioError("SESSION_NOT_ELIGIBLE")); return; }
       this.trace.mark("TRANSPORT_READY");
-      this.origin = (this.options.readClock ?? (() => performance.now()))(); this.lastClock = 0;
+      this.origin = this.options.sessionClock?.origin ?? (this.options.readClock ?? (() => performance.now()))(); this.lastClock = 0;
+      if (this.options.sessionClock) {
+        this.fact("CALLER_AUDIO_START", this.options.sessionClock.callerStartedAtMs);
+        this.fact("CALLER_AUDIO_END", this.options.sessionClock.callerEndedAtMs);
+        this.diagnostics.callerPlayed = true; this.callerPlayed = true;
+        this.diagnostics.callerStartMs = this.options.sessionClock.callerStartedAtMs;
+        this.diagnostics.callerEndMs = this.options.sessionClock.callerEndedAtMs;
+      }
       this.trace.enter("RESAMPLER_INITIALIZATION");
       this.resampler = new StreamingResampler(connection.sampleRate);
       this.trace.enter("VAD_INITIALIZATION");
-      this.vad = new LocalVad();
+      this.vad = this.options.createVad?.() ?? new LocalVad();
       this.trace.enter("PCM_FRAME_AGGREGATION");
       this.assembler = new PcmFrameAssembler((bytes, paddedSamples) => {
         this.trace.mark("FIRST_PCM_FRAME"); this.trace.enter("PCM_FRAME_PRODUCTION");
@@ -112,11 +141,14 @@ export class BrowserAudioController {
         this.trace.enter("TRANSPORT_FRAME");
         this.forwarder!.frame(bytes, metadata); this.diagnostics.frameCount++; this.diagnostics.paddedSamples += paddedSamples;
       });
-      this.state("CALIBRATING");
-      this.deadline = (this.options.setDeadline ?? setTimeout)(() => { void this.finish(); }, 55_000);
+      this.state(this.vad.state === "calibrating" ? "CALIBRATING" : "LISTENING");
+      this.deadline = (this.options.setDeadline ?? setTimeout)(() => { if (generation === this.generation) void this.finish(); }, this.options.maxCaptureMs ?? 55_000);
       this.trace.enter("AUDIO_CONTEXT_RESUME");
       await connection.start((samples) => { if (generation === this.generation) this.process(samples); }, (error) => { if (generation === this.generation) this.fail(error); });
       if (generation !== this.generation) return;
+      if (this.options.sessionClock && this.options.noSpeechTimeoutMs && this.diagnostics.latestStartMs === null) {
+        this.noSpeechDeadline = (this.options.setDeadline ?? setTimeout)(() => { if (generation === this.generation) void this.finish(); }, this.options.noSpeechTimeoutMs);
+      }
     } catch (cause) {
       if (generation === this.generation) this.fail(audioFailure(cause, "PCM_PIPELINE_FAILED", this.trace.stage));
     }
@@ -137,7 +169,7 @@ export class BrowserAudioController {
       this.diagnostics.speechOff = this.vad!.speechOff; this.diagnostics.vadState = this.vad!.state;
       if (wasCalibrating && this.vad!.state !== "calibrating" && !this.finishing) this.state("LISTENING");
       for (const boundary of boundaries) {
-        if (boundary.kind === "start") { this.segment++; this.diagnostics.segmentCount = this.segment; this.diagnostics.latestEndMs = null; this.diagnostics.latestStartMs = boundary.monotonicMs; this.fact("LEARNER_SPEECH_START", boundary.monotonicMs, this.segment); if (!this.finishing) this.state("SPEECH_ACTIVE"); }
+        if (boundary.kind === "start") { this.clearNoSpeechDeadline(); this.segment++; this.diagnostics.segmentCount = this.segment; this.diagnostics.latestEndMs = null; this.diagnostics.latestStartMs = boundary.monotonicMs; this.fact("LEARNER_SPEECH_START", boundary.monotonicMs, this.segment); if (!this.finishing) this.state("SPEECH_ACTIVE"); }
         else { this.diagnostics.latestEndMs = boundary.monotonicMs; this.fact("LEARNER_SPEECH_END", boundary.monotonicMs, this.segment); if (!this.finishing) this.state("LISTENING"); }
       }
       if (!wasCalibrating) {
@@ -146,6 +178,11 @@ export class BrowserAudioController {
         this.trace.enter("PCM_FRAME_AGGREGATION"); this.assembler!.push(resampled);
       }
       this.diagnostics.queuedFrames = this.forwarder!.queuedFrames; this.notify();
+      if (this.options.autoPlayCaller && !this.callerPlayed && this.diagnostics.state === "LISTENING") this.playMockCaller();
+      if (this.options.finishOnSpeechEnd && boundaries.some((boundary) => boundary.kind === "end") && !this.diagnostics.callerPlaying
+        && (!this.options.prepareCaller || this.diagnostics.callerEndMs !== undefined)) {
+        this.scheduleFinish();
+      }
     } catch (cause) { this.fail(audioFailure(cause, "PCM_PIPELINE_FAILED", this.trace.stage)); }
     finally { samples.fill(0); }
   }
@@ -154,6 +191,9 @@ export class BrowserAudioController {
     this.facts.push({ sessionId: this.options.sessionId, turnNumber: this.options.turnNumber, kind,
       at: { monotonicMs, audioClockId: this.clockId, source: kind.startsWith("CALLER") ? "CLIENT_AUDIO_CLOCK" : "LOCAL_VAD", precision: "instant" },
       availability: "available", ...(segmentNumber === undefined ? {} : { segmentNumber }) });
+    // VAD confirmation may arrive after a caller callback whose estimated boundary it precedes.
+    // Preserve strict chronological facts in the same clock; do not clamp away real overlap.
+    this.facts.sort((left, right) => left.at.monotonicMs - right.at.monotonicMs);
   }
   playMockCaller(): void {
     if (!this.connection || this.callerPlayed || this.diagnostics.state !== "LISTENING") return;
@@ -163,19 +203,46 @@ export class BrowserAudioController {
       const generation = this.generation;
       const record = (kind: "CALLER_AUDIO_START" | "CALLER_AUDIO_END") => {
         if (generation !== this.generation) return;
-        try { this.fact(kind, this.clock()); this.diagnostics.callerPlaying = kind === "CALLER_AUDIO_START"; this.notify(true); }
+        try {
+          const at = this.clock(); this.fact(kind, at);
+          if (kind === "CALLER_AUDIO_START") this.diagnostics.callerStartMs = at;
+          else { this.diagnostics.callerEndMs = at; this.diagnostics.callerPlaybackDurationMs = at - (this.diagnostics.callerStartMs ?? at); }
+          this.diagnostics.callerPlaying = kind === "CALLER_AUDIO_START"; this.notify(true);
+          if (kind === "CALLER_AUDIO_END") {
+            if (this.options.finishOnSpeechEnd && this.diagnostics.latestEndMs !== null) this.scheduleFinish();
+            else if (this.options.noSpeechTimeoutMs && this.diagnostics.latestStartMs === null) {
+              this.noSpeechDeadline = (this.options.setDeadline ?? setTimeout)(() => { if (generation === this.generation) void this.finish(); }, this.options.noSpeechTimeoutMs);
+            }
+          }
+        }
         catch (cause) { this.fail(audioFailure(cause, "TIMING_UNAVAILABLE", "LOCAL_TIMING")); }
       };
-      this.connection.playMockCaller(() => record("CALLER_AUDIO_START"), () => record("CALLER_AUDIO_END"));
+      if (this.callerPlayback) {
+        // Pending decode/play is not a completed cue; suppress learner completion until actual ended.
+        this.diagnostics.callerPlaying = true; this.notify(true);
+        this.callerPlayback.play(() => record("CALLER_AUDIO_START"), () => record("CALLER_AUDIO_END"), () => {
+          if (generation === this.generation) this.fail(new BrowserAudioError("CALLER_AUDIO_FAILED"));
+        });
+      } else this.connection.playMockCaller(() => record("CALLER_AUDIO_START"), () => record("CALLER_AUDIO_END"));
     } catch (cause) { this.fail(audioFailure(cause, "PCM_PIPELINE_FAILED", "CALLER_PLAYBACK")); }
   }
   private release(): void {
+    this.clearNoSpeechDeadline();
+    this.callerPlayback?.stop(); this.callerPlayback = undefined;
     this.acquisitionAbort?.abort(); this.acquisitionAbort = undefined;
     if (this.deadline !== undefined) (this.options.clearDeadline ?? clearTimeout)(this.deadline);
     this.deadline = undefined; this.connection?.stop(); this.connection = undefined;
     this.resampler?.clear(); this.assembler?.clear(); this.vad?.clear();
     this.resampler = undefined; this.assembler = undefined; this.vad = undefined;
     this.diagnostics.level = 0; this.diagnostics.callerPlaying = false; this.diagnostics.queuedFrames = 0;
+  }
+  private clearNoSpeechDeadline(): void {
+    if (this.noSpeechDeadline !== undefined) (this.options.clearDeadline ?? clearTimeout)(this.noSpeechDeadline);
+    this.noSpeechDeadline = undefined;
+  }
+  private scheduleFinish(): void {
+    const generation = this.generation;
+    queueMicrotask(() => { if (generation === this.generation) void this.finish(); });
   }
   /** Hard stop releases the mic synchronously, without waiting for backend/provider completion. */
   stop(): void {
@@ -190,6 +257,7 @@ export class BrowserAudioController {
   async finish(): Promise<void> {
     if (this.finishing || this.diagnostics.state === "COMPLETED") return;
     if (!["LISTENING", "SPEECH_ACTIVE"].includes(this.diagnostics.state)) { this.stop(); return; }
+    if (this.options.prepareCaller && this.diagnostics.callerEndMs === undefined) { this.fail(new BrowserAudioError("CALLER_AUDIO_FAILED")); return; }
     const forwarder = this.forwarder!;
     this.finishing = true;
     this.state("FINISHING");

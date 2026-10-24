@@ -42,6 +42,21 @@ test("worklet acknowledgement permits continued capture and hard stop prevents l
   assert.equal(messages.length, count);
 });
 
+test("turn flush drains the tail without terminating the processor or mixing old samples into the next block", () => {
+  const { processor, messages } = worklet();
+  processor.process([[new Float32Array(128).fill(0.8)]]);
+  processor.port.onmessage({ data: "flush-turn" });
+  assert.equal(messages[0]?.flushed, true); assert.equal(messages[0]?.samples?.length, 128);
+  for (let index = 0; index < 8; index++) assert.equal(processor.process([[new Float32Array(128).fill(0.2)]]), true);
+  assert.equal(messages[1]?.samples?.length, 960);
+  assert.ok(messages[1]!.samples!.every((value) => Math.abs(value - 0.2) < 1e-6));
+  processor.port.onmessage({ data: "ack" }); processor.port.onmessage({ data: "flush-turn" });
+  assert.equal(messages[2]?.samples?.length, 64);
+  assert.equal(processor.process([[new Float32Array(128)]]), true);
+  processor.port.onmessage({ data: "stop" });
+  assert.equal(processor.process([[new Float32Array(128)]]), false);
+});
+
 test("Vite serves the standalone AudioWorklet module without a browser or provider dependency", async () => {
   const vite = await createViteServer({ configFile: fileURLToPath(new URL("../../vite.config.ts", import.meta.url)),
     root: fileURLToPath(new URL("../..", import.meta.url)), optimizeDeps: { noDiscovery: true }, server: { host: "127.0.0.1", port: 0 } });

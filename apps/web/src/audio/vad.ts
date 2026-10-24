@@ -14,6 +14,8 @@ export class LocalVad {
   private calibration: Array<{ level: number; duration: number }> = [];
   private calibrationDuration = 0;
   private candidateMs = 0;
+  private candidateStartedAt: number | undefined;
+  private lastActiveAt: number | undefined;
   private activeMs = 0;
   private silentMs = 0;
   private lastTime = -1;
@@ -37,24 +39,32 @@ export class LocalVad {
       return [];
     }
     if (this.state === "silence") {
-      if (level >= this.speechOn) this.candidateMs += durationMs;
+      if (level >= this.speechOn) {
+        this.candidateStartedAt ??= Math.max(0, monotonicMs - durationMs);
+        this.candidateMs += durationMs;
+      }
       else {
-        this.candidateMs = 0;
+        this.candidateMs = 0; this.candidateStartedAt = undefined;
         // Slow adaptation only below the speech-off threshold; no voice profile is retained.
         if (level < this.speechOff) { this.noiseFloor += (level - this.noiseFloor) * Math.min(0.02, durationMs / 10_000); this.updateThresholds(); }
       }
       if (this.candidateMs >= Math.max(this.config.activationMs, this.config.minimumSpeechMs)) {
+        const startedAt = this.candidateStartedAt!;
         this.state = "speech"; this.activeMs = this.candidateMs; this.candidateMs = 0; this.silentMs = 0;
-        // Timestamp the confirmation on the master clock; do not backdate across caller events.
-        return [{ kind: "start", monotonicMs }];
+        this.candidateStartedAt = undefined; this.lastActiveAt = monotonicMs;
+        // Confirm later, but estimate the boundary at the first candidate block's start.
+        return [{ kind: "start", monotonicMs: startedAt }];
       }
       return [];
     }
     this.activeMs += durationMs;
-    this.silentMs = level < this.speechOff ? this.silentMs + durationMs : 0;
+    if (level < this.speechOff) this.silentMs += durationMs;
+    else { this.silentMs = 0; this.lastActiveAt = monotonicMs; }
     if (this.silentMs >= this.config.hangoverMs && this.activeMs >= this.config.minimumSpeechMs) {
+      const endedAt = this.lastActiveAt!;
       this.state = "silence"; this.silentMs = 0; this.activeMs = 0;
-      return [{ kind: "end", monotonicMs }];
+      this.lastActiveAt = undefined;
+      return [{ kind: "end", monotonicMs: endedAt }];
     }
     return [];
   }
@@ -62,5 +72,5 @@ export class LocalVad {
     this.speechOn = Math.max(this.config.minOn, Math.min(this.config.maxOn, this.noiseFloor * this.config.noiseMultiplier));
     this.speechOff = this.speechOn * this.config.offRatio;
   }
-  clear(): void { this.calibration = []; this.candidateMs = 0; this.activeMs = 0; this.silentMs = 0; }
+  clear(): void { this.calibration = []; this.candidateMs = 0; this.activeMs = 0; this.silentMs = 0; this.candidateStartedAt = undefined; this.lastActiveAt = undefined; }
 }

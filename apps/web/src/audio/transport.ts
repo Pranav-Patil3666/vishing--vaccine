@@ -1,9 +1,10 @@
 import {
-  BrowserAudioSummarySchema, BrowserAudioWindowSchema,
+  BrowserAudioSummarySchema, BrowserAudioWindowSchema, RealAudioWindowSchema,
   type BrowserAudioSummary, type BrowserAudioTimingFacts, type PcmFrameMetadata,
 } from "@vaccine/contracts";
 import { audioFailure, BrowserAudioError } from "./errors.js";
 import type { AudioPipelineDiagnostics } from "./diagnostics.js";
+import { readTechnicalFailure } from "./technicalFailure.js";
 
 export interface AudioForwarder {
   setDiagnostics?(trace: AudioPipelineDiagnostics): void;
@@ -12,6 +13,12 @@ export interface AudioForwarder {
   finish(facts: BrowserAudioTimingFacts): Promise<BrowserAudioSummary>;
   cancel(): void;
   readonly queuedFrames: number;
+}
+export interface AudioForwardingOptions {
+  route?: "audio" | "real-audio";
+  startRequestMs?: number;
+  finishRequestMs?: number;
+  parseFinish?: (value: unknown) => BrowserAudioSummary;
 }
 
 /** Eight frames (256 ms) maximum, one in-flight HTTP request, no retries, no persistent storage. */
@@ -27,27 +34,34 @@ export class DevelopmentAudioForwarder implements AudioForwarder {
   private trace: AudioPipelineDiagnostics | undefined;
   setDiagnostics(trace: AudioPipelineDiagnostics): void { this.trace = trace; }
   constructor(private readonly sessionId: string, private readonly baseUrl = "", private readonly fetcher: typeof fetch = fetch,
-    private readonly onError: (error: BrowserAudioError) => void = () => {}) {
+    private readonly onError: (error: BrowserAudioError) => void = () => {}, private readonly options: AudioForwardingOptions = {}) {
     // Window.fetch rejects the forwarder as its receiver. Preserve a standalone call for every request, including cancel.
     this.fetcher = (input, init) => fetcher(input, init);
   }
   get queuedFrames(): number { return this.queue.length + Number(this.inFlight); }
   private url(action: string): string {
-    const path = `/api/sessions/${encodeURIComponent(this.sessionId)}/audio/${action}`;
+    const path = `/api/sessions/${encodeURIComponent(this.sessionId)}/${this.options.route ?? "audio"}/${action}`;
     return this.baseUrl.trim() ? new URL(path, this.baseUrl).toString() : path;
   }
   private async request(action: string, body?: BodyInit, headers: Record<string, string> = {}): Promise<unknown> {
-    const timeout = setTimeout(() => this.abort.abort(), 2000);
+    const timeoutMs = action === "start" ? this.options.startRequestMs ?? 2000 : action === "finish" ? this.options.finishRequestMs ?? 2000 : 2000;
+    const timeout = setTimeout(() => this.abort.abort(), timeoutMs);
     try {
       const response = await this.fetcher(this.url(action), { method: "POST", cache: "no-store", signal: this.abort.signal,
         headers: { ...headers, ...(this.token ? { "x-audio-token": this.token } : {}) }, ...(body === undefined ? {} : { body }) });
-      if (!response.ok) throw new Error(`Audio ${action} request failed (HTTP ${response.status}).`);
+      if (!response.ok) {
+        const technical = readTechnicalFailure(await response.json().catch(() => null), action === "start" ? "STT_START" : action === "frame" ? "STT_STREAM" : "STT_FINALIZE");
+        throw new BrowserAudioError(technical.causeCode === "CREDIT_LIMIT_REACHED" ? "CREDIT_LIMIT_REACHED" : "PCM_PIPELINE_FAILED",
+          new Error(`Audio ${action} request failed (HTTP ${response.status}).`),
+          action === "start" ? "TRANSPORT_OPEN" : action === "frame" ? "TRANSPORT_FRAME" : "TRANSPORT_FINISH", technical);
+      }
       return await response.json();
     } finally { clearTimeout(timeout); }
   }
   async open(audioClockId: string, turnNumber: number): Promise<void> {
     try {
-      const window = BrowserAudioWindowSchema.parse(await this.request("start", JSON.stringify({ audioClockId, turnNumber }), { "content-type": "application/json" }));
+      const window = (this.options.route === "real-audio" ? RealAudioWindowSchema : BrowserAudioWindowSchema).parse(await this.request("start", JSON.stringify({ audioClockId, turnNumber,
+        ...(this.options.route === "real-audio" ? { microphoneConsent: true } : {}) }), { "content-type": "application/json" }));
       this.token = window.token;
       if (this.closed) this.cancel();
       else this.trace?.mark("TRANSPORT_READY");
@@ -79,7 +93,8 @@ export class DevelopmentAudioForwarder implements AudioForwarder {
     await this.pending;
     if (this.failure || this.closed) throw this.failure ?? new BrowserAudioError("PCM_PIPELINE_FAILED");
     try {
-      const result = BrowserAudioSummarySchema.parse(await this.request("finish", JSON.stringify(facts), { "content-type": "application/json" }));
+      const value = await this.request("finish", JSON.stringify(facts), { "content-type": "application/json" });
+      const result = this.options.parseFinish ? this.options.parseFinish(value) : BrowserAudioSummarySchema.parse(value);
       this.closed = true; this.token = undefined; return result;
     } catch (cause) { throw audioFailure(cause, "PCM_PIPELINE_FAILED", "TRANSPORT_FINISH"); }
   }

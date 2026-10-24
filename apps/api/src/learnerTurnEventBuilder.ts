@@ -26,6 +26,8 @@ export interface LearnerTurnEventBuilderInput {
   behavior: LearnerTurnEvent["behavior"];
   policy: AdaptivePolicyAction;
   tts: { cacheHit: boolean; fallback: boolean; mediaType: string };
+  inputSource?: "REAL_STT";
+  dummySecretTokens?: readonly string[];
 }
 
 /** The only constructor for normalized learner-turn timeline records. */
@@ -57,7 +59,7 @@ export class LearnerTurnEventBuilder {
         ...(input.transcript.segmentId ? { segmentId: input.transcript.segmentId } : {}),
         ...(localSegmentStart && localSegmentEnd ? { localSegmentStart, localSegmentEnd } : {}),
         timingSource: localSegmentStart ? localSegmentStart.source : "UNKNOWN",
-      }, SYNTHETIC_DUMMY_SECRET_FIXTURES)
+      }, input.dummySecretTokens ?? SYNTHETIC_DUMMY_SECRET_FIXTURES)
       : null;
     const interruption = timing.noResponse ? { status: "unknown" as const, source: "UNKNOWN" as const, playbackTimingCertain: false }
       : detectInterruptionForEvent(timing);
@@ -115,6 +117,7 @@ export class LearnerTurnEventBuilder {
       behavior: input.behavior,
       complianceMoment,
       observedEvidenceRuleIds: [...new Set([
+        ...(input.inputSource ? ["input.prisma_runtime"] : []),
         ...input.behavior.evidenceRuleIds,
         `policy.${policy.decisionCode.toLocaleLowerCase()}`,
         ...(timing.timingCertain ? ["timing.fixture_or_local_clock"] : ["timing.unavailable"]),

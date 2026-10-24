@@ -163,7 +163,7 @@ function createTrainingExamples() {
   })));
 }
 
-function createSafetyPreflight(
+export function createSafetyPreflight(
   scenario: ScenarioDocument,
   tactics: AuthoredTactic[],
   examples: ReturnType<typeof BehaviorTrainingExampleSchema.parse>[],
@@ -183,7 +183,7 @@ function createSafetyPreflight(
     forbiddenOperationalPhrases: configuredPhrases,
   });
   const safeMaskedContent = `${JSON.stringify(scanScenario)} ${scanPayload}`.replace(/\bDUMMY-\d{4}\b/giu, "DUMMY-XXXX");
-  const hasInvalidDummy = /\bDUMMY-(?!\d{4}\b)\d+\b/iu.test(`${JSON.stringify(scanScenario)} ${scanPayload}`);
+  const hasInvalidDummy = /\bDUMMY-(?!\d{4}(?![\p{L}\p{N}-]))[\p{L}\p{N}-]+\b/iu.test(`${JSON.stringify(scanScenario)} ${scanPayload}`);
   const hasCredential = hasInvalidDummy
     || /\b(?:otp|one[- ]time\s+password|pin|cvv|cvc|card\s+number|account\s+number)\s*[:#=-]?\s*\d{3,19}\b|\b\d{6,19}\b/iu.test(safeMaskedContent)
     || scenarioSafety.issues.some((issue) => issue.code === "credential_pattern_detected");
@@ -193,11 +193,29 @@ function createSafetyPreflight(
   const hasOperationalInstruction = scenarioSafety.issues.some((issue) => issue.code === "operational_instruction_detected" || issue.code === "forbidden_phrase_detected");
   const schemaIssue = scenarioSafety.issues.some((issue) => issue.code === "scenario_schema_invalid");
   const disclosurePass = scenario.safety_metadata?.visible_simulation_label === true;
+  const metadata = scenario.safety_metadata;
+  const safeguardsPass = metadata?.ai_voice_disclosure_required === true && metadata.consent_before_recording === true
+    && metadata.audio_retention === "none_by_default" && metadata.dummy_data_mode === "synthetic_only"
+    && Boolean(scenario.responses[metadata.safe_ending_response_id] && scenario.responses[metadata.safe_ending_response_id]!.safety_status !== "draft");
+  const languagePass = Boolean(scenario.language?.trim());
+  const canonicalPass = tactics.length === canonicalTacticIds.length && canonicalTacticIds.every((id) => tactics.filter((tactic) => tactic.id === id && tactic.response.id === id).length === 1);
+  const maximum = scenario.adaptive_policy?.max_pressure_level;
+  const levels = maximum !== undefined && maximum >= 2 && maximum <= 5 ? selectPressureLevels(maximum) : null;
+  const linesPass = Boolean(levels && tactics.every((tactic) => tactic.lines.length === 3 && tactic.lines.every((line, index) =>
+    line.intensity === ["low", "medium", "high"][index] && line.pressureLevel === levels[index] && line.text.trim())));
+  const behaviors = ["REFUSED", "STALLED", "VERIFIED_INDEPENDENTLY", "COMPLIED", "DISCLOSED_DUMMY_SECRET"];
+  const examplesPass = examples.length === 15 && behaviors.every((behavior) => examples.filter((example) => example.label === behavior).length === 3);
+  const debriefPass = variants.length === 5 && behaviors.every((behavior) => variants.filter((variant) => variant.id === behavior.toLowerCase()).length === 1)
+    && variants.every((variant) => ["{latency}", "{timestamp}", "{behavior}"].every((placeholder) => variant.text.includes(placeholder)));
   const checks: SafetyCheck[] = [
     { id: "fictional-organization", label: "Fictional organization", status: organizationPass ? "PASS" : "FAIL", detail: organizationPass ? `${scenario.fictional_organization.name} is marked training-only.` : "A named fictional organization with training-only status is required." },
     { id: "real-brand-scan", label: "Real-brand scan", status: brandIssue ? "FAIL" : brandConfigured ? "PASS" : "WARNING", detail: brandIssue ? "A configured real-organization reference matched this draft." : brandConfigured ? "No configured real-organization name matched this draft." : "No real-organization reference list is configured; coverage is incomplete." },
     { id: "credential-scan", label: "Credential scan", status: hasCredential ? "FAIL" : "PASS", detail: hasCredential ? "Credential-like text or a non-allowlisted dummy value was found." : "No credential values found. Only DUMMY-#### placeholders are allowed." },
     { id: "simulation-disclosure", label: "Simulation disclosure", status: disclosurePass ? "PASS" : "FAIL", detail: disclosurePass ? "Visible simulation labeling is required by the scenario metadata." : "Required visible simulation disclosure is missing." },
+    { id: "mandatory-safeguards", label: "Mandatory safeguards", status: safeguardsPass ? "PASS" : "FAIL", detail: safeguardsPass ? "Voice disclosure, consent, retention, synthetic-only data and a safe ending are configured." : "A mandatory consent, disclosure, retention, synthetic-data or safe-ending safeguard is missing." },
+    { id: "language", label: "Content language", status: languagePass ? "PASS" : "FAIL", detail: languagePass ? "A content language is explicitly configured." : "A content language is required." },
+    { id: "canonical-tactics", label: "Canonical tactic IDs", status: canonicalPass ? "PASS" : "FAIL", detail: canonicalPass ? "Five canonical tactic/response identities are present." : "Canonical tactic/response identities are incomplete or duplicated." },
+    { id: "content-completeness", label: "Authoring content completeness", status: linesPass && examplesPass && debriefPass ? "PASS" : "FAIL", detail: linesPass && examplesPass && debriefPass ? "Fifteen intensity lines, fifteen labeled examples and five complete debrief variants are present." : "Required intensity lines, examples or debrief placeholders are incomplete." },
     { id: "operational-content", label: "Operational instruction scan", status: hasOperationalInstruction || schemaIssue ? "FAIL" : "PASS", detail: hasOperationalInstruction ? "The content matches a configured operational-risk pattern." : schemaIssue ? "The scenario did not pass structural validation." : "No configured operational-risk phrase matched." },
   ];
   const status = checks.some((check) => check.status === "FAIL") ? "FAIL" : checks.some((check) => check.status === "WARNING") ? "WARNING" : "PASS";

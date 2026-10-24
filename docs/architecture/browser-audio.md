@@ -1,13 +1,13 @@
 # Browser audio instrumentation — Phase 4B
 
-Phase 4B adds an optional **development-only** microphone check to the existing live-call screen. Typed mock turns still drive the session engine. There is no browser-to-provider connection, production STT orchestration, Timbre, acoustic behavior/filler detection, or automatic policy change.
+Phase 4B adds an optional **development-only** microphone check to the existing live-call screen. Its discard-only path remains separate from session turns. Phase 4C.1 now reuses the same capture/controller/forwarder with opt-in `real-audio` routing, automatic mock cue after calibration, bounded no-speech/capture windows and local VAD completion. The backend owns Prisma and canonical turn creation; the browser never connects directly to the provider. Canonical S-01 v0.2.0 is approved; physical live acceptance remains pending. Final preflight corrected confirmation timestamps to estimated block boundaries and labels discard diagnostics as latest-segment facts. No DSP/VAD/resampling tuning, Timbre or acoustic behavior inference was added. See [one-turn runtime](real-voice-turn.md).
 
 ## Two independent paths
 
 ```mermaid
 flowchart TD
   Clock[Browser performance.now clock + ephemeral audioClockId] --> Caller[Local mock playback start / actual ended callback]
-  Clock --> Vad[Local VAD confirmation boundaries]
+  Clock --> Vad[Local VAD estimated block boundaries]
   Caller --> Facts[Strict provider-neutral timing facts]
   Vad --> Facts
   Facts --> Backend[Backend canonical timing utilities]
@@ -53,7 +53,7 @@ Defaults in `audio/vad.ts`:
 | End hangover | 300 ms continuously below speech-off |
 | Quiet-floor adaptation | Slow update only below speech-off |
 
-One impulse or an interrupted subminimum burst cannot start a segment. Hysteresis and hangover keep short pauses inside a segment. Start/end times are **confirmation times on the browser clock**, not exact acoustic phoneme boundaries: start includes confirmation delay; end includes hangover. A stopped active segment has no fabricated speech end. Energy VAD cannot identify the learner, reject all noise, distinguish speaker bleed, count words, infer emotion or establish formal speech accuracy. High/background noise, browser processing and gain control can alter thresholds; physical-device QA remains necessary.
+One impulse or an interrupted subminimum burst cannot start a segment. Hysteresis and hangover keep short pauses inside a segment. Since the final Phase 4C.1 preflight, start/end times are **estimated block boundaries on the browser clock**: confirmation emits the first qualifying block's start and last active block's end, excluding evidence/hangover confirmation delay. The estimates use callback monotonic time and block duration; they are not hardware sample timestamps or exact phoneme boundaries. The original Phase 4B confirmation-time semantics remain documented in its historical evidence. A stopped active segment has no fabricated speech end. Energy VAD cannot identify the learner, reject all noise, distinguish speaker bleed, count words, infer emotion or establish formal speech accuracy. High/background noise, browser processing and gain control can alter thresholds; physical-device QA remains necessary.
 
 ## Clock domains and canonical facts
 

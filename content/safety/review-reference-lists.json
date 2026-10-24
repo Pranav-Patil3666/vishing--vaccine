@@ -1,0 +1,4 @@
+{
+  "knownRealOrganizations": ["SBI", "State Bank of India", "HDFC", "ICICI", "Axis Bank", "RBI", "Reserve Bank of India", "police", "government department", "telecom regulator"],
+  "forbiddenOperationalPhrases": ["disable identity verification", "bypass fraud detection", "scan this QR", "send money", "install AnyDesk", "install TeamViewer"]
+}
