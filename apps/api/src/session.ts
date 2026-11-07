@@ -114,12 +114,13 @@ export function restoreSessionState(snapshot: SessionState): SessionState {
 
 export function endSession(state: SessionState, endedAt: Date): SessionState {
   if (state.state === "COMPLETED" || state.state === "ENDED_BY_LEARNER") return state;
+  if (state.runtimeMode === "REAL_CONVERSATION" && state.conversation?.phase === "ERROR") return state;
   return {
     ...state,
     state: "ENDED_BY_LEARNER",
     recordingEnabled: false,
     consent: { ...state.consent, status: "withdrawn", updatedAt: endedAt.toISOString() },
-    terminalState: "LEARNER_ENDED",
+    terminalState: state.runtimeMode === "REAL_CONVERSATION" ? state.terminalState ?? "LEARNER_ENDED" : "LEARNER_ENDED",
     ...(state.conversation ? { conversation: { ...state.conversation, phase: "STOPPED" as const } } : {}),
   };
 }

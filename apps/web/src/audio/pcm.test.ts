@@ -43,3 +43,11 @@ test("frame assembly buffers leftovers, emits exact frames and explicitly pads t
   assert.ok(frames[1]!.bytes.subarray(88 * 2).every((value) => value === 0));
   assert.equal(assembler.remainderSamples, 0); assembler.finish(); assert.equal(frames.length, 2);
 });
+
+test("5E clearing partial resampler/frame state prevents PCM from bleeding into a new window", () => {
+  const resampler = new StreamingResampler(44100); resampler.push(new Float32Array(7).fill(0.8)); resampler.clear();
+  assert.ok(resampler.push(new Float32Array(441).fill(0)).every((sample) => sample === 0));
+  const frames: Uint8Array[] = [], assembler = new PcmFrameAssembler((bytes) => frames.push(bytes));
+  assembler.push(new Float32Array(100).fill(0.8)); assembler.clear(); assembler.push(new Float32Array(512).fill(0));
+  assert.equal(frames.length, 1); assert.ok(frames[0]!.every((byte) => byte === 0)); assert.equal(assembler.remainderSamples, 0);
+});

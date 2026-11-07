@@ -6,6 +6,10 @@ export function appendLearnerTurnEvent(session: SessionState, input: LearnerTurn
   if (event.sessionId !== session.sessionId) throw new Error("Learner event belongs to another session.");
   if (session.timelineEvents.some((prior) => prior.turnId === event.turnId)) throw new Error("Duplicate learner turn event.");
   if (session.runtimeMode === "REAL_CONVERSATION") {
+    if (["COMPLETED", "ENDED_BY_LEARNER", "ERROR"].includes(session.state)
+      || ["COMPLETED", "STOPPED", "ERROR"].includes(session.conversation?.phase ?? "")
+      || (session.terminalState !== null && session.timelineEvents.length >= session.turnNumber)) throw new Error("Conversation is terminal; no further learner event can commit.");
+    if (session.timelineEvents.length >= session.maxTurns) throw new Error("Conversation learner turn limit reached.");
     if (event.turnId !== `${session.sessionId}:turn-${session.timelineEvents.length + 1}` || event.callerResponseId !== session.conversation?.caller?.responseId) throw new Error("Conversation event identity or order is invalid.");
     if (event.callerAudioStartedAt?.audioClockId !== session.conversation?.audioClockId
       || event.learnerSpeechStartedAt?.audioClockId !== session.conversation?.audioClockId) throw new Error("Conversation events must share their session browser clock.");

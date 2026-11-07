@@ -1,9 +1,18 @@
-# Evon authoring boundary
+# Scenario authoring and the runtime boundary
 
-Evon remains offline authoring only. The live learner path never calls Evon. A mock may create draft placeholders, and generated files may be imported without a hosted authoring service. Potential later targets are an authorized hosted/contest route, rented GPU, or experimental local GPU; no target is assumed available and no 8 GB RTX 4060 unquantized-runtime claim is made.
+Phase 6A provides deterministic mock-assisted scenario authoring with manual draft import. Future Evon inference can replace the mock generation adapter without changing validation, review, approval or live runtime.
 
-`MockEvonAuthoringAdapter` returns a `DraftScenarioPackage` containing a scenario brief, draft tactic pool, candidate approved-response records, multilingual synthetic behavior examples, debrief template variants, and candidate utterances. Every result is `DRAFT` and runtime-ineligible. A separate explicit safety-review transition and human approval record are required before an approved package can be produced; approval requires reviewer identity, timestamp, checklist evidence, and matching scenario ID/version. Only a subsequent runtime-eligibility transition can enable adaptive runtime behavior.
+```text
+structured brief → DeterministicMockScenarioGenerator ─┐
+author-selected UTF-8 JSON → bounded parser ───────────┴→ candidate schema → local DRAFT store → Authoring preview
+```
 
-`BehaviorTrainingExample` records a scrubbed utterance, one behavior label, synthetic or consented-redacted source, and a train/validation/held-out split. Examples are authoring/evaluation data, not runtime inference. No learner audio or actual credentials belong in a package.
+`ScenarioDraftGenerator.generateDraft(brief)` is the offline generator interface. The `fictional-benefits-verification` family v1.0.0 accepts an explicitly supported brief. Its templates supply the fictional organization, premise, department, five tactic categories, intensity variants, safe actions and endings. The brief selects the working title, scenario ID, draft version, audience, difficulty, training emphasis, caller script and two or three learner decisions. Change the template version when changing its authored content. A future inference adapter would return the same candidate structure for the same intake checks.
 
-Approval remains human and separate from generation. The review checks fictional identity, synthetic-only data, no security-bypass instruction, safe ending, visible simulation label, AI-voice disclosure, consent before recording, and no audio retention by default. Import does not imply approval.
+The Phase 6A input envelope adds `schemaVersion: 1` and authoring-only `details` around the existing `DraftScenarioPackage`. The package still owns the scenario, review, tactic pool, responses, examples, debrief templates and importable artifact. Details reference those IDs for authored intensity, example interpretation, safe actions, behavior routes and observable scoring. The existing scenario and runtime release validators retain their rules. The old development mock API and S-01 review fixtures remain compatibility surfaces.
+
+The terminal CLI owns all writes. It accepts an explicit local file, bounds reads at 160 KiB, checks UTF-8 and JSON structure, and validates the draft package and its internal references. Incompatible approval claims are rejected. Manual import verifies the ingestion source and records any `declaredOrigin` as unverified metadata. Configured organization, credential and operational-phrase patterns provide a basic intake filter. Human semantic, linguistic and safety review remains required.
+
+Saved records live in the ignored `.cache/authoring/` directory. Their filenames use the verified ingestion source and canonical content hash. A synced staging file and exclusive hard link make the record visible as a whole and prevent duplicate writes. Later revisions can reference an existing candidate with the same scenario ID and a different version. The Authoring page reads a user-selected saved record, revalidates its structure and verifies its hash in the browser. Use localhost or another secure browser context for Web Crypto.
+
+The simulation catalog reads `content/scenarios/`. Local authoring records stay in their separate store. DRAFT, pending review and runtime-ineligible status are enforced independently of structural validation. Existing human review and runtime promotion still require named approval, timestamp, checklist evidence, and matching scenario/version. See the [Phase 6A evidence and walkthrough](../evidence/phase6a-mock-authoring-import.md).

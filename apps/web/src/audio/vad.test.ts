@@ -9,6 +9,11 @@ function fixture() {
   };
   return { vad, feed, events };
 }
+test("5E a fresh turn/session VAD has no old speech/hangover state", () => {
+  const old = fixture(); old.feed(0.004, 38); old.feed(0.2, 20); assert.equal(old.vad.state, "speech"); old.vad.clear();
+  const fresh = fixture(); assert.equal(fresh.vad.state, "calibrating"); fresh.feed(0.004, 38);
+  assert.equal(fresh.vad.state, "silence"); assert.deepEqual(fresh.events, []);
+});
 test("ambient calibration derives bounded separate thresholds without speech events", () => {
   const { vad, feed, events } = fixture();
   feed(0.004, 37); assert.equal(vad.state, "calibrating");

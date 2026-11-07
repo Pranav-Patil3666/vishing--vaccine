@@ -1,5 +1,6 @@
 node_modules/
 .cache/tts/
+.cache/authoring/
 **/dist/
 **/coverage/
 .env

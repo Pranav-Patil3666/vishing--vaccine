@@ -79,6 +79,12 @@ In-memory session storage is currently a development implementation. Production 
 
 The session/orchestration layer depends on the existing `SpeechRecognizer` and `SpeechSynthesizer` contracts. A future provider adapter must be built only after its request schema, authentication, response fields, voice/language support, billing units, errors, retention, and rate limits are verified. No real Prisma, Timbre, or Evon integration exists in this phase.
 
+## Phase 5C automatic terminal lifecycle
+
+For REAL_CONVERSATION, a committed natural terminal outcome enters TERMINAL_CALLER_PREPARING, then TERMINAL_CALLER_PLAYING. COMPLETED requires the browser's matching actual playback-ended acknowledgement. No further learner window is allowed once the outcome is committed. SAFE_WORD instead performs the existing immediate STOPPED/ENDED_BY_LEARNER path without another caller line. Manual End requests no mandatory terminal audio and preserves committed events; if policy already produced a causal outcome it is retained, while conversation phase becomes STOPPED and debrief remains partial. End after automatic ERROR preserves ERROR/failure/outcome rather than replacing them with LEARNER_ENDED. End after COMPLETED remains idempotent.
+
+The browser drive checks its generation before publishing startup responses and on every loop iteration; settled playback callbacks cannot acknowledge late start/end. Final cleanup aborts/ignores pending work, stops caller/learner resources, releases the reusable microphone and clears deadlines. The actual driver stops tracks, disconnects/closes worklet and context, and removes listeners; the player clears handlers/source and revokes its URL. See [Phase 5C terminal matrix and regressions](../evidence/phase5c-terminal-state-validation.md). Legacy mock/recoverable lifecycle behavior is unchanged.
+
 ## Phase 4C.3 credit diagnostics and typed technical failures
 
 The earlier sections describe the foundation phase; the current bounded real-runtime route is documented in [the Phase 4C.3 report](../evidence/phase4c3-multiturn-s01.md). GET `/api/runtime/credit` is read-only and restricted by the same development/test, loopback peer/Host and same-origin checks as real audio. It exposes loaded numeric cap/reserve/costs, process/boot identity, separate runtime STT/TTS and simulation balances, runtime attempt counts and at most 64 sanitized reservation decisions. It performs no provider work. The automatic panel shows it under Technical audio facts.

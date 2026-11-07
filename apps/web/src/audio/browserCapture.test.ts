@@ -159,3 +159,17 @@ test("actual 48 kHz driver/worklet survives two learner finalizations with one l
   mic.stop(); assert.deepEqual(b.counts(), { stops: 1, closed: 1 }); assert.equal(b.lifecycle().listeners, 0);
   assert.equal(b.lifecycle().disconnected, 1); assert.equal(b.lifecycle().portsClosed, 1); assert.equal(b.quantum(), false);
 });
+
+for (const reason of ["natural terminal", "manual stop", "safe word", "technical failure"]) test(`5C ${reason}: final capture release closes track/context/worklet/listeners once`, async (context) => {
+  const b = browser(context), abort = new AbortController(), driver = await acquireBrowserMicrophone(abort.signal);
+  let delivered = 0;
+  await driver.start(() => { delivered++; }, assert.fail);
+  for (let index = 0; index < 30; index++) b.quantum();
+  if (reason === "manual stop" || reason === "technical failure") abort.abort();
+  else driver.stop();
+  const before = delivered; driver.stop(); abort.abort(); driver.stop();
+  assert.deepEqual(b.counts(), { stops: 1, closed: 1 }); assert.equal(b.lifecycle().listeners, 0);
+  assert.equal(b.lifecycle().trackState, "ended"); assert.equal(b.lifecycle().contextState, "closed");
+  assert.equal(b.lifecycle().disconnected, 1); assert.equal(b.lifecycle().portsClosed, 1);
+  assert.equal(b.quantum(), false); assert.equal(delivered, before);
+});

@@ -118,3 +118,18 @@ test("an intentional stop from READY blocks a stale start handler", () => {
     onChange: () => {}, onSession: () => {}, onTurn: () => {}, onFinished: () => {} });
   controller.stop(); controller.start(); assert.equal(controller.snapshot().state, "STOPPED"); controller.dispose();
 });
+
+for (const [phase, outcome] of [
+  ["COMPLETED", "SAFE_VERIFIED"], ["COMPLETED", "DUMMY_SECRET_DISCLOSED"], ["COMPLETED", "SAFE_FALLBACK"],
+  ["COMPLETED", "MAX_TURNS"], ["STOPPED", "LEARNER_ENDED"], ["STOPPED", "SAFE_WORD"], ["ERROR", null],
+] as const) test(`5C ${phase}/${outcome} renders its final status and cannot expose start/resume controls`, async (context) => {
+  const session = ready(); session.terminalState = outcome; session.recordingEnabled = false;
+  session.state = phase === "STOPPED" ? "ENDED_BY_LEARNER" : phase;
+  session.conversation = { phase, ...(phase === "ERROR" ? { failureCode: "PROVIDER_FAILED" as const } : {}) };
+  const view = await mounted(context, session);
+  assert.equal(view.status(), phase); assert.equal(view.button(), undefined);
+  assert.equal(view.dom.window.document.querySelectorAll("button").length, 0);
+  assert.equal(view.counts().microphoneRequests, 0);
+  if (phase === "ERROR") assert.match(view.dom.window.document.querySelector("[role=alert]")!.textContent!, /Technical stop: PROVIDER_FAILED/u);
+  await view.render(); assert.equal(view.status(), phase);
+});

@@ -26,10 +26,15 @@ import { PressureLatencyCurve } from "../components/PressureLatencyCurve.js";
 import { ApplicationError } from "../../../api/src/errors.js";
 import { SessionApiError } from "../sessionApi.js";
 import { PrismaRealtimeSpeechRecognizer } from "../../../api/src/providers/prisma/prismaRealtimeRecognizer.js";
+import { AdaptivePolicyEngine } from "../../../api/src/adaptivePolicy.js";
+import { endSession } from "../../../api/src/session.js";
+import { BrowserAudioController, type AudioControllerOptions, type AudioDiagnostics } from "./controller.js";
+import { assertRuntimeInvariants } from "../../../api/src/testing/runtimeInvariants.js";
+import { LearnerBehaviorClassifier } from "../../../api/src/behaviorClassifier.js";
 
 const clock = "00000000-0000-4000-8000-000000000003";
 const scenario = validateScenarioDocument(JSON.parse(await readFile("content/scenarios/S-01-urgent-account-verification.json", "utf8")));
-async function setup(context: TestContext, options: { texts?: string[]; cap?: number; sttUnits?: number; sttFailureAt?: number; sttConnectFailure?: boolean; sttLocalFailure?: boolean; ttsFailureAt?: number; delayFinish?: boolean; initialTtsUsedUnits?: number; cachedResponses?: string[]; runtimeRecognizer?: SpeechRecognizer } = {}) {
+async function setup(context: TestContext, options: { texts?: string[]; cap?: number; sttUnits?: number; sttFailureAt?: number; sttStartFailureAt?: number; sttFrameFailureAt?: number; sttConnectFailure?: boolean; sttLocalFailure?: boolean; ttsFailureAt?: number; delayFinish?: boolean; initialTtsUsedUnits?: number; cachedResponses?: string[]; runtimeRecognizer?: SpeechRecognizer } = {}) {
   const directory = await mkdtemp(join(tmpdir(), "conversation-offline-"));
   const cache = new FileCallerAudioCache(directory), catalog = new ApprovedCallerCatalog(new Map([[scenario.scenario_id, scenario]]), TIMBRE_PROFILE.voice);
   for (const id of options.cachedResponses ?? []) await cache.set(callerAudioKey(catalog.resolveId("S-01", scenario.version, id), TIMBRE_PROFILE), callerWavFixture());
@@ -39,10 +44,11 @@ async function setup(context: TestContext, options: { texts?: string[]; cap?: nu
   const recognizer: SpeechRecognizer = { transcribe: async () => { throw new Error("No text/mock transcription"); },
     openStream: (request) => {
       if (options.sttLocalFailure) throw new ApplicationError("INVALID_REQUEST", "Offline local validation failure");
+      if (options.sttStartFailureAt === opened + 1) throw new ApplicationError("STT_CONNECTION_FAILED", "Offline start failure");
       opened++; const index = opened; let stopped = false;
       const ready = options.sttConnectFailure ? Promise.reject(new Error("Offline connection failure")) : Promise.resolve();
       void ready.catch(() => {});
-      return { ready, sendFrame: async (bytes) => { assert.equal(bytes.length, 1024); },
+      return { ready, sendFrame: async (bytes) => { assert.equal(bytes.length, 1024); if (index === options.sttFrameFailureAt) throw new ApplicationError("STT_CONNECTION_FAILED", "Offline stream failure"); },
         finish: async () => { finished++; await gate;
           if (index === options.sttFailureAt) throw new Error("Sanitized offline failure");
           return TranscriptEventSchema.parse({ ...request, eventId: `offline-${index}`, text: options.texts?.[index - 1] ?? "थोड़ा समय चाहिए",
@@ -221,7 +227,7 @@ test("curve renders three ordered 0/1/2 points, associated null latency, and fir
 
 async function until(predicate: () => boolean) { for (let count = 0; count < 1500; count++) { if (predicate()) return; await new Promise((resolve) => setTimeout(resolve, 2)); } assert.fail("Offline condition did not settle"); }
 
-async function browser(context: TestContext, options: Parameters<typeof setup>[1] = {}) {
+async function browser(context: TestContext, options: Parameters<typeof setup>[1] = {}, callbacks: { onTurn?: () => void } = {}) {
   const h = await setup(context, options); let now = 100000, acquired = 0, driverStopped = 0, flushes = 0;
   let receive: ((samples: Float32Array) => void) | undefined, driverError: ((error: BrowserAudioError) => void) | undefined;
   const players: { start(): void; end(): void; fail(): void; stopped: boolean }[] = [];
@@ -231,7 +237,7 @@ async function browser(context: TestContext, options: Parameters<typeof setup>[1
     stop: () => { driverStopped++; receive = undefined; health.tracksLive = false; health.audioContextState = "closed"; health.workletState = "stopped"; }, playMockCaller: () => assert.fail("No mock cues") };
   const sessions: SafeSession[] = [], completed: SafeSession[] = [];
   const controller = new BoundedConversationController({ session: h.session, api: h.api, now: () => now, newClockId: () => clock,
-    acquire: async () => { acquired++; return driver; }, onChange: () => {}, onSession: (session) => sessions.push(session), onTurn: () => {}, onFinished: (session) => completed.push(session),
+    acquire: async () => { acquired++; return driver; }, onChange: () => {}, onSession: (session) => sessions.push(session), onTurn: () => callbacks.onTurn?.(), onFinished: (session) => completed.push(session),
     makePlayback: (asset): CallerPlayback => { const value = { start: () => {}, end: () => {}, fail: () => {}, stopped: false }; players.push(value);
       return { asset, play: (start, end, fail) => { value.start = start; value.end = end; value.fail = fail; }, stop: () => { value.stopped = true; } }; } });
   context.after(() => controller.dispose());
@@ -569,4 +575,339 @@ for (const failure of ["caller delivery", "playback", "STT", "credit", "micropho
   assert.equal(h.countsBrowser().driverStopped, 1); assert.equal(h.completed.length, 0);
   assert.equal(h.store.get(h.session.sessionId).timelineEvents.length, ["STT", "caller delivery", "credit"].includes(failure) ? 1 : 0);
   if (failure === "credit") { assert.equal(h.counts().opened, 1); assert.equal(h.controller.snapshot().error, "CREDIT_LIMIT_REACHED"); }
+});
+
+test("5C late start acknowledgement after manual stop is never published", async (context) => {
+  const h = await browser(context); let release!: () => void, pending = false;
+  const gate = new Promise<void>((resolve) => { release = resolve; }); context.after(release);
+  const original = h.api.conversationAction!;
+  h.api.conversationAction = async (...args) => {
+    const session = await original(...args);
+    if (args[1] === "start") { pending = true; await gate; }
+    return session;
+  };
+  h.controller.start(); await until(() => pending); h.controller.stop();
+  await h.api.endSession(h.session.sessionId); const count = h.sessions.length;
+  release(); await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.equal(h.sessions.length, count); assert.equal(h.controller.snapshot().state, "STOPPED");
+  assert.equal(h.players.length, 0); assert.equal(h.countsBrowser().driverStopped, 1);
+});
+
+test("5C error stays ERROR when End opens its partial debrief or cleanup is repeated", async (context) => {
+  const h = await browser(context); await h.start(); h.error();
+  await until(() => h.store.get(h.session.sessionId).conversation?.phase === "ERROR");
+  const before = await h.api.getSession(h.session.sessionId), ended = await h.api.endSession(h.session.sessionId);
+  assert.deepEqual(ended, before); h.controller.stop(); h.controller.dispose();
+  assert.equal(h.controller.snapshot().state, "ERROR"); assert.equal(h.countsBrowser().driverStopped, 1);
+});
+
+test("5C synchronous stop at committed-turn callback cannot prepare the next caller", async (context) => {
+  let stop = () => {};
+  const h = await browser(context, {}, { onTurn: () => stop() }); stop = () => h.controller.stop();
+  await h.start(); await h.endCaller(1); await h.speak();
+  await until(() => h.store.get(h.session.sessionId).timelineEvents.length === 1);
+  await new Promise((resolve) => setTimeout(resolve, 25)); await h.api.endSession(h.session.sessionId);
+  assert.equal(h.controller.snapshot().state, "STOPPED"); assert.equal(h.players.length, 1);
+  assert.equal(h.counts().opened, 1); assert.equal(h.countsBrowser().driverStopped, 1);
+});
+
+test("5C callbacks from a failed playback cannot acknowledge start or end", async (context) => {
+  const h = await browser(context); await h.start(); let acknowledgements = 0;
+  const original = h.api.conversationAction!;
+  h.api.conversationAction = async (...args) => { if (args[1].startsWith("caller-")) acknowledgements++; return original(...args); };
+  h.players[0]!.fail(); h.players[0]!.start(); h.players[0]!.end();
+  await until(() => h.controller.snapshot().state === "ERROR");
+  assert.equal(acknowledgements, 0); assert.equal(h.counts().opened, 0); assert.equal(h.completed.length, 0);
+});
+
+const terminalCases = [
+  ["verified first", ["Main independently verify karunga"], "SAFE_VERIFIED", "system.safe-ending"],
+  ["disclosed first", ["DUMMY-4821"], "DUMMY_SECRET_DISCLOSED", "system.safe-ending"],
+  ["unknown first", ["a quiet blue sky"], "SAFE_FALLBACK", "system.safe-fallback"],
+  ["stalled max", Array(3).fill("थोड़ा समय चाहिए"), "MAX_TURNS", "system.safe-ending"],
+  ["refused max", Array(3).fill("main share nahi karunga"), "MAX_TURNS", "system.safe-ending"],
+  ["complied max", Array(3).fill("main share karunga"), "MAX_TURNS", "system.safe-ending"],
+  ["unknown final", ["थोड़ा समय चाहिए", "थोड़ा समय चाहिए", "a quiet blue sky"], "MAX_TURNS", "system.safe-ending"],
+  ["verified final", ["थोड़ा समय चाहिए", "थोड़ा समय चाहिए", "Main independently verify karunga"], "SAFE_VERIFIED", "system.safe-ending"],
+  ["disclosed final", ["थोड़ा समय चाहिए", "थोड़ा समय चाहिए", "DUMMY-4821"], "DUMMY_SECRET_DISCLOSED", "system.safe-ending"],
+] as const;
+for (const [name, texts, outcome, responseId] of terminalCases) test(`5C browser natural terminal: ${name}, causal events then one terminal playback then cleanup`, async (context) => {
+  const h = await browser(context, { texts: [...texts] }); await h.start();
+  for (let index = 0; index < texts.length; index++) { await h.endCaller(index + 1); await h.speak(); await h.callerReady(index + 2); }
+  const before = h.controller.snapshot(), count = texts.length;
+  assert.equal(before.session.terminalState, outcome); assert.equal(before.session.currentResponseId, responseId);
+  assert.equal(before.session.timelineEvents.length, count); assert.equal(before.session.pressureTimeline.length, count);
+  assert.notEqual(before.session.state, "COMPLETED"); assert.equal(before.session.pressureDebrief?.completionKind, "in_progress");
+  assert.equal(h.completed.length, 0); assert.equal(h.countsBrowser().driverStopped, 1);
+  const eventSnapshot = JSON.stringify(before.session.timelineEvents), player = h.players[count]!;
+  const credit = await h.api.getRuntimeCredit!();
+  h.advance(100); player.start(); player.start();
+  await until(() => h.controller.snapshot().session.conversation?.phase === "TERMINAL_CALLER_PLAYING");
+  assert.equal(h.controller.snapshot().state, "TERMINAL_CALLER_PLAYING"); assert.equal(h.counts().opened, count);
+  h.samples(40, 0.1); h.controller.finishLearner(); h.controller.start();
+  assert.equal(h.counts().opened, count); assert.equal(h.players.length, count + 1);
+  h.advance(1000); player.end(); player.end();
+  await until(() => h.completed.length === 1); const completed = h.completed[0]!;
+  player.start(); player.end(); h.error(); h.samples(40, 0.1); h.controller.stop(); h.controller.dispose();
+  await new Promise((resolve) => setTimeout(resolve, 15));
+  assert.equal(h.controller.snapshot().state, "COMPLETED"); assert.equal(completed.conversation?.phase, "COMPLETED");
+  assert.equal(completed.pressureDebrief?.completionKind, "complete"); assert.equal(completed.pressureDebrief?.terminalOutcome, outcome);
+  assert.equal(JSON.stringify(completed.timelineEvents), eventSnapshot);
+  assert.deepEqual(completed.pressureTimeline.map((point) => point.callerPressureLevel), [0, 1, 1].slice(0, count));
+  assert.equal(completed.timelineEvents.filter((event) => event.complianceMoment).length, outcome === "DUMMY_SECRET_DISCLOSED" ? 1 : 0);
+  if (outcome === "DUMMY_SECRET_DISCLOSED") assert.equal(completed.pressureDebrief?.firstComplianceMoment?.turnId, `${completed.sessionId}:turn-${count}`);
+  assert.equal(h.countsBrowser().driverStopped, 1); assert.equal(h.counts().opened, count); assert.equal(h.counts().cancelled, count);
+  assert.equal(h.completed.length, 1); assert.equal(h.players.length, count + 1);
+  const after = await h.api.getSession(completed.sessionId); assert.deepEqual(after.pressureDebrief, completed.pressureDebrief);
+  const finalCredit = await h.api.getRuntimeCredit!();
+  assert.equal(finalCredit.stt.usedUnits, credit.stt.usedUnits); assert.equal(finalCredit.tts.usedUnits, credit.tts.usedUnits);
+  await assert.rejects(h.api.getCallerAudio!(completed.sessionId, count, responseId, new AbortController().signal));
+  assert.equal((await h.post(completed.sessionId, "start", { audioClockId: clock, turnNumber: count + 1, microphoneConsent: true })).status, 503);
+  assert.doesNotMatch(JSON.stringify(completed.pressureDebrief), /learner (?:was|felt|is) (?:scared|afraid|nervous|panicked|stressed)/iu);
+});
+
+for (const cached of [true, false]) test(`5C terminal cache ${cached ? "HIT" : "MISS"}: one playback and ${cached ? "zero" : "one"} guarded synthesis`, async (context) => {
+  const h = await browser(context, { texts: ["Main independently verify karunga"], cachedResponses: ["system.opening", ...(cached ? ["system.safe-ending"] : [])] });
+  await h.start(); await h.endCaller(1); await h.speak(); await h.callerReady(2);
+  assert.equal(h.counts().tts, cached ? 0 : 1); assert.equal((await h.api.getRuntimeCredit!()).tts.usedUnits, cached ? 0 : 1);
+  h.players[1]!.start(); h.advance(1000); h.players[1]!.end(); h.players[1]!.end(); await until(() => h.completed.length === 1);
+  assert.equal(h.players.length, 2); assert.equal(h.counts().tts, cached ? 0 : 1); assert.equal(h.completed.length, 1);
+});
+
+for (const phase of ["READY", "CALLER_PREPARING", "CALLER_PLAYING", "CALIBRATING", "LEARNER_LISTENING", "LEARNER_FINALIZING", "TERMINAL_CALLER_PLAYING"] as const) test(`5C manual stop at ${phase} preserves events, never completes or resumes`, async (context) => {
+  const h = await browser(context, { texts: ["Main independently verify karunga"], delayFinish: phase === "LEARNER_FINALIZING" });
+  let release = () => {}, waiting = false;
+  if (phase === "CALLER_PREPARING") {
+    const original = h.api.getCallerAudio!, gate = new Promise<void>((resolve) => { release = resolve; }); context.after(release);
+    h.api.getCallerAudio = async (...args) => { const value = await original(...args); waiting = true; await gate; return value; };
+    h.controller.start(); await until(() => waiting);
+  } else if (phase !== "READY") {
+    await h.start();
+    if (phase === "CALLER_PLAYING") { h.players[0]!.start(); await until(() => h.controller.snapshot().session.conversation?.phase === "CALLER_PLAYING"); }
+    if (phase === "CALIBRATING") await h.beginCallerEnd(1);
+    if (["LEARNER_LISTENING", "LEARNER_FINALIZING", "TERMINAL_CALLER_PLAYING"].includes(phase)) await h.endCaller(1);
+    if (["LEARNER_FINALIZING", "TERMINAL_CALLER_PLAYING"].includes(phase)) { await h.speak(); await until(() => h.counts().finished === 1); }
+    if (phase === "TERMINAL_CALLER_PLAYING") { await h.callerReady(2); h.players[1]!.start(); await until(() => h.controller.snapshot().session.conversation?.phase === "TERMINAL_CALLER_PLAYING"); }
+  }
+  const before = h.store.get(h.session.sessionId), events = JSON.stringify(before.timelineEvents), terminal = before.terminalState;
+  h.controller.stop(); const ended = await h.api.endSession(h.session.sessionId);
+  release(); h.release(); for (const player of h.players) { player.start(); player.end(); }
+  h.samples(40, 0.1); h.controller.start(); h.controller.finishLearner(); h.controller.stop(); h.controller.dispose();
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.equal(h.controller.snapshot().state, "STOPPED"); assert.equal(ended.conversation?.phase, "STOPPED"); assert.equal(ended.state, "ENDED_BY_LEARNER");
+  assert.equal(ended.terminalState, terminal ?? "LEARNER_ENDED");
+  assert.equal(JSON.stringify(ended.timelineEvents), events); assert.equal(ended.pressureTimeline.length, ended.timelineEvents.length);
+  assert.equal(ended.pressureDebrief?.completionKind ?? null, ended.timelineEvents.length ? "partial" : null);
+  assert.equal(h.completed.length, 0); assert.equal(h.countsBrowser().driverStopped, phase === "READY" ? 0 : 1);
+  assert.deepEqual(await h.api.endSession(h.session.sessionId), ended);
+});
+
+for (const failure of ["TTS", "cache", "playback", "calibration", "policy"] as const) test(`5C ${failure} failure preserves causal evidence, typed ERROR and cleanup`, async (context) => {
+  const h = await browser(context, { texts: ["Main independently verify karunga"], ...(failure === "TTS" ? { ttsFailureAt: 2 } : {}) });
+  if (failure === "cache") {
+    const original = FileCallerAudioCache.prototype.get;
+    context.mock.method(FileCallerAudioCache.prototype, "get", async function(this: FileCallerAudioCache, key: string) {
+      if (h.store.get(h.session.sessionId).turnNumber === 1) throw new Error("Offline cache lookup failure");
+      return original.call(this, key);
+    });
+  }
+  if (failure === "policy") {
+    context.mock.method(AdaptivePolicyEngine.prototype, "decide", () => { throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Offline approved response resolution failure"); });
+  }
+  await h.start();
+  if (failure === "calibration") { await h.beginCallerEnd(1); h.health.audioContextState = "closed"; h.samples(1); }
+  else { await h.endCaller(1); await h.speak(); if (failure === "playback") { await h.callerReady(2); h.players[1]!.fail(); } }
+  await until(() => h.store.get(h.session.sessionId).conversation?.phase === "ERROR");
+  const state = await h.api.getSession(h.session.sessionId), hasEvent = ["TTS", "cache", "playback"].includes(failure);
+  assert.equal(state.state, "ERROR"); assert.equal(state.timelineEvents.length, hasEvent ? 1 : 0);
+  assert.equal(state.pressureTimeline.length, state.timelineEvents.length); assert.equal(state.terminalState, hasEvent ? "SAFE_VERIFIED" : null);
+  assert.equal(state.pressureDebrief?.completionKind ?? null, hasEvent ? "partial" : null);
+  if (failure === "cache") assert.equal(h.controller.snapshot().technical?.stage, "TTS_CACHE");
+  if (failure === "policy") assert.equal(h.controller.snapshot().technical?.causeCode, "APPROVED_RESPONSE_UNAVAILABLE");
+  assert.equal(h.countsBrowser().driverStopped, 1); assert.equal(h.completed.length, 0); assert.equal(h.counts().opened, failure === "calibration" ? 0 : 1);
+  assert.deepEqual(await h.api.endSession(h.session.sessionId), state);
+});
+
+test("5C stop during actual policy resolution cannot commit or prepare another caller", async (context) => {
+  const h = await browser(context); let resolved = 0;
+  const original = AdaptivePolicyEngine.prototype.decide;
+  context.mock.method(AdaptivePolicyEngine.prototype, "decide", function(this: AdaptivePolicyEngine, input: Parameters<AdaptivePolicyEngine["decide"]>[0]) {
+    const action = original.call(this, input); resolved++; h.controller.stop();
+    h.store.update(endSession(h.store.get(h.session.sessionId), new Date("2026-10-24T01:00:00Z")));
+    return action;
+  });
+  await h.start(); await h.endCaller(1); await h.speak(); await until(() => resolved === 1);
+  await new Promise((resolve) => setTimeout(resolve, 25)); const state = await h.api.endSession(h.session.sessionId);
+  assert.equal(state.conversation?.phase, "STOPPED"); assert.equal(state.timelineEvents.length, 0);
+  assert.equal(h.controller.snapshot().state, "STOPPED"); assert.equal(h.counts().opened, 1); assert.equal(h.players.length, 1);
+  assert.equal(h.countsBrowser().driverStopped, 1); assert.equal(h.completed.length, 0);
+});
+
+test("5C duplicate/late Finish and PCM after terminal commit cannot append events or reserve units", async (context) => {
+  const h = await setup(context, { texts: ["Main independently verify karunga"] });
+  let state = await h.action(h.session.sessionId, "start", { audioClockId: clock }); state = await h.playback(state, 0, 1000);
+  const token = await h.open(state), facts = h.facts(state, 0, 1000);
+  const first = await h.post(state.sessionId, "finish", facts, token); assert.equal(first.status, 200);
+  const committed = RealVoiceTurnResultSchema.parse(await first.json()).turn.session;
+  const completed = await h.playback(committed, 5000, 6000), credit = await h.api.getRuntimeCredit!();
+  assert.ok((await h.post(state.sessionId, "finish", facts, token)).status >= 400);
+  const staleFrame = await fetch(`${h.base}/api/sessions/${state.sessionId}/real-audio/frame`, { method: "POST", headers: {
+    "content-type": "application/octet-stream", "x-audio-token": token, "x-audio-sequence": "1", "x-audio-produced-at": "6032" }, body: new Uint8Array(1024) });
+  assert.ok(staleFrame.status >= 400);
+  await assert.rejects(h.api.getCallerAudio!(state.sessionId, 1, "system.safe-ending", new AbortController().signal));
+  assert.equal((await h.post(state.sessionId, "start", { audioClockId: clock, turnNumber: 2, microphoneConsent: true })).status, 503);
+  assert.deepEqual((await h.api.getSession(state.sessionId)).timelineEvents, completed.timelineEvents);
+  assert.equal(h.counts().opened, 1); assert.equal(h.counts().finished, 1);
+  const after = await h.api.getRuntimeCredit!(); assert.equal(after.stt.usedUnits, credit.stt.usedUnits); assert.equal(after.tts.usedUnits, credit.tts.usedUnits);
+});
+
+for (const staleState of ["LISTENING", "FINISHING", "ERROR", "COMPLETED"] as const) test(`5E late learner ${staleState} callback from turn 1 cannot mutate turn 2`, async (context) => {
+  const captured: { options: AudioControllerOptions; learner: BrowserAudioController }[] = [], original = BrowserAudioController.prototype.prepare;
+  context.mock.method(BrowserAudioController.prototype, "prepare", function(this: BrowserAudioController) {
+    captured.push({ options: Reflect.get(this, "options") as AudioControllerOptions, learner: this }); return original.call(this);
+  });
+  const h = await browser(context); await h.start(); await h.endCaller(1); await h.speak(); await h.callerReady(2); await h.endCaller(2);
+  assert.equal(h.controller.snapshot().state, "LEARNER_LISTENING");
+  const old = captured.find((value) => value.options.turnNumber === 1)!;
+  const before = JSON.stringify(h.controller.snapshot()), serverBefore = JSON.stringify(h.store.get(h.session.sessionId));
+  const stale: AudioDiagnostics = { ...old.learner.diagnostics, state: staleState, error: staleState === "ERROR" ? new BrowserAudioError("PCM_PIPELINE_FAILED") : null };
+  old.options.onChange(stale); h.players[0]!.start(); h.players[0]!.end();
+  assert.equal(JSON.stringify(h.controller.snapshot()), before); assert.equal(JSON.stringify(h.store.get(h.session.sessionId)), serverBefore);
+  assertRuntimeInvariants(h.controller.snapshot().session, h.controller.snapshot().session.pressureDebrief);
+});
+
+test("5E stale learner callbacks cannot resurrect naturally COMPLETED conversation", async (context) => {
+  let oldOptions: AudioControllerOptions | undefined; const original = BrowserAudioController.prototype.prepare;
+  context.mock.method(BrowserAudioController.prototype, "prepare", function(this: BrowserAudioController) {
+    oldOptions = Reflect.get(this, "options") as AudioControllerOptions; return original.call(this);
+  });
+  const h = await browser(context, { texts: ["Main independently verify karunga"] }); await h.start(); await h.endCaller(1); await h.speak(); await h.callerReady(2); await h.endCaller(2);
+  await until(() => h.completed.length === 1); const before = JSON.stringify(h.controller.snapshot());
+  oldOptions!.onChange({ ...h.controller.snapshot().diagnostics!, state: "LISTENING", error: null });
+  assert.equal(JSON.stringify(h.controller.snapshot()), before); assert.equal(h.controller.snapshot().state, "COMPLETED");
+});
+
+test("5E stale server turn-1 deadline cannot cancel active turn-2 capture", async (context) => {
+  const deadlines: (() => void)[] = [], original = globalThis.setTimeout;
+  context.mock.method(globalThis, "setTimeout", (callback: () => void, ms?: number) => {
+    if (ms === 45000) deadlines.push(callback); return original(callback, ms);
+  });
+  const h = await setup(context); let state = await h.action(h.session.sessionId, "start", { audioClockId: clock });
+  state = (await h.turn(state, 0)).turn.session;
+  const listening = await h.playback(state, 5000, 6000), token = await h.open(listening);
+  assert.equal(deadlines.length, 2); deadlines[0]!();
+  const frame = await fetch(`${h.base}/api/sessions/${state.sessionId}/real-audio/frame`, { method: "POST", headers: {
+    "content-type": "application/octet-stream", "x-audio-token": token, "x-audio-sequence": "1", "x-audio-produced-at": "6064" }, body: new Uint8Array(1024) });
+  assert.equal(frame.status, 200, "Old deadline must not dispose the new token/stream");
+  const finish = await h.post(state.sessionId, "finish", h.facts(listening, 5000, 6000), token); assert.equal(finish.status, 200);
+  assert.equal(h.store.get(state.sessionId).timelineEvents.length, 2);
+});
+
+const failureStages = ["A opening resolution", "B opening fetch", "B opening playback", "C calibration", "D STT start", "E STT stream", "F STT finalize",
+  "G classifier", "G policy", "H continuation resolution", "I continuation TTS", "I continuation cache", "J continuation playback", "K terminal resolution", "L terminal playback"] as const;
+for (const stage of failureStages) test(`5E failure matrix ${stage}: no phantom behavior/evidence, preserved commit and cleanup`, async (context) => {
+  const prior = /^[FGHIJ]/u.test(stage) ? 1 : 0;
+  const terminal = stage.startsWith("K") || stage.startsWith("L");
+  let restoreResolution = () => {};
+  const h = await browser(context, { texts: terminal ? ["Main independently verify karunga"] : ["थोड़ा समय चाहिए", "Main independently verify karunga"],
+    ...(stage === "D STT start" ? { sttStartFailureAt: 1 } : {}), ...(stage === "E STT stream" ? { sttFrameFailureAt: 1 } : {}),
+    ...(stage === "F STT finalize" ? { sttFailureAt: 2 } : {}), ...(stage === "I continuation TTS" ? { ttsFailureAt: 2 } : {}) });
+  const rejectedId = stage.startsWith("A") ? "system.opening" : stage.startsWith("H") ? "authority" : stage.startsWith("K") ? "system.safe-ending" : null;
+  if (rejectedId) {
+    const original = ApprovedCallerCatalog.prototype.resolveId;
+    const resolverMock = context.mock.method(ApprovedCallerCatalog.prototype, "resolveId", function(this: ApprovedCallerCatalog, scenarioId: string, version: string, responseId: string) {
+      if (responseId === rejectedId) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Offline resolution failure");
+      return original.call(this, scenarioId, version, responseId);
+    });
+    restoreResolution = () => resolverMock.mock.restore();
+  }
+  if (stage === "B opening fetch") {
+    const original = h.api.getCallerAudio!;
+    h.api.getCallerAudio = async (...args) => { await original(...args); throw new SessionApiError("Offline delivery failure", 502,
+      { stage: "CALLER_AUDIO_FETCH", causeCode: "TTS_PROVIDER_FAILED", providerAttempted: false }); };
+  }
+  if (stage === "I continuation cache") {
+    const original = FileCallerAudioCache.prototype.get;
+    context.mock.method(FileCallerAudioCache.prototype, "get", async function(this: FileCallerAudioCache, key: string) {
+      if (h.store.get(h.session.sessionId).turnNumber === 1) throw new Error("Offline cache failure"); return original.call(this, key);
+    });
+  }
+  if (stage === "G classifier") {
+    const original = LearnerBehaviorClassifier.prototype.classify;
+    context.mock.method(LearnerBehaviorClassifier.prototype, "classify", function(this: LearnerBehaviorClassifier, input: Parameters<LearnerBehaviorClassifier["classify"]>[0]) {
+      if (input.activeTactic?.tacticId === "authority") throw new Error("Offline classifier failure"); return original.call(this, input);
+    });
+  }
+  if (stage === "G policy") {
+    const original = AdaptivePolicyEngine.prototype.decide;
+    context.mock.method(AdaptivePolicyEngine.prototype, "decide", function(this: AdaptivePolicyEngine, input: Parameters<AdaptivePolicyEngine["decide"]>[0]) {
+      if (input.turnNumber === 2) throw new ApplicationError("APPROVED_RESPONSE_UNAVAILABLE", "Offline policy failure"); return original.call(this, input);
+    });
+  }
+  await h.start();
+  if (stage === "B opening playback") h.players[0]!.fail();
+  else if (stage === "C calibration") { await h.beginCallerEnd(1); h.health.audioContextState = "closed"; h.samples(1); }
+  else if (!stage.startsWith("A") && stage !== "B opening fetch") {
+    await h.endCaller(1);
+    if (!stage.startsWith("D")) {
+      await h.speak();
+      if (prior) {
+        await h.callerReady(2);
+        if (stage.startsWith("F") || stage.startsWith("G")) { await h.endCaller(2); await h.speak(); }
+        if (stage.startsWith("J")) h.players[1]!.fail();
+      } else if (stage.startsWith("L")) { await h.callerReady(2); h.players[1]!.fail(); }
+    }
+  }
+  await until(() => h.store.get(h.session.sessionId).conversation?.phase === "ERROR");
+  restoreResolution();
+  const state = await h.api.getSession(h.session.sessionId), expectedCount = terminal ? 1 : prior;
+  assertRuntimeInvariants(state, state.pressureDebrief); assert.equal(state.state, "ERROR");
+  assert.equal(state.timelineEvents.length, expectedCount); assert.equal(state.pressureTimeline.length, expectedCount);
+  assert.deepEqual(state.timelineEvents.map((event) => event.behavior.label), terminal ? ["VERIFIED_INDEPENDENTLY"] : prior ? ["STALLED"] : []);
+  assert.equal(state.terminalState, terminal ? "SAFE_VERIFIED" : null); assert.equal(state.pressureDebrief?.firstComplianceMoment ?? null, null);
+  assert.equal(h.countsBrowser().driverStopped, 1); assert.equal(h.completed.length, 0);
+  const before = JSON.stringify(state), players = h.players.length, opened = h.counts().opened;
+  h.controller.stop(); h.controller.dispose(); h.samples(40, 0.1); for (const player of h.players) { player.start(); player.end(); }
+  await new Promise((resolve) => setTimeout(resolve, 10)); assert.equal(h.controller.snapshot().state, "ERROR");
+  assert.equal(JSON.stringify(await h.api.endSession(state.sessionId)), before);
+  assert.equal(h.players.length, players); assert.equal(h.counts().opened, opened);
+});
+
+for (const outcome of ["STOPPED", "ERROR"] as const) test(`5E stale learner/VAD notifications remain inert after ${outcome}`, async (context) => {
+  let options: AudioControllerOptions | undefined; const original = BrowserAudioController.prototype.prepare;
+  context.mock.method(BrowserAudioController.prototype, "prepare", function(this: BrowserAudioController) { options = Reflect.get(this, "options") as AudioControllerOptions; return original.call(this); });
+  const h = await browser(context); await h.start(); await h.endCaller(1);
+  if (outcome === "STOPPED") { h.controller.stop(); await h.api.endSession(h.session.sessionId); }
+  else { h.error(); await until(() => h.store.get(h.session.sessionId).conversation?.phase === "ERROR"); }
+  const before = JSON.stringify(h.controller.snapshot());
+  for (const state of ["LISTENING", "SPEECH_ACTIVE", "FINISHING", "COMPLETED", "ERROR"] as const) options!.onChange({ ...h.controller.snapshot().diagnostics!, state });
+  h.samples(40, 0.1); assert.equal(JSON.stringify(h.controller.snapshot()), before); assert.equal(h.countsBrowser().driverStopped, 1);
+});
+
+test("5E completion clears owned timers and queued deadline callbacks cannot revive state", async (context) => {
+  const timers = new Map<ReturnType<typeof setTimeout>, () => void>(), cleared = new Set<ReturnType<typeof setTimeout>>();
+  const originalSet = globalThis.setTimeout, originalClear = globalThis.clearTimeout;
+  context.mock.method(globalThis, "setTimeout", (callback: () => void, ms?: number) => {
+    const timer = originalSet(callback, ms); if ([600000, 65000, 45000, 30000, 10000, 2500].includes(ms ?? 0)) timers.set(timer, callback); return timer;
+  });
+  context.mock.method(globalThis, "clearTimeout", (timer: ReturnType<typeof setTimeout>) => { cleared.add(timer); originalClear(timer); });
+  const h = await browser(context, { texts: ["Main independently verify karunga"] }); await h.start(); await h.endCaller(1); await h.speak(); await h.callerReady(2); await h.endCaller(2);
+  await until(() => h.completed.length === 1); assert.ok(timers.size >= 5);
+  for (const timer of timers.keys()) assert.ok(cleared.has(timer), "Every owned long deadline was cleared");
+  const before = JSON.stringify(h.controller.snapshot()); for (const callback of timers.values()) callback();
+  h.samples(40, 0.1); await Promise.resolve(); assert.equal(JSON.stringify(h.controller.snapshot()), before); assert.equal(h.completed.length, 1);
+});
+
+for (const failure of [false, true]) test(`5E ${failure ? "technical failure" : "valid finalized UNKNOWN"} remains distinct from ${failure ? "learner UNKNOWN" : "ERROR"}`, async (context) => {
+  const h = await browser(context, { texts: ["a quiet blue sky"], ...(failure ? { sttFailureAt: 1 } : {}) });
+  await h.start(); await h.endCaller(1); await h.speak();
+  if (failure) {
+    await until(() => h.store.get(h.session.sessionId).conversation?.phase === "ERROR");
+    const state = await h.api.getSession(h.session.sessionId); assertRuntimeInvariants(state, state.pressureDebrief);
+    assert.equal(state.timelineEvents.length, 0); assert.equal(state.behaviorHistory.length, 0); assert.equal(state.terminalState, null);
+  } else {
+    await h.callerReady(2); await h.endCaller(2); await until(() => h.completed.length === 1);
+    const state = h.completed[0]!; assertRuntimeInvariants(state, state.pressureDebrief);
+    assert.equal(state.timelineEvents[0]!.behavior.label, "UNKNOWN"); assert.equal(state.terminalState, "SAFE_FALLBACK"); assert.equal(state.state, "COMPLETED");
+  }
 });

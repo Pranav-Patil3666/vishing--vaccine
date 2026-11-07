@@ -1,0 +1,1970 @@
+{
+  "schemaVersion": 1,
+  "draft": {
+    "packageId": "S-91-0.1.0-draft",
+    "source": "offline_authoring",
+    "target": "offline_pre_generated",
+    "scenarioBrief": {
+      "scenarioId": "S-91",
+      "learningObjective": "Pause before confirming a fictional employee benefits request and check it independently.",
+      "redFlags": [
+        "RF-01",
+        "RF-02",
+        "RF-03",
+        "RF-07",
+        "RF-08"
+      ],
+      "language": "hi-en"
+    },
+    "scenario": {
+      "scenario_id": "S-91",
+      "version": "0.1.0",
+      "lifecycle_status": "DRAFT",
+      "language": "hi-en",
+      "voice_id": null,
+      "fictional_organization": {
+        "name": "Fictional Meghdoot Works",
+        "training_only": true
+      },
+      "simulation": true,
+      "opening_line": "यह सिमुलेशन है। मैं काल्पनिक मेघदूत वर्क्स के बेनिफिट्स डेस्क से बोल रहा हूँ। अभ्यास वाले वेलनेस नामांकन की पुष्टि बाकी है। क्या अभी बात कर सकते हैं?",
+      "learning_objectives": [
+        "Pause before confirming a fictional employee benefits request and check it independently."
+      ],
+      "red_flag_ids": [
+        "RF-01",
+        "RF-02",
+        "RF-03",
+        "RF-07",
+        "RF-08"
+      ],
+      "responses": {
+        "system.opening": {
+          "text": "यह सिमुलेशन है। मैं काल्पनिक मेघदूत वर्क्स के बेनिफिट्स डेस्क से बोल रहा हूँ। अभ्यास वाले वेलनेस नामांकन की पुष्टि बाकी है। क्या अभी बात कर सकते हैं?",
+          "safety_status": "draft"
+        },
+        "urgency.low": {
+          "text": "मेघदूत की अभ्यास वाली वेलनेस सूची आज देखी जा रही है। क्या आप अपना फैसला जल्दी बता सकते हैं?",
+          "safety_status": "draft"
+        },
+        "urgency.medium": {
+          "text": "मेघदूत के अभ्यास वाले वेलनेस फ़ॉर्म का आज का बैच बंद होने वाला है। मैं इसी कॉल पर आपका जवाब लिख लूँ?",
+          "safety_status": "draft"
+        },
+        "urgency.high": {
+          "text": "मेघदूत के अभ्यास वाले वेलनेस स्लॉट पर समय चल रहा है। आगे बढ़ने से पहले मुझे हाँ या ना चाहिए।",
+          "safety_status": "draft"
+        },
+        "authority.low": {
+          "text": "मेघदूत बेनिफिट्स डेस्क में यह अभ्यास वाली वेलनेस रिक्वेस्ट मेरे नाम आई है। आप मेरी बात पर स्थिति की पुष्टि कर सकते हैं।",
+          "safety_status": "draft"
+        },
+        "authority.medium": {
+          "text": "मेघदूत की अभ्यास वाली वेलनेस कतार में सुपरवाइज़र ने मेरे लिए मंज़ूरी दर्ज की है। इसी कॉल पर पुष्टि कर दीजिए।",
+          "safety_status": "draft"
+        },
+        "authority.high": {
+          "text": "मेघदूत की अभ्यास वाली वेलनेस सूची की अंतिम मंज़ूरी मेरे डेस्क के पास है। मेरे कहने पर पुष्टि कर दीजिए।",
+          "safety_status": "draft"
+        },
+        "isolation.low": {
+          "text": "मेघदूत की अभ्यास वाली वेलनेस एंट्री पहले हम दोनों देख लेते हैं। टीम को बाद में बताएँगे।",
+          "safety_status": "draft"
+        },
+        "isolation.medium": {
+          "text": "मेघदूत के इस अभ्यास वाले वेलनेस रिव्यू का ज़िक्र अभी ग्रुप में मत कीजिए। पहले मुझे यहीं जवाब दे दीजिए।",
+          "safety_status": "draft"
+        },
+        "isolation.high": {
+          "text": "मेघदूत की इस अभ्यास वाली वेलनेस कॉल में किसी और डेस्क को मत जोड़िए। मैं आपसे अकेले में पुष्टि चाहता हूँ।",
+          "safety_status": "draft"
+        },
+        "fear.low": {
+          "text": "मेघदूत की अभ्यास वाली वेलनेस पुष्टि आज न मिली तो एंट्री अगले रिव्यू तक बाकी रह सकती है।",
+          "safety_status": "draft"
+        },
+        "fear.medium": {
+          "text": "मेघदूत की अभ्यास वाली वेलनेस एंट्री रोकने का नोट है। आप अभी पुष्टि कर दें तो मैं नोट हटा सकता हूँ।",
+          "safety_status": "draft"
+        },
+        "fear.high": {
+          "text": "मेघदूत के अभ्यास वाले वेलनेस राउंड में बिना जवाब वाली एंट्री सूची से हट सकती है। क्या मैं अभी आपकी हाँ लिख दूँ?",
+          "safety_status": "draft"
+        },
+        "reward.low": {
+          "text": "मेघदूत के अभ्यास वाले वेलनेस फ़ॉर्म की पुष्टि पर एक डेमो भागीदारी बैज मिल सकता है।",
+          "safety_status": "draft"
+        },
+        "reward.medium": {
+          "text": "मेघदूत के अभ्यास वाले वेलनेस राउंड में जो इसी कॉल पर हाँ बोलते हैं, उनके लिए डेमो वर्कशॉप की पहली पसंद है।",
+          "safety_status": "draft"
+        },
+        "reward.high": {
+          "text": "मेघदूत का अभ्यास वाला वेलनेस बोनस बैज इसी कॉल की पुष्टि के साथ मिलने का ऑफ़र है। क्या आप इसे लेना चाहेंगे?",
+          "safety_status": "draft"
+        },
+        "ending.verified": {
+          "text": "आपने अपना जाना-पहचाना चैनल चुना। मेघदूत की अभ्यास कॉल यहीं खत्म है।",
+          "safety_status": "draft"
+        },
+        "ending.dummy": {
+          "text": "डेमो टोकन बोल दिया गया। मेघदूत की अभ्यास कॉल यहीं रोकते हैं। अगली बार किसी कॉलर को असली जानकारी न बताएँ।",
+          "safety_status": "draft"
+        },
+        "system.safe-fallback": {
+          "text": "जवाब साफ़ नहीं था। मेघदूत की अभ्यास कॉल यहीं रोकते हैं। अपने जाने-पहचाने चैनल से जाँच करें।",
+          "safety_status": "system_safe_template"
+        },
+        "ending.turn-limit": {
+          "text": "मेघदूत की अभ्यास कॉल की बारी सीमा पूरी हो गई। कोई पुष्टि ज़रूरी नहीं है। अब समीक्षा देखें।",
+          "safety_status": "draft"
+        },
+        "system.safe-ending": {
+          "text": "यह अभ्यास कॉल अब खत्म है। अगला कदम लेने से पहले जाने-पहचाने चैनल से जाँच करें।",
+          "safety_status": "system_safe_template"
+        }
+      },
+      "nodes": [
+        {
+          "id": "opening-decision",
+          "parent_node_id": null,
+          "trigger_rules": [],
+          "response_id": "system.opening",
+          "learner_expected_behavior": [
+            "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+          ],
+          "next_node_id": "authority-decision",
+          "safe_fallback_response_id": "system.safe-fallback",
+          "debrief_tags": [
+            "RF-01"
+          ],
+          "safety_constraints": [
+            "Fictional simulation with synthetic examples only."
+          ],
+          "branch_status": "draft"
+        },
+        {
+          "id": "authority-decision",
+          "parent_node_id": "opening-decision",
+          "trigger_rules": [
+            {
+              "type": "normalized_text",
+              "text": "abhi confirm nahi karunga"
+            }
+          ],
+          "response_id": "authority.medium",
+          "learner_expected_behavior": [
+            "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+          ],
+          "next_node_id": null,
+          "safe_fallback_response_id": "system.safe-fallback",
+          "debrief_tags": [
+            "RF-02"
+          ],
+          "safety_constraints": [
+            "Fictional simulation with synthetic examples only."
+          ],
+          "branch_status": "draft"
+        }
+      ],
+      "adaptive_policy": {
+        "max_pressure_level": 3,
+        "max_turns": 2,
+        "safe_word": "stop simulation",
+        "escalation_behaviors": [
+          "COMPLIED"
+        ],
+        "terminal_states": [
+          "SAFE_VERIFIED",
+          "DUMMY_SECRET_DISCLOSED",
+          "SAFE_FALLBACK",
+          "MAX_TURNS",
+          "SAFE_WORD",
+          "LEARNER_ENDED"
+        ],
+        "tactics": [
+          {
+            "tactic_id": "urgency.low",
+            "category": "URGENCY",
+            "pressure_level": 1,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "urgency.low"
+            ]
+          },
+          {
+            "tactic_id": "urgency.medium",
+            "category": "URGENCY",
+            "pressure_level": 2,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "urgency.medium"
+            ]
+          },
+          {
+            "tactic_id": "urgency.high",
+            "category": "URGENCY",
+            "pressure_level": 3,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "urgency.high"
+            ]
+          },
+          {
+            "tactic_id": "authority.low",
+            "category": "AUTHORITY",
+            "pressure_level": 1,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "authority.low"
+            ]
+          },
+          {
+            "tactic_id": "authority.medium",
+            "category": "AUTHORITY",
+            "pressure_level": 2,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "authority.medium"
+            ]
+          },
+          {
+            "tactic_id": "authority.high",
+            "category": "AUTHORITY",
+            "pressure_level": 3,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "authority.high"
+            ]
+          },
+          {
+            "tactic_id": "isolation.low",
+            "category": "ISOLATION",
+            "pressure_level": 1,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "isolation.low"
+            ]
+          },
+          {
+            "tactic_id": "isolation.medium",
+            "category": "ISOLATION",
+            "pressure_level": 2,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "isolation.medium"
+            ]
+          },
+          {
+            "tactic_id": "isolation.high",
+            "category": "ISOLATION",
+            "pressure_level": 3,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "isolation.high"
+            ]
+          },
+          {
+            "tactic_id": "fear.low",
+            "category": "FEAR_CONSEQUENCE",
+            "pressure_level": 1,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "fear.low"
+            ]
+          },
+          {
+            "tactic_id": "fear.medium",
+            "category": "FEAR_CONSEQUENCE",
+            "pressure_level": 2,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "fear.medium"
+            ]
+          },
+          {
+            "tactic_id": "fear.high",
+            "category": "FEAR_CONSEQUENCE",
+            "pressure_level": 3,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "fear.high"
+            ]
+          },
+          {
+            "tactic_id": "reward.low",
+            "category": "REWARD_FAKE_HELP",
+            "pressure_level": 1,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "reward.low"
+            ]
+          },
+          {
+            "tactic_id": "reward.medium",
+            "category": "REWARD_FAKE_HELP",
+            "pressure_level": 2,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "reward.medium"
+            ]
+          },
+          {
+            "tactic_id": "reward.high",
+            "category": "REWARD_FAKE_HELP",
+            "pressure_level": 3,
+            "prompts_dummy_secret": false,
+            "behavior_targets": [
+              "REFUSED",
+              "STALLED",
+              "COMPLIED"
+            ],
+            "response_ids": [
+              "reward.high"
+            ]
+          }
+        ]
+      },
+      "safety_metadata": {
+        "visible_simulation_label": true,
+        "ai_voice_disclosure_required": true,
+        "consent_before_recording": true,
+        "audio_retention": "none_by_default",
+        "dummy_data_mode": "synthetic_only",
+        "safe_ending_response_id": "system.safe-ending"
+      },
+      "safety_constraints": [
+        "Use fictional benefits requests and synthetic practice data.",
+        "End the simulation on the safe word or learner stop."
+      ],
+      "review_status": "draft",
+      "reviewed_by": null,
+      "reviewed_at": null
+    },
+    "tacticPool": [
+      {
+        "tacticId": "urgency.low",
+        "category": "URGENCY",
+        "pressureLevel": 1,
+        "responseIds": [
+          "urgency.low"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "urgency.medium",
+        "category": "URGENCY",
+        "pressureLevel": 2,
+        "responseIds": [
+          "urgency.medium"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "urgency.high",
+        "category": "URGENCY",
+        "pressureLevel": 3,
+        "responseIds": [
+          "urgency.high"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "authority.low",
+        "category": "AUTHORITY",
+        "pressureLevel": 1,
+        "responseIds": [
+          "authority.low"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "authority.medium",
+        "category": "AUTHORITY",
+        "pressureLevel": 2,
+        "responseIds": [
+          "authority.medium"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "authority.high",
+        "category": "AUTHORITY",
+        "pressureLevel": 3,
+        "responseIds": [
+          "authority.high"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "isolation.low",
+        "category": "ISOLATION",
+        "pressureLevel": 1,
+        "responseIds": [
+          "isolation.low"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "isolation.medium",
+        "category": "ISOLATION",
+        "pressureLevel": 2,
+        "responseIds": [
+          "isolation.medium"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "isolation.high",
+        "category": "ISOLATION",
+        "pressureLevel": 3,
+        "responseIds": [
+          "isolation.high"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "fear.low",
+        "category": "FEAR_CONSEQUENCE",
+        "pressureLevel": 1,
+        "responseIds": [
+          "fear.low"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "fear.medium",
+        "category": "FEAR_CONSEQUENCE",
+        "pressureLevel": 2,
+        "responseIds": [
+          "fear.medium"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "fear.high",
+        "category": "FEAR_CONSEQUENCE",
+        "pressureLevel": 3,
+        "responseIds": [
+          "fear.high"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "reward.low",
+        "category": "REWARD_FAKE_HELP",
+        "pressureLevel": 1,
+        "responseIds": [
+          "reward.low"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "reward.medium",
+        "category": "REWARD_FAKE_HELP",
+        "pressureLevel": 2,
+        "responseIds": [
+          "reward.medium"
+        ],
+        "status": "DRAFT"
+      },
+      {
+        "tacticId": "reward.high",
+        "category": "REWARD_FAKE_HELP",
+        "pressureLevel": 3,
+        "responseIds": [
+          "reward.high"
+        ],
+        "status": "DRAFT"
+      }
+    ],
+    "candidateApprovedResponses": [
+      {
+        "responseId": "system.opening",
+        "text": "यह सिमुलेशन है। मैं काल्पनिक मेघदूत वर्क्स के बेनिफिट्स डेस्क से बोल रहा हूँ। अभ्यास वाले वेलनेस नामांकन की पुष्टि बाकी है। क्या अभी बात कर सकते हैं?",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "urgency.low",
+        "text": "मेघदूत की अभ्यास वाली वेलनेस सूची आज देखी जा रही है। क्या आप अपना फैसला जल्दी बता सकते हैं?",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "urgency.medium",
+        "text": "मेघदूत के अभ्यास वाले वेलनेस फ़ॉर्म का आज का बैच बंद होने वाला है। मैं इसी कॉल पर आपका जवाब लिख लूँ?",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "urgency.high",
+        "text": "मेघदूत के अभ्यास वाले वेलनेस स्लॉट पर समय चल रहा है। आगे बढ़ने से पहले मुझे हाँ या ना चाहिए।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "authority.low",
+        "text": "मेघदूत बेनिफिट्स डेस्क में यह अभ्यास वाली वेलनेस रिक्वेस्ट मेरे नाम आई है। आप मेरी बात पर स्थिति की पुष्टि कर सकते हैं।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "authority.medium",
+        "text": "मेघदूत की अभ्यास वाली वेलनेस कतार में सुपरवाइज़र ने मेरे लिए मंज़ूरी दर्ज की है। इसी कॉल पर पुष्टि कर दीजिए।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "authority.high",
+        "text": "मेघदूत की अभ्यास वाली वेलनेस सूची की अंतिम मंज़ूरी मेरे डेस्क के पास है। मेरे कहने पर पुष्टि कर दीजिए।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "isolation.low",
+        "text": "मेघदूत की अभ्यास वाली वेलनेस एंट्री पहले हम दोनों देख लेते हैं। टीम को बाद में बताएँगे।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "isolation.medium",
+        "text": "मेघदूत के इस अभ्यास वाले वेलनेस रिव्यू का ज़िक्र अभी ग्रुप में मत कीजिए। पहले मुझे यहीं जवाब दे दीजिए।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "isolation.high",
+        "text": "मेघदूत की इस अभ्यास वाली वेलनेस कॉल में किसी और डेस्क को मत जोड़िए। मैं आपसे अकेले में पुष्टि चाहता हूँ।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "fear.low",
+        "text": "मेघदूत की अभ्यास वाली वेलनेस पुष्टि आज न मिली तो एंट्री अगले रिव्यू तक बाकी रह सकती है।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "fear.medium",
+        "text": "मेघदूत की अभ्यास वाली वेलनेस एंट्री रोकने का नोट है। आप अभी पुष्टि कर दें तो मैं नोट हटा सकता हूँ।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "fear.high",
+        "text": "मेघदूत के अभ्यास वाले वेलनेस राउंड में बिना जवाब वाली एंट्री सूची से हट सकती है। क्या मैं अभी आपकी हाँ लिख दूँ?",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "reward.low",
+        "text": "मेघदूत के अभ्यास वाले वेलनेस फ़ॉर्म की पुष्टि पर एक डेमो भागीदारी बैज मिल सकता है।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "reward.medium",
+        "text": "मेघदूत के अभ्यास वाले वेलनेस राउंड में जो इसी कॉल पर हाँ बोलते हैं, उनके लिए डेमो वर्कशॉप की पहली पसंद है।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "reward.high",
+        "text": "मेघदूत का अभ्यास वाला वेलनेस बोनस बैज इसी कॉल की पुष्टि के साथ मिलने का ऑफ़र है। क्या आप इसे लेना चाहेंगे?",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "ending.verified",
+        "text": "आपने अपना जाना-पहचाना चैनल चुना। मेघदूत की अभ्यास कॉल यहीं खत्म है।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "ending.dummy",
+        "text": "डेमो टोकन बोल दिया गया। मेघदूत की अभ्यास कॉल यहीं रोकते हैं। अगली बार किसी कॉलर को असली जानकारी न बताएँ।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "system.safe-fallback",
+        "text": "जवाब साफ़ नहीं था। मेघदूत की अभ्यास कॉल यहीं रोकते हैं। अपने जाने-पहचाने चैनल से जाँच करें।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "ending.turn-limit",
+        "text": "मेघदूत की अभ्यास कॉल की बारी सीमा पूरी हो गई। कोई पुष्टि ज़रूरी नहीं है। अब समीक्षा देखें।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      },
+      {
+        "responseId": "system.safe-ending",
+        "text": "यह अभ्यास कॉल अब खत्म है। अगला कदम लेने से पहले जाने-पहचाने चैनल से जाँच करें।",
+        "language": "hi-en",
+        "status": "DRAFT"
+      }
+    ],
+    "behaviorTrainingExamples": [
+      {
+        "exampleId": "refused.1",
+        "utterance": "मैं वेलनेस नामांकन की पुष्टि इस कॉल पर नहीं करूँगी।",
+        "language": "hi",
+        "label": "REFUSED",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "refused.2",
+        "utterance": "Nahi, Meghdoot ki entry par meri haan mat likhiye.",
+        "language": "hi-en",
+        "label": "REFUSED",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "refused.3",
+        "utterance": "I won't share a practice token on this call.",
+        "language": "en",
+        "label": "REFUSED",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "stalled.1",
+        "utterance": "वेलनेस वाली बात समझने के लिए थोड़ा समय चाहिए।",
+        "language": "hi",
+        "label": "STALLED",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "stalled.2",
+        "utterance": "Wellness form par abhi jawab mat likhiye, main baad mein soch kar bataunga.",
+        "language": "hi-en",
+        "label": "STALLED",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "stalled.3",
+        "utterance": "Give me a minute to find my notes about this practice round.",
+        "language": "en",
+        "label": "STALLED",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "verifiedindependently.1",
+        "utterance": "मैं मेघदूत की पहले से जानती हुई कर्मचारी डायरेक्टरी से पुष्टि करूँगी।",
+        "language": "hi",
+        "label": "VERIFIED_INDEPENDENTLY",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "verifiedindependently.2",
+        "utterance": "Caller ke contact se nahi, main apne saved training desk se wellness entry verify karunga.",
+        "language": "hi-en",
+        "label": "VERIFIED_INDEPENDENTLY",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "verifiedindependently.3",
+        "utterance": "I'll open the training portal from my own bookmark and verify this enrollment there.",
+        "language": "en",
+        "label": "VERIFIED_INDEPENDENTLY",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "complied.1",
+        "utterance": "ठीक है, मेरी वेलनेस एंट्री की पुष्टि लिख लीजिए।",
+        "language": "hi",
+        "label": "COMPLIED",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "complied.2",
+        "utterance": "Aap mere liye practice wellness slot select kar dijiye.",
+        "language": "hi-en",
+        "label": "COMPLIED",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "complied.3",
+        "utterance": "Yes, go ahead and mark me down for that practice workshop.",
+        "language": "en",
+        "label": "COMPLIED",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "discloseddummysecret.1",
+        "utterance": "मेरे अभ्यास कार्ड पर DUMMY-1234 लिखा है।",
+        "language": "hi",
+        "label": "DISCLOSED_DUMMY_SECRET",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "discloseddummysecret.2",
+        "utterance": "Wellness round mein mera demo token DUMMY-2048 hai.",
+        "language": "hi-en",
+        "label": "DISCLOSED_DUMMY_SECRET",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "discloseddummysecret.3",
+        "utterance": "I can read out the example for this exercise: DUMMY-4720.",
+        "language": "en",
+        "label": "DISCLOSED_DUMMY_SECRET",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "unknown.1",
+        "utterance": "आज बाहर बहुत बारिश हो रही है।",
+        "language": "hi",
+        "label": "UNKNOWN",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "unknown.2",
+        "utterance": "Wellness list mein kitne column hote hain?",
+        "language": "hi-en",
+        "label": "UNKNOWN",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "unknown.3",
+        "utterance": "The title sounds familiar.",
+        "language": "en",
+        "label": "UNKNOWN",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      }
+    ],
+    "debriefTemplateVariants": [
+      {
+        "templateId": "verified",
+        "language": "hi-en",
+        "kind": "safe",
+        "text": "Learner ne apne known channel ka zikr kiya. Caller ki pehchaan ka daava khud proof nahi tha.",
+        "status": "DRAFT"
+      },
+      {
+        "templateId": "refused",
+        "language": "hi-en",
+        "kind": "safe",
+        "text": "Learner ne call par action se mana kiya. Isse caller ki one-to-one request accept nahi hui.",
+        "status": "DRAFT"
+      },
+      {
+        "templateId": "stalled",
+        "language": "hi-en",
+        "kind": "safe",
+        "text": "Learner ne jawab dene se pehle waqt maanga. Practice deadline ke bawajood turant confirmation nahi di.",
+        "status": "DRAFT"
+      },
+      {
+        "templateId": "dummy",
+        "language": "hi-en",
+        "kind": "risky",
+        "text": "Learner ne practice token bola. Yeh observation sirf synthetic value ke baare mein hai.",
+        "status": "DRAFT"
+      },
+      {
+        "templateId": "fallback",
+        "language": "hi-en",
+        "kind": "unknown",
+        "text": "Is jawab se learner ka decision clear nahi tha. Practice call bina aur pressure ke khatam hui.",
+        "status": "DRAFT"
+      },
+      {
+        "templateId": "limit",
+        "language": "hi-en",
+        "kind": "unknown",
+        "text": "Practice ki turn limit poori hui. Debrief mein sirf darj decisions ko dekhein.",
+        "status": "DRAFT"
+      }
+    ],
+    "candidateUtterances": [
+      {
+        "exampleId": "refused.1",
+        "utterance": "मैं वेलनेस नामांकन की पुष्टि इस कॉल पर नहीं करूँगी।",
+        "language": "hi",
+        "label": "REFUSED",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "refused.2",
+        "utterance": "Nahi, Meghdoot ki entry par meri haan mat likhiye.",
+        "language": "hi-en",
+        "label": "REFUSED",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "refused.3",
+        "utterance": "I won't share a practice token on this call.",
+        "language": "en",
+        "label": "REFUSED",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "stalled.1",
+        "utterance": "वेलनेस वाली बात समझने के लिए थोड़ा समय चाहिए।",
+        "language": "hi",
+        "label": "STALLED",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "stalled.2",
+        "utterance": "Wellness form par abhi jawab mat likhiye, main baad mein soch kar bataunga.",
+        "language": "hi-en",
+        "label": "STALLED",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "stalled.3",
+        "utterance": "Give me a minute to find my notes about this practice round.",
+        "language": "en",
+        "label": "STALLED",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "verifiedindependently.1",
+        "utterance": "मैं मेघदूत की पहले से जानती हुई कर्मचारी डायरेक्टरी से पुष्टि करूँगी।",
+        "language": "hi",
+        "label": "VERIFIED_INDEPENDENTLY",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "verifiedindependently.2",
+        "utterance": "Caller ke contact se nahi, main apne saved training desk se wellness entry verify karunga.",
+        "language": "hi-en",
+        "label": "VERIFIED_INDEPENDENTLY",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "verifiedindependently.3",
+        "utterance": "I'll open the training portal from my own bookmark and verify this enrollment there.",
+        "language": "en",
+        "label": "VERIFIED_INDEPENDENTLY",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "complied.1",
+        "utterance": "ठीक है, मेरी वेलनेस एंट्री की पुष्टि लिख लीजिए।",
+        "language": "hi",
+        "label": "COMPLIED",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "complied.2",
+        "utterance": "Aap mere liye practice wellness slot select kar dijiye.",
+        "language": "hi-en",
+        "label": "COMPLIED",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "complied.3",
+        "utterance": "Yes, go ahead and mark me down for that practice workshop.",
+        "language": "en",
+        "label": "COMPLIED",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "discloseddummysecret.1",
+        "utterance": "मेरे अभ्यास कार्ड पर DUMMY-1234 लिखा है।",
+        "language": "hi",
+        "label": "DISCLOSED_DUMMY_SECRET",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "discloseddummysecret.2",
+        "utterance": "Wellness round mein mera demo token DUMMY-2048 hai.",
+        "language": "hi-en",
+        "label": "DISCLOSED_DUMMY_SECRET",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "discloseddummysecret.3",
+        "utterance": "I can read out the example for this exercise: DUMMY-4720.",
+        "language": "en",
+        "label": "DISCLOSED_DUMMY_SECRET",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "unknown.1",
+        "utterance": "आज बाहर बहुत बारिश हो रही है।",
+        "language": "hi",
+        "label": "UNKNOWN",
+        "split": "train",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "unknown.2",
+        "utterance": "Wellness list mein kitne column hote hain?",
+        "language": "hi-en",
+        "label": "UNKNOWN",
+        "split": "validation",
+        "source": "synthetic",
+        "redactionReviewed": true
+      },
+      {
+        "exampleId": "unknown.3",
+        "utterance": "The title sounds familiar.",
+        "language": "en",
+        "label": "UNKNOWN",
+        "split": "held_out_test",
+        "source": "synthetic",
+        "redactionReviewed": true
+      }
+    ],
+    "importableArtifacts": [
+      {
+        "artifactId": "S-91-0.1.0-scenario",
+        "format": "scenario-json",
+        "scenario": {
+          "scenario_id": "S-91",
+          "version": "0.1.0",
+          "lifecycle_status": "DRAFT",
+          "language": "hi-en",
+          "voice_id": null,
+          "fictional_organization": {
+            "name": "Fictional Meghdoot Works",
+            "training_only": true
+          },
+          "simulation": true,
+          "opening_line": "यह सिमुलेशन है। मैं काल्पनिक मेघदूत वर्क्स के बेनिफिट्स डेस्क से बोल रहा हूँ। अभ्यास वाले वेलनेस नामांकन की पुष्टि बाकी है। क्या अभी बात कर सकते हैं?",
+          "learning_objectives": [
+            "Pause before confirming a fictional employee benefits request and check it independently."
+          ],
+          "red_flag_ids": [
+            "RF-01",
+            "RF-02",
+            "RF-03",
+            "RF-07",
+            "RF-08"
+          ],
+          "responses": {
+            "system.opening": {
+              "text": "यह सिमुलेशन है। मैं काल्पनिक मेघदूत वर्क्स के बेनिफिट्स डेस्क से बोल रहा हूँ। अभ्यास वाले वेलनेस नामांकन की पुष्टि बाकी है। क्या अभी बात कर सकते हैं?",
+              "safety_status": "draft"
+            },
+            "urgency.low": {
+              "text": "मेघदूत की अभ्यास वाली वेलनेस सूची आज देखी जा रही है। क्या आप अपना फैसला जल्दी बता सकते हैं?",
+              "safety_status": "draft"
+            },
+            "urgency.medium": {
+              "text": "मेघदूत के अभ्यास वाले वेलनेस फ़ॉर्म का आज का बैच बंद होने वाला है। मैं इसी कॉल पर आपका जवाब लिख लूँ?",
+              "safety_status": "draft"
+            },
+            "urgency.high": {
+              "text": "मेघदूत के अभ्यास वाले वेलनेस स्लॉट पर समय चल रहा है। आगे बढ़ने से पहले मुझे हाँ या ना चाहिए।",
+              "safety_status": "draft"
+            },
+            "authority.low": {
+              "text": "मेघदूत बेनिफिट्स डेस्क में यह अभ्यास वाली वेलनेस रिक्वेस्ट मेरे नाम आई है। आप मेरी बात पर स्थिति की पुष्टि कर सकते हैं।",
+              "safety_status": "draft"
+            },
+            "authority.medium": {
+              "text": "मेघदूत की अभ्यास वाली वेलनेस कतार में सुपरवाइज़र ने मेरे लिए मंज़ूरी दर्ज की है। इसी कॉल पर पुष्टि कर दीजिए।",
+              "safety_status": "draft"
+            },
+            "authority.high": {
+              "text": "मेघदूत की अभ्यास वाली वेलनेस सूची की अंतिम मंज़ूरी मेरे डेस्क के पास है। मेरे कहने पर पुष्टि कर दीजिए।",
+              "safety_status": "draft"
+            },
+            "isolation.low": {
+              "text": "मेघदूत की अभ्यास वाली वेलनेस एंट्री पहले हम दोनों देख लेते हैं। टीम को बाद में बताएँगे।",
+              "safety_status": "draft"
+            },
+            "isolation.medium": {
+              "text": "मेघदूत के इस अभ्यास वाले वेलनेस रिव्यू का ज़िक्र अभी ग्रुप में मत कीजिए। पहले मुझे यहीं जवाब दे दीजिए।",
+              "safety_status": "draft"
+            },
+            "isolation.high": {
+              "text": "मेघदूत की इस अभ्यास वाली वेलनेस कॉल में किसी और डेस्क को मत जोड़िए। मैं आपसे अकेले में पुष्टि चाहता हूँ।",
+              "safety_status": "draft"
+            },
+            "fear.low": {
+              "text": "मेघदूत की अभ्यास वाली वेलनेस पुष्टि आज न मिली तो एंट्री अगले रिव्यू तक बाकी रह सकती है।",
+              "safety_status": "draft"
+            },
+            "fear.medium": {
+              "text": "मेघदूत की अभ्यास वाली वेलनेस एंट्री रोकने का नोट है। आप अभी पुष्टि कर दें तो मैं नोट हटा सकता हूँ।",
+              "safety_status": "draft"
+            },
+            "fear.high": {
+              "text": "मेघदूत के अभ्यास वाले वेलनेस राउंड में बिना जवाब वाली एंट्री सूची से हट सकती है। क्या मैं अभी आपकी हाँ लिख दूँ?",
+              "safety_status": "draft"
+            },
+            "reward.low": {
+              "text": "मेघदूत के अभ्यास वाले वेलनेस फ़ॉर्म की पुष्टि पर एक डेमो भागीदारी बैज मिल सकता है।",
+              "safety_status": "draft"
+            },
+            "reward.medium": {
+              "text": "मेघदूत के अभ्यास वाले वेलनेस राउंड में जो इसी कॉल पर हाँ बोलते हैं, उनके लिए डेमो वर्कशॉप की पहली पसंद है।",
+              "safety_status": "draft"
+            },
+            "reward.high": {
+              "text": "मेघदूत का अभ्यास वाला वेलनेस बोनस बैज इसी कॉल की पुष्टि के साथ मिलने का ऑफ़र है। क्या आप इसे लेना चाहेंगे?",
+              "safety_status": "draft"
+            },
+            "ending.verified": {
+              "text": "आपने अपना जाना-पहचाना चैनल चुना। मेघदूत की अभ्यास कॉल यहीं खत्म है।",
+              "safety_status": "draft"
+            },
+            "ending.dummy": {
+              "text": "डेमो टोकन बोल दिया गया। मेघदूत की अभ्यास कॉल यहीं रोकते हैं। अगली बार किसी कॉलर को असली जानकारी न बताएँ।",
+              "safety_status": "draft"
+            },
+            "system.safe-fallback": {
+              "text": "जवाब साफ़ नहीं था। मेघदूत की अभ्यास कॉल यहीं रोकते हैं। अपने जाने-पहचाने चैनल से जाँच करें।",
+              "safety_status": "system_safe_template"
+            },
+            "ending.turn-limit": {
+              "text": "मेघदूत की अभ्यास कॉल की बारी सीमा पूरी हो गई। कोई पुष्टि ज़रूरी नहीं है। अब समीक्षा देखें।",
+              "safety_status": "draft"
+            },
+            "system.safe-ending": {
+              "text": "यह अभ्यास कॉल अब खत्म है। अगला कदम लेने से पहले जाने-पहचाने चैनल से जाँच करें।",
+              "safety_status": "system_safe_template"
+            }
+          },
+          "nodes": [
+            {
+              "id": "opening-decision",
+              "parent_node_id": null,
+              "trigger_rules": [],
+              "response_id": "system.opening",
+              "learner_expected_behavior": [
+                "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+              ],
+              "next_node_id": "authority-decision",
+              "safe_fallback_response_id": "system.safe-fallback",
+              "debrief_tags": [
+                "RF-01"
+              ],
+              "safety_constraints": [
+                "Fictional simulation with synthetic examples only."
+              ],
+              "branch_status": "draft"
+            },
+            {
+              "id": "authority-decision",
+              "parent_node_id": "opening-decision",
+              "trigger_rules": [
+                {
+                  "type": "normalized_text",
+                  "text": "abhi confirm nahi karunga"
+                }
+              ],
+              "response_id": "authority.medium",
+              "learner_expected_behavior": [
+                "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+              ],
+              "next_node_id": null,
+              "safe_fallback_response_id": "system.safe-fallback",
+              "debrief_tags": [
+                "RF-02"
+              ],
+              "safety_constraints": [
+                "Fictional simulation with synthetic examples only."
+              ],
+              "branch_status": "draft"
+            }
+          ],
+          "adaptive_policy": {
+            "max_pressure_level": 3,
+            "max_turns": 2,
+            "safe_word": "stop simulation",
+            "escalation_behaviors": [
+              "COMPLIED"
+            ],
+            "terminal_states": [
+              "SAFE_VERIFIED",
+              "DUMMY_SECRET_DISCLOSED",
+              "SAFE_FALLBACK",
+              "MAX_TURNS",
+              "SAFE_WORD",
+              "LEARNER_ENDED"
+            ],
+            "tactics": [
+              {
+                "tactic_id": "urgency.low",
+                "category": "URGENCY",
+                "pressure_level": 1,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "urgency.low"
+                ]
+              },
+              {
+                "tactic_id": "urgency.medium",
+                "category": "URGENCY",
+                "pressure_level": 2,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "urgency.medium"
+                ]
+              },
+              {
+                "tactic_id": "urgency.high",
+                "category": "URGENCY",
+                "pressure_level": 3,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "urgency.high"
+                ]
+              },
+              {
+                "tactic_id": "authority.low",
+                "category": "AUTHORITY",
+                "pressure_level": 1,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "authority.low"
+                ]
+              },
+              {
+                "tactic_id": "authority.medium",
+                "category": "AUTHORITY",
+                "pressure_level": 2,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "authority.medium"
+                ]
+              },
+              {
+                "tactic_id": "authority.high",
+                "category": "AUTHORITY",
+                "pressure_level": 3,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "authority.high"
+                ]
+              },
+              {
+                "tactic_id": "isolation.low",
+                "category": "ISOLATION",
+                "pressure_level": 1,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "isolation.low"
+                ]
+              },
+              {
+                "tactic_id": "isolation.medium",
+                "category": "ISOLATION",
+                "pressure_level": 2,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "isolation.medium"
+                ]
+              },
+              {
+                "tactic_id": "isolation.high",
+                "category": "ISOLATION",
+                "pressure_level": 3,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "isolation.high"
+                ]
+              },
+              {
+                "tactic_id": "fear.low",
+                "category": "FEAR_CONSEQUENCE",
+                "pressure_level": 1,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "fear.low"
+                ]
+              },
+              {
+                "tactic_id": "fear.medium",
+                "category": "FEAR_CONSEQUENCE",
+                "pressure_level": 2,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "fear.medium"
+                ]
+              },
+              {
+                "tactic_id": "fear.high",
+                "category": "FEAR_CONSEQUENCE",
+                "pressure_level": 3,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "fear.high"
+                ]
+              },
+              {
+                "tactic_id": "reward.low",
+                "category": "REWARD_FAKE_HELP",
+                "pressure_level": 1,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "reward.low"
+                ]
+              },
+              {
+                "tactic_id": "reward.medium",
+                "category": "REWARD_FAKE_HELP",
+                "pressure_level": 2,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "reward.medium"
+                ]
+              },
+              {
+                "tactic_id": "reward.high",
+                "category": "REWARD_FAKE_HELP",
+                "pressure_level": 3,
+                "prompts_dummy_secret": false,
+                "behavior_targets": [
+                  "REFUSED",
+                  "STALLED",
+                  "COMPLIED"
+                ],
+                "response_ids": [
+                  "reward.high"
+                ]
+              }
+            ]
+          },
+          "safety_metadata": {
+            "visible_simulation_label": true,
+            "ai_voice_disclosure_required": true,
+            "consent_before_recording": true,
+            "audio_retention": "none_by_default",
+            "dummy_data_mode": "synthetic_only",
+            "safe_ending_response_id": "system.safe-ending"
+          },
+          "safety_constraints": [
+            "Use fictional benefits requests and synthetic practice data.",
+            "End the simulation on the safe word or learner stop."
+          ],
+          "review_status": "draft",
+          "reviewed_by": null,
+          "reviewed_at": null
+        }
+      }
+    ],
+    "review": {
+      "decision": "pending",
+      "reviewerId": null,
+      "reviewedAt": null,
+      "checklist": {
+        "fictionalOrganization": false,
+        "syntheticDataOnly": false,
+        "noSecurityBypassInstructions": false,
+        "safeEndingAvailable": false,
+        "simulationLabelVisible": false,
+        "aiVoiceDisclosureRequired": false,
+        "consentBeforeRecording": false,
+        "noAudioRetentionByDefault": false
+      },
+      "notes": []
+    },
+    "runtimeEligible": false,
+    "status": "DRAFT"
+  },
+  "details": {
+    "title": "Wellness enrollment callback practice",
+    "department": "Employee Benefits Practice Desk",
+    "industry": "Fictional workplace benefits",
+    "audience": "all employees",
+    "difficulty": "introductory",
+    "premise": "A fictional benefits desk calls about wellness enrollment before the learner has opened the practice portal. The learner can stop and check their own saved directory.",
+    "register": "Conversational Hindi/Hinglish with familiar workplace terms",
+    "scriptPreference": "Devanagari",
+    "safeActions": [
+      "Pause before confirming any enrollment or benefit.",
+      "Decline to provide private information or even a practice token to an unexpected caller.",
+      "Check the enrollment in a familiar fictional employee directory or bookmarked training portal.",
+      "End the simulation whenever the request is unclear or you want to stop."
+    ],
+    "openingResponseId": "system.opening",
+    "variants": [
+      {
+        "responseId": "urgency.low",
+        "tactic": "urgency",
+        "intensity": "low",
+        "pressureLevel": 1,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-01"
+        ],
+        "educationalPurpose": "Recognize artificial deadline in the low-intensity wellness call example."
+      },
+      {
+        "responseId": "urgency.medium",
+        "tactic": "urgency",
+        "intensity": "medium",
+        "pressureLevel": 2,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-01"
+        ],
+        "educationalPurpose": "Recognize artificial deadline in the medium-intensity wellness call example."
+      },
+      {
+        "responseId": "urgency.high",
+        "tactic": "urgency",
+        "intensity": "high",
+        "pressureLevel": 3,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-01"
+        ],
+        "educationalPurpose": "Recognize artificial deadline in the high-intensity wellness call example."
+      },
+      {
+        "responseId": "authority.low",
+        "tactic": "authority",
+        "intensity": "low",
+        "pressureLevel": 1,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-02"
+        ],
+        "educationalPurpose": "Recognize claimed approval in the low-intensity wellness call example."
+      },
+      {
+        "responseId": "authority.medium",
+        "tactic": "authority",
+        "intensity": "medium",
+        "pressureLevel": 2,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-02"
+        ],
+        "educationalPurpose": "Recognize claimed approval in the medium-intensity wellness call example."
+      },
+      {
+        "responseId": "authority.high",
+        "tactic": "authority",
+        "intensity": "high",
+        "pressureLevel": 3,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-02"
+        ],
+        "educationalPurpose": "Recognize claimed approval in the high-intensity wellness call example."
+      },
+      {
+        "responseId": "isolation.low",
+        "tactic": "isolation",
+        "intensity": "low",
+        "pressureLevel": 1,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-03"
+        ],
+        "educationalPurpose": "Recognize isolation in the low-intensity wellness call example."
+      },
+      {
+        "responseId": "isolation.medium",
+        "tactic": "isolation",
+        "intensity": "medium",
+        "pressureLevel": 2,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-03"
+        ],
+        "educationalPurpose": "Recognize isolation in the medium-intensity wellness call example."
+      },
+      {
+        "responseId": "isolation.high",
+        "tactic": "isolation",
+        "intensity": "high",
+        "pressureLevel": 3,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-03"
+        ],
+        "educationalPurpose": "Recognize isolation in the high-intensity wellness call example."
+      },
+      {
+        "responseId": "fear.low",
+        "tactic": "fear",
+        "intensity": "low",
+        "pressureLevel": 1,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-07"
+        ],
+        "educationalPurpose": "Recognize threatened consequence in the low-intensity wellness call example."
+      },
+      {
+        "responseId": "fear.medium",
+        "tactic": "fear",
+        "intensity": "medium",
+        "pressureLevel": 2,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-07"
+        ],
+        "educationalPurpose": "Recognize threatened consequence in the medium-intensity wellness call example."
+      },
+      {
+        "responseId": "fear.high",
+        "tactic": "fear",
+        "intensity": "high",
+        "pressureLevel": 3,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-07"
+        ],
+        "educationalPurpose": "Recognize threatened consequence in the high-intensity wellness call example."
+      },
+      {
+        "responseId": "reward.low",
+        "tactic": "reward",
+        "intensity": "low",
+        "pressureLevel": 1,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-08"
+        ],
+        "educationalPurpose": "Recognize reward bait in the low-intensity wellness call example."
+      },
+      {
+        "responseId": "reward.medium",
+        "tactic": "reward",
+        "intensity": "medium",
+        "pressureLevel": 2,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-08"
+        ],
+        "educationalPurpose": "Recognize reward bait in the medium-intensity wellness call example."
+      },
+      {
+        "responseId": "reward.high",
+        "tactic": "reward",
+        "intensity": "high",
+        "pressureLevel": 3,
+        "script": "Devanagari",
+        "redFlags": [
+          "RF-08"
+        ],
+        "educationalPurpose": "Recognize reward bait in the high-intensity wellness call example."
+      }
+    ],
+    "redFlags": [
+      {
+        "id": "RF-01",
+        "title": "Artificial deadline",
+        "description": "The caller makes the practice decision sound time-limited.",
+        "tactics": [
+          "urgency"
+        ],
+        "safeAction": "Take time to check the practice request."
+      },
+      {
+        "id": "RF-02",
+        "title": "Claimed approval",
+        "description": "A desk name, queue, or supervisor is offered as proof of identity.",
+        "tactics": [
+          "authority"
+        ],
+        "safeAction": "Use the fictional employee directory you already know."
+      },
+      {
+        "id": "RF-03",
+        "title": "Isolation",
+        "description": "The caller suggests keeping the training request away from colleagues.",
+        "tactics": [
+          "isolation"
+        ],
+        "safeAction": "Consult the established training desk through your own channel."
+      },
+      {
+        "id": "RF-07",
+        "title": "Threatened consequence",
+        "description": "A delay, hold, or removal is presented as a consequence of pausing.",
+        "tactics": [
+          "fear"
+        ],
+        "safeAction": "Verify the stated consequence independently before deciding."
+      },
+      {
+        "id": "RF-08",
+        "title": "Reward bait",
+        "description": "A practice perk is linked to accepting the request on the call.",
+        "tactics": [
+          "reward"
+        ],
+        "safeAction": "Decline the offer until the familiar training channel confirms it."
+      }
+    ],
+    "examples": [
+      {
+        "exampleId": "refused.1",
+        "script": "Devanagari",
+        "interpretation": "Declines to confirm enrollment on the call.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "refused.2",
+        "script": "Latin",
+        "interpretation": "Rejects consent to record agreement.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "refused.3",
+        "script": "Latin",
+        "interpretation": "Refuses to share a token without claiming verification.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "stalled.1",
+        "script": "Devanagari",
+        "interpretation": "Asks for time to understand the request.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "stalled.2",
+        "script": "Latin",
+        "interpretation": "Defers the decision.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "stalled.3",
+        "script": "Latin",
+        "interpretation": "Pauses to check notes without independently verifying.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "verifiedindependently.1",
+        "script": "Devanagari",
+        "interpretation": "Chooses a familiar employee directory.",
+        "decision": "SAFE_VERIFIED"
+      },
+      {
+        "exampleId": "verifiedindependently.2",
+        "script": "Latin",
+        "interpretation": "Names an independently saved contact.",
+        "decision": "SAFE_VERIFIED"
+      },
+      {
+        "exampleId": "verifiedindependently.3",
+        "script": "Latin",
+        "interpretation": "Uses a channel independent of the caller.",
+        "decision": "SAFE_VERIFIED"
+      },
+      {
+        "exampleId": "complied.1",
+        "script": "Devanagari",
+        "interpretation": "Agrees to confirmation without disclosing a token.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "complied.2",
+        "script": "Latin",
+        "interpretation": "Accepts the caller's suggested slot selection.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "complied.3",
+        "script": "Latin",
+        "interpretation": "Assents to a workshop action without sharing a token.",
+        "decision": "continue"
+      },
+      {
+        "exampleId": "discloseddummysecret.1",
+        "script": "Devanagari",
+        "interpretation": "Says the synthetic value printed on a practice card.",
+        "decision": "DUMMY_SECRET_DISCLOSED"
+      },
+      {
+        "exampleId": "discloseddummysecret.2",
+        "script": "Latin",
+        "interpretation": "Volunteers a synthetic practice token.",
+        "decision": "DUMMY_SECRET_DISCLOSED"
+      },
+      {
+        "exampleId": "discloseddummysecret.3",
+        "script": "Latin",
+        "interpretation": "Reads a different explicitly synthetic value aloud.",
+        "decision": "DUMMY_SECRET_DISCLOSED"
+      },
+      {
+        "exampleId": "unknown.1",
+        "script": "Devanagari",
+        "interpretation": "Unrelated weather comment gives no usable decision.",
+        "decision": "SAFE_FALLBACK"
+      },
+      {
+        "exampleId": "unknown.2",
+        "script": "Latin",
+        "interpretation": "Asks about format without agreeing, pausing, or verifying.",
+        "decision": "SAFE_FALLBACK"
+      },
+      {
+        "exampleId": "unknown.3",
+        "script": "Latin",
+        "interpretation": "Acknowledges familiarity without expressing an action.",
+        "decision": "SAFE_FALLBACK"
+      }
+    ],
+    "decisionPoints": [
+      {
+        "nodeId": "opening-decision",
+        "turn": 1,
+        "context": "Decide whether to confirm the practice enrollment on an unexpected call.",
+        "routes": [
+          {
+            "behavior": "REFUSED",
+            "action": "continue",
+            "nextNodeId": "authority-decision"
+          },
+          {
+            "behavior": "STALLED",
+            "action": "continue",
+            "nextNodeId": "authority-decision"
+          },
+          {
+            "behavior": "VERIFIED_INDEPENDENTLY",
+            "action": "terminal",
+            "outcome": "SAFE_VERIFIED"
+          },
+          {
+            "behavior": "COMPLIED",
+            "action": "continue",
+            "nextNodeId": "authority-decision"
+          },
+          {
+            "behavior": "DISCLOSED_DUMMY_SECRET",
+            "action": "terminal",
+            "outcome": "DUMMY_SECRET_DISCLOSED"
+          },
+          {
+            "behavior": "UNKNOWN",
+            "action": "terminal",
+            "outcome": "SAFE_FALLBACK"
+          }
+        ]
+      },
+      {
+        "nodeId": "authority-decision",
+        "turn": 2,
+        "context": "Consider whether the claimed supervisor approval independently establishes identity.",
+        "routes": [
+          {
+            "behavior": "REFUSED",
+            "action": "terminal",
+            "outcome": "MAX_TURNS"
+          },
+          {
+            "behavior": "STALLED",
+            "action": "terminal",
+            "outcome": "MAX_TURNS"
+          },
+          {
+            "behavior": "VERIFIED_INDEPENDENTLY",
+            "action": "terminal",
+            "outcome": "SAFE_VERIFIED"
+          },
+          {
+            "behavior": "COMPLIED",
+            "action": "terminal",
+            "outcome": "MAX_TURNS"
+          },
+          {
+            "behavior": "DISCLOSED_DUMMY_SECRET",
+            "action": "terminal",
+            "outcome": "DUMMY_SECRET_DISCLOSED"
+          },
+          {
+            "behavior": "UNKNOWN",
+            "action": "terminal",
+            "outcome": "MAX_TURNS"
+          }
+        ]
+      }
+    ],
+    "terminalResponses": {
+      "SAFE_VERIFIED": "ending.verified",
+      "DUMMY_SECRET_DISCLOSED": "ending.dummy",
+      "SAFE_FALLBACK": "system.safe-fallback",
+      "MAX_TURNS": "ending.turn-limit"
+    },
+    "stopGuidance": "Learner End and the safe word stop the simulation immediately without another learner window.",
+    "debriefs": [
+      {
+        "templateId": "verified",
+        "behavior": "VERIFIED_INDEPENDENTLY",
+        "outcome": "SAFE_VERIFIED",
+        "redFlags": [
+          "RF-02"
+        ],
+        "scoring": "Credit independent verification only when the learner names a channel they already know.",
+        "nextAction": "Open the familiar employee directory yourself before confirming enrollment.",
+        "limitations": "A stated plan does not establish that an external check was completed.",
+        "takeaway": "A familiar channel separates the decision from the caller's claimed approval."
+      },
+      {
+        "templateId": "refused",
+        "behavior": "REFUSED",
+        "outcome": null,
+        "redFlags": [
+          "RF-03"
+        ],
+        "scoring": "Record an explicit refusal only when the learner states it.",
+        "nextAction": "End the call if the caller insists and check the request separately.",
+        "limitations": "Refusal alone does not establish independent verification.",
+        "takeaway": "A caller cannot require you to keep a training request private."
+      },
+      {
+        "templateId": "stalled",
+        "behavior": "STALLED",
+        "outcome": null,
+        "redFlags": [
+          "RF-01"
+        ],
+        "scoring": "Record a requested pause. Do not infer recognition from response latency.",
+        "nextAction": "Use the pause to look up the training desk through a familiar source.",
+        "limitations": "A pause alone does not establish what the learner noticed.",
+        "takeaway": "A practice deadline leaves room for an independent check."
+      },
+      {
+        "templateId": "dummy",
+        "behavior": "DISCLOSED_DUMMY_SECRET",
+        "outcome": "DUMMY_SECRET_DISCLOSED",
+        "redFlags": [
+          "RF-02"
+        ],
+        "scoring": "Record synthetic disclosure only when the structured behavior identifies the dummy pattern.",
+        "nextAction": "On the next call, decline to read a token and verify the request elsewhere.",
+        "limitations": "This records a practice action and makes no claim about real credential exposure.",
+        "takeaway": "A caller's asserted authority cannot authorize token disclosure."
+      },
+      {
+        "templateId": "fallback",
+        "behavior": "UNKNOWN",
+        "outcome": "SAFE_FALLBACK",
+        "redFlags": [
+          "RF-03"
+        ],
+        "scoring": "Leave action-specific points unscored when the behavior is UNKNOWN.",
+        "nextAction": "End the call and check the enrollment through a familiar channel.",
+        "limitations": "An ambiguous reply cannot establish intent, compliance, or refusal.",
+        "takeaway": "An unclear request can be stopped without making a decision."
+      },
+      {
+        "templateId": "limit",
+        "behavior": null,
+        "outcome": "MAX_TURNS",
+        "redFlags": [
+          "RF-07"
+        ],
+        "scoring": "Record bounded completion. Score verification or refusal only if present in committed events.",
+        "nextAction": "Review the enrollment separately before acting.",
+        "limitations": "Reaching the turn cap does not imply acceptance of the caller's claim.",
+        "takeaway": "The practice can end while a decision is still open."
+      }
+    ]
+  },
+  "declaredOrigin": "Repository demonstration fixture adapted from the deterministic benefits template"
+}

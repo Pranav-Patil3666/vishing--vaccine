@@ -315,7 +315,9 @@ export class TurnOrchestrator {
       session = { ...session, pressureTimeline: [...session.pressureTimeline, buildPressureTimelinePoint(learnerTurnEvent)] };
       const callerTesting = turnSession.currentTacticId
         ? `Caller tactic ${turnSession.currentTacticId} was active at pressure ${turnSession.currentPressureLevel}.`
-        : "No previous adaptive tactic was active; the system-safe fallback was used.";
+        : turnSession.currentResponseId
+          ? `Caller response ${turnSession.currentResponseId} was active at pressure ${turnSession.currentPressureLevel}.`
+          : "No previous adaptive tactic was active; the system-safe fallback was used.";
       const debriefEvent = makeDebriefEvent(turnNumber, normalizedText, callerTesting);
       session = { ...session, observedEvents: [...session.observedEvents, debriefEvent] };
       const terminal = policyAction.terminalState !== null;
@@ -362,6 +364,8 @@ export class TurnOrchestrator {
         creditMode: fallbackUsed || session.mode === "demo" ? "demo" : "none",
       };
     } catch (error) {
+      // A failed append/result must not persist speculative turn, behavior or outcome fields.
+      if (runtime) session = this.options.store.get(sessionId);
       if (runtime && (this.options.store.get(sessionId).state === "ENDED_BY_LEARNER"
         || ["ERROR", "STOPPED"].includes(this.options.store.get(sessionId).conversation?.phase ?? ""))) throw error;
       if (session.state !== "ENDED_BY_LEARNER" && session.state !== "COMPLETED") {

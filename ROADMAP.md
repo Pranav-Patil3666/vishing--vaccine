@@ -8,6 +8,10 @@
 **Version:** 1.1  
 **Status:** Execution-ready, pending organizer/API verification gates
 
+**Implementation milestone — 2026-10-26:** Phase 5A–5F and overall Phase 5 **COMPLETE**. Fresh user-reported SAFE_VERIFIED and MAX_TURNS paths match offline expectations, with automatic terminal playback, no extra learner listening turn and microphone indicator cleanup confirmed. See the [Phase 5 final acceptance record](docs/evidence/phase5-final-acceptance.md) for validation, observed evidence and limits. Phase 6 has **not started**. The dated planning assumptions below remain historical.
+
+**Implementation milestone — 2026-11-06:** Phase 6A **COMPLETE**. The local authoring CLI generates and imports validated drafts, and the Authoring page previews saved records. Phase 6B has not started. [Phase 6A evidence and walkthrough](docs/evidence/phase6a-mock-authoring-import.md)
+
 **Status legend**
 
 - `[VERIFIED src]` = checked against a primary/current source on 2026-10-02; source URL is recorded in Appendix H.

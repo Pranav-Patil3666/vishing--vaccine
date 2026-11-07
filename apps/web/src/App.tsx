@@ -19,13 +19,11 @@ import { PressureTimeline } from "./components/PressureTimeline.js";
 import { ScenarioCard } from "./components/ScenarioCard.js";
 import { VoiceSecurityCore, type VoiceActivity } from "./components/VoiceSecurityCore.js";
 import { AuthoringPage } from "./pages/AuthoringPage.js";
-import { LocalDraftReview } from "./components/LocalDraftReview.js";
-import type { LocalScenarioDraft } from "./authoringDraft.js";
 import { fetchApiHealth } from "./healthClient.js";
 import { parseClientEnvironment } from "./environment.js";
 import { createApiClient } from "./sessionApi.js";
 import { parseHashRoute, routeHash, type AppRoute } from "./route.js";
-import { getScenarioCatalog, scenarioById, scenarioCatalog, scenarioFocus, scenarioTitle } from "./scenarioCatalog.js";
+import { scenarioById, scenarioCatalog, scenarioFocus, scenarioTitle } from "./scenarioCatalog.js";
 import { useBrowserAudio } from "./audio/useBrowserAudio.js";
 import { BrowserAudioPanel } from "./components/BrowserAudioPanel.js";
 import { RealVoiceTurnPanel } from "./components/RealVoiceTurnPanel.js";
@@ -55,21 +53,12 @@ export function App() {
   const [health, setHealth] = useState<ApiHealthResponse | null>(null);
   const [healthChecked, setHealthChecked] = useState(false);
   const [session, setSession] = useState<SafeSession | null>(null);
-  const [localDrafts, setLocalDrafts] = useState<LocalScenarioDraft[]>([]);
   const [lastTurn, setLastTurn] = useState<TurnTelemetry | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function navigate(next: AppRoute) {
     window.location.hash = routeHash(next);
-  }
-
-  function registerLocalDraft(draft: LocalScenarioDraft) {
-    setLocalDrafts((current) => {
-      const next = current.filter((item) => item.scenario.scenario_id !== draft.scenario.scenario_id);
-      return [...next, draft];
-    });
-    navigate({ page: "scenarios" });
   }
 
   async function checkHealth() {
@@ -133,10 +122,9 @@ export function App() {
   }
 
   const page = renderPage({
-    route, health, healthChecked, session, localDrafts, lastTurn, busy, error, api,
+    route, health, healthChecked, session, lastTurn, busy, error, api,
     onClearError: () => setError(null),
     onNavigate: navigate,
-    onRegisterDraft: registerLocalDraft,
     onStart: (scenarioId) => navigate({ page: "precall", scenarioId }),
     onStartConfirmed: startSimulation,
     onSubmitTurn: submitTurn,
@@ -159,14 +147,12 @@ interface PageProps {
   health: ApiHealthResponse | null;
   healthChecked: boolean;
   session: SafeSession | null;
-  localDrafts: LocalScenarioDraft[];
   lastTurn: TurnTelemetry | null;
   busy: boolean;
   error: string | null;
   api: ReturnType<typeof createApiClient>;
   onClearError: () => void;
   onNavigate: (route: AppRoute) => void;
-  onRegisterDraft: (draft: LocalScenarioDraft) => void;
   onStart: (scenarioId: string) => void;
   onStartConfirmed: (scenarioId: string, runtimeMode?: "MOCK" | "REAL_STT" | "REAL_CONVERSATION") => Promise<void>;
   onRealTurn: (result: RealVoiceTurnResult) => void;
@@ -182,7 +168,7 @@ function renderPage(props: PageProps) {
   if (route.page === "dashboard") return <DashboardPage {...props} />;
   if (route.page === "scenarios") return <ScenarioLibraryPage {...props} />;
   if (route.page === "scenario") return <ScenarioReviewPage {...props} scenarioId={route.scenarioId} />;
-  if (route.page === "authoring") return <AuthoringPage api={props.api} onRegisterDraft={props.onRegisterDraft} />;
+  if (route.page === "authoring") return <AuthoringPage />;
   if (route.page === "sessions") return <SessionHistoryPage {...props} />;
   if (route.page === "precall") return <PreCallPage {...props} scenarioId={route.scenarioId} />;
   if (route.page === "live") return <LiveCallPage {...props} sessionId={route.sessionId} />;
@@ -230,21 +216,18 @@ function DashboardPage(props: PageProps) {
   </div>;
 }
 
-function ScenarioLibraryPage({ onNavigate, onStart, localDrafts }: PageProps) {
-  const allScenarios = getScenarioCatalog(localDrafts);
+function ScenarioLibraryPage({ onNavigate, onStart }: PageProps) {
   return <div className="page-stack">
     <div className="page-heading"><div><div className="eyebrow"><BookOpenCheck size={14} /> SCENARIO LIBRARY</div><h1>Training scenarios</h1><p>Inspect the structured source content and its review state before starting a metadata-only demo.</p></div><button className="button button-primary" onClick={() => onNavigate({ page: "authoring" })}><Sparkles size={16} /> Create scenario</button></div>
-    <div className="library-toolbar"><span><span className="tiny-dot" /> {allScenarios.length} scenario records · {localDrafts.length} local draft{localDrafts.length === 1 ? "" : "s"}</span><span>Local drafts are in-memory only</span></div>
-    <div className="scenario-grid">{allScenarios.map((scenario) => <ScenarioCard key={scenario.scenario_id} scenario={scenario} isLocalDraft={localDrafts.some((draft) => draft.scenario.scenario_id === scenario.scenario_id)} onOpen={() => onNavigate({ page: "scenario", scenarioId: scenario.scenario_id })} onStart={() => onStart(scenario.scenario_id)} />)}</div>
+    <div className="library-toolbar"><span><span className="tiny-dot" /> {scenarioCatalog.length} scenario records</span><span>Local drafts are available in Authoring</span></div>
+    <div className="scenario-grid">{scenarioCatalog.map((scenario) => <ScenarioCard key={scenario.scenario_id} scenario={scenario} onOpen={() => onNavigate({ page: "scenario", scenarioId: scenario.scenario_id })} onStart={() => onStart(scenario.scenario_id)} />)}</div>
     <div className="note-banner"><ShieldAlert size={17} /><div><strong>Draft content is not caller dialogue</strong><span>These source packages are not runtime eligible. Demo sessions use the system-safe fallback and do not play caller audio.</span></div></div>
   </div>;
 }
 
-function ScenarioReviewPage({ scenarioId, onNavigate, onStart, localDrafts }: PageProps & { scenarioId: string }) {
-  const localDraft = localDrafts.find((draft) => draft.scenario.scenario_id === scenarioId);
-  const scenario = localDraft?.scenario ?? scenarioById(scenarioId);
+function ScenarioReviewPage({ scenarioId, onNavigate, onStart }: PageProps & { scenarioId: string }) {
+  const scenario = scenarioById(scenarioId);
   const [selectedNodeId, setSelectedNodeId] = useState(scenario?.nodes[0]?.id ?? "");
-  if (localDraft) return <LocalDraftReview draft={localDraft} onBack={() => onNavigate({ page: "scenarios" })} />;
   if (!scenario) return <EmptyState icon={CircleHelp} title="Scenario not found" text="Choose a scenario from the library." action="Back to library" onAction={() => onNavigate({ page: "scenarios" })} />;
   const selectedNode = scenario.nodes.find((node) => node.id === selectedNodeId) ?? scenario.nodes[0];
   const selectedResponse = selectedNode ? scenario.responses[selectedNode.response_id] : undefined;

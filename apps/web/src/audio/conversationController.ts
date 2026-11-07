@@ -83,11 +83,12 @@ export class BoundedConversationController {
     const driver = await (this.options.acquire ?? acquireBrowserMicrophone)(this.abort.signal);
     if (generation !== this.generation) { driver.stop(); return; }
     this.microphone = new ReusableMicrophone(driver, () => this.clock());
-    this.update(await this.options.api.conversationAction!(this.session.sessionId, "start", { audioClockId: this.clockId }, this.abort.signal));
-    this.active(generation);
+    const startedSession = await this.options.api.conversationAction!(this.session.sessionId, "start", { audioClockId: this.clockId }, this.abort.signal);
+    this.active(generation); this.update(startedSession);
     await this.microphone.start((error) => { void this.fail(new ConversationError("LEARNER_AUDIO_FAILED", error.technical)); });
     this.active(generation);
     while (true) {
+      this.active(generation);
       const terminal = this.session.terminalState !== null;
       if (this.session.conversation?.phase === "STOPPED") { this.cleanup(); this.setState("STOPPED"); this.options.onFinished(this.session); return; }
       if (!terminal && this.session.turnNumber >= this.session.maxTurns) throw new ConversationError("TURN_LIMIT");
@@ -136,7 +137,7 @@ export class BoundedConversationController {
       this.abort.signal.addEventListener("abort", cancel, { once: true });
       let startAck: Promise<void> | undefined;
       player.play(() => {
-        if (generation !== this.generation || started) return; started = true;
+        if (generation !== this.generation || settled || started) return; started = true;
         try {
           observation.startedAtMs = this.clock(); this.setState(terminal ? "TERMINAL_CALLER_PLAYING" : "CALLER_PLAYING");
           startAck = this.options.api.conversationAction!(this.session.sessionId, "caller-start", {
@@ -145,7 +146,7 @@ export class BoundedConversationController {
           void startAck.catch(finish);
         } catch (error) { finish(error); }
       }, () => {
-        if (generation !== this.generation || ended) return; ended = true;
+        if (generation !== this.generation || settled || ended) return; ended = true;
         if (!started || !startAck) { finish(new ConversationError("CALLER_AUDIO_FAILED")); return; }
         try { observation.endedAtMs = this.clock(); } catch (error) { finish(error); return; }
         void startAck.then(async () => {
@@ -166,14 +167,14 @@ export class BoundedConversationController {
         if (settled) return; settled = true; this.rejectPending = undefined;
         if (error) reject(error); else if (result) resolve(result); else reject(new ConversationError("PROVIDER_FAILED"));
       };
-      const learner = new BrowserAudioController({ sessionId: this.session.sessionId, turnNumber: this.session.turnNumber + 1,
-        eligible: () => generation === this.generation && !this.abort.signal.aborted && !this.session.terminalState,
+      const learner: BrowserAudioController = new BrowserAudioController({ sessionId: this.session.sessionId, turnNumber: this.session.turnNumber + 1,
+        eligible: () => generation === this.generation && this.learner === learner && !this.abort.signal.aborted && !this.session.terminalState,
         acquire: async () => this.microphone!.lease(this.session.turnNumber + 1), createVad: () => vad,
         ...(this.options.now ? { readClock: this.options.now } : {}), sessionClock: { origin: this.origin, audioClockId: this.clockId, callerStartedAtMs: caller.startedAtMs!, callerEndedAtMs: caller.endedAtMs! },
         forwarder: (onError) => this.options.api.createRealAudioForwarder!(this.session.sessionId, onError, (value) => { result = value; }),
         finishOnSpeechEnd: true, noSpeechTimeoutMs: REAL_TURN_LIMITS.noSpeechMs, maxCaptureMs: REAL_TURN_LIMITS.captureMs,
         onChange: (snapshot) => {
-          if (generation !== this.generation) return;
+          if (generation !== this.generation || settled || this.learner !== learner) return;
           this.diagnostics = snapshot;
           if (["LISTENING", "SPEECH_ACTIVE"].includes(snapshot.state)) this.setState("LEARNER_LISTENING");
           else if (snapshot.state === "FINISHING") this.setState("LEARNER_FINALIZING");
@@ -203,7 +204,7 @@ export class BoundedConversationController {
       if (generation === this.generation && this.state === "ERROR") this.update(session);
     } catch { /* Preserve local typed failure and last committed session facts. */ }
   }
-  stop(): void { if (["COMPLETED", "STOPPED"].includes(this.state)) return; ++this.generation; this.rejectPending?.(new ConversationError("PROVIDER_FAILED")); this.rejectPending = undefined; this.cleanup(); this.setState("STOPPED"); }
+  stop(): void { if (["COMPLETED", "STOPPED", "ERROR"].includes(this.state)) return; ++this.generation; this.rejectPending?.(new ConversationError("PROVIDER_FAILED")); this.rejectPending = undefined; this.cleanup(); this.setState("STOPPED"); }
   dispose(): void {
     // Effect replay/unmount of an untouched controller is cleanup, not an intentional session stop.
     if (!this.used) return;

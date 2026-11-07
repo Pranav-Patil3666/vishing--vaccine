@@ -80,7 +80,9 @@ export class RuntimeAudioIngress {
       const window: RuntimeWindow = { ...identity.data, token, sessionId, stream, frameCount: 0, lastProducedAt: -1,
         captureFloorMs: session.conversation?.caller?.endedAtMs ?? 0,
         captureCeilingMs: session.runtimeMode === "REAL_CONVERSATION" ? (session.conversation?.caller?.endedAtMs ?? 0) + REAL_TURN_LIMITS.captureMs + REAL_TURN_LIMITS.startRequestMs + 1000 : REAL_TURN_LIMITS.captureMs + 1000,
-        state: "CONNECTING", inFlight: false, timer: setTimeout(() => this.cancelSession(sessionId), REAL_TURN_LIMITS.totalMs) };
+        state: "CONNECTING", inFlight: false, timer: setTimeout(() => {
+          if (this.windows.get(token) === window) this.dispose(window);
+        }, REAL_TURN_LIMITS.totalMs) };
       this.windows.set(token, window); this.onDisconnect(request, response, window);
       try {
         await stream.ready; this.eligible(window);
