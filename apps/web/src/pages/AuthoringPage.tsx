@@ -30,6 +30,8 @@ export function AuthoringValidationFindings({ result }: { result: AuthoringValid
       <strong>Safety validation {result.status}</strong>
       <p>Review eligible {result.reviewEligible ? "Yes" : "No"} · DRAFT</p>
       <p>Errors {result.summary.errors} · Warnings {result.summary.warnings} · Info {result.summary.info}</p>
+      <p>{result.summary.errors ? "Resolve blocking errors before submission."
+        : result.summary.warnings ? "A reviewer must address each warning before approval." : "There are no blocking errors or review warnings."}</p>
       <p>Validator {result.validationVersion} · Checked {result.checkedAt}</p>
       <p style={{ overflowWrap: "anywhere" }}>Candidate {result.candidateId ?? "Unsaved or invalid identity"}</p>
       <p style={{ overflowWrap: "anywhere" }}>Validated content {result.sourceHash ?? "Unavailable"}</p>
@@ -176,15 +178,22 @@ export function AuthoringPage() {
   return <div className="page-stack">
     <div className="page-heading">
       <div><div className="eyebrow"><WandSparkles size={14} /> OFFLINE CONTENT WORKFLOW</div>
-        <h1>Scenario authoring</h1><p>Deterministic mock-assisted authoring and manual JSON draft import.</p></div>
+        <h1>Scenario authoring</h1><p>Build a fictional call, inspect its safety findings, and review the evidence required before it can be used in training.</p></div>
       <span className="status-badge status-draft">{workflow ? "WORKFLOW PREVIEW" : "DRAFT PREVIEW"}</span>
     </div>
+    <ol className="authoring-steps" aria-label="Trainer workflow"><li>1. Create or import</li><li>2. Check safety</li><li>3. Human review</li><li>4. Controlled publication</li></ol>
+    <div className="authoring-entry-grid" aria-busy={reading}>
     <section className="panel authoring-brief-panel">
-      <div className="panel-heading"><h2>Open a saved draft</h2></div>
+      <div className="panel-heading"><h2>Create or inspect a draft</h2></div>
       <div className="authoring-form">
-        <p>Generate from a structured brief or import candidate JSON in a local terminal. Then choose the saved record from the path printed by the command.</p>
-        <code>npm run authoring:draft -- generate content/authoring/examples/benefits-brief.json</code>
-        <code>npm run authoring:draft -- import content/authoring/examples/benefits-import.json</code>
+        <p>Open a saved draft to run safety and schema validation and inspect its dialogue and learner examples.</p>
+        <details><summary>Local commands to create or import</summary>
+          <p>Deterministic mock generation from a fictional brief:</p>
+          <code>npm run authoring:draft -- generate content/authoring/examples/benefits-brief.json</code>
+          <p>Manual import with the same validation checks:</p>
+          <code>npm run authoring:draft -- import content/authoring/examples/benefits-import.json</code>
+          <p>Choose the saved JSON at the path printed by the command. Files are read locally in this browser.</p>
+        </details>
         <label><span><FolderOpen size={14} /> Saved draft JSON</span>
           <input type="file" accept=".json,application/json" disabled={reading} onChange={(event) => void openFiles(event, "draft")} />
         </label>
@@ -197,14 +206,17 @@ export function AuthoringPage() {
       </div>
     </section>
     <section className="panel authoring-brief-panel">
-      <div className="panel-heading"><h2>Local human review workflow</h2></div>
+      <div className="panel-heading"><h2>Inspect review and publication</h2></div>
       <div className="authoring-form">
-        <p>Open a workflow export to verify the candidate, lineage and persisted review state together.</p>
-        <code>npm run --silent authoring:review -- help</code>
+        <p>Open a workflow export to check its exact snapshot, human decisions and publication history. Approval is separate from runtime availability.</p>
+        <p>The local CLI applies privileged decisions. For the S-92 example, choose <code>S-92-v0.1.1-approved.workflow.json</code> from the local authoring cache.</p>
+        <details><summary>Local review commands</summary><code>npm run --silent authoring:review -- help</code><p>If the registry is unavailable, check it in the local CLI and open a fresh export once it is available.</p></details>
         <label>Workflow export JSON<input type="file" accept=".json,application/json" disabled={reading} onChange={(event) => void openFiles(event, "workflow")} /></label>
       </div>
     </section>
+    </div>
     {reading && <p role="status">Checking structure, content hashes and lineage…</p>}
+    {!reading && !error && !validation && !workflow && <p className="empty-inline">Choose a saved draft or workflow export to begin. Findings and decisions will appear here.</p>}
     {error && <div className="inline-error" role="alert"><AlertCircle size={16} />{error}</div>}
     {validation && <AuthoringValidationFindings result={validation} />}
     {saved && <AuthoringDraftPreview saved={saved} />}

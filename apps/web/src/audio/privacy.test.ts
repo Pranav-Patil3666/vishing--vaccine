@@ -20,9 +20,12 @@ test("audio implementation has no persistence, raw-buffer logging or provider ac
   assert.equal(hook.match(/console\./gu)?.length, 1);
   assert.doesNotMatch(hook, /localStorage|sessionStorage|indexedDB|MediaRecorder|GNANI_API_KEY|api\.vachana/u);
   assert.match(hook, /audio\.stop\(\)/u); assert.doesNotMatch(hook, /audio\.prepare\(\)/u);
+  const callPage = readFileSync(resolve("apps/web/src/pages/TrainingPages.tsx"), "utf8");
+  assert.match(callPage, /import\.meta\.env\?\.DEV && health\?\.environment === "development" && offline/u);
+  assert.doesNotMatch(callPage, /localStorage|sessionStorage|indexedDB|MediaRecorder|GNANI_API_KEY|api\.vachana/u);
+  assert.match(callPage, /stopAudio\(\);\s*realStop\.current\?\.\(\)/u);
   const app = readFileSync(resolve("apps/web/src/App.tsx"), "utf8");
-  assert.match(app, /import\.meta\.env\.DEV && canUseFixtures/u);
-  assert.match(app, /audio\.stop\(\);\s*realStop\.current\?\.\(\);\s*void onEnd\(\)/u);
+  assert.match(app, /if \(active\.current === id\) stopMedia\.current\?\.\(\);/u);
 });
 test("diagnostic panel starts with preparation disabled and interruption unavailable", () => {
   const markup = renderToStaticMarkup(BrowserAudioPanelElement());

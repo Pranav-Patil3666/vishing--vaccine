@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import test from "node:test";
 import { createApiServer } from "./health.js";
+import { InMemorySessionStore } from "./sessionStore.js";
 
 test("mock session API requires consent and only serves the draft-safe fallback", async (context) => {
   const server = createApiServer({ environment: "test", now: () => new Date("2026-10-06T00:00:00.000Z") });
@@ -116,4 +117,49 @@ test("turn processing rate limit is enforced per remote address", async (context
   assert.equal(last?.status, 429);
   const payload = await last?.json() as { error?: { code?: string; retryAfterSeconds?: number } };
   assert.equal(payload.error?.code, "RATE_LIMITED");
+});
+
+test("7A End cannot be overwritten by a typed turn already in flight", async (context) => {
+  const store = new InMemorySessionStore();
+  let entered!: () => void, release!: () => void;
+  const enteredSynthesis = new Promise<void>((resolve) => { entered = resolve; });
+  const pendingSynthesis = new Promise<void>((resolve) => { release = resolve; });
+  const server = createApiServer({ environment: "test", sessionStore: store, synthesizer: { async synthesize() {
+    entered(); await pendingSynthesis;
+    return { bytes: new Uint8Array(), mediaType: "application/x-offline-test" };
+  } } });
+  context.after(() => {
+    release();
+    return new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  });
+  server.listen(0, "127.0.0.1"); await once(server, "listening");
+  const address = server.address(); assert.ok(address && typeof address !== "string");
+  const base = `http://127.0.0.1:${address.port}/api/sessions`;
+  const post = (path: string, body: unknown) => fetch(base + path, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+  });
+  const created = await post("", { scenarioId: "S-01", scenarioVersion: "0.2.0", language: "hi-IN", demoMode: false });
+  assert.equal(created.status, 201);
+  const { session: { sessionId } } = await created.json() as { session: { sessionId: string } };
+  const path = "/" + sessionId;
+  await post(path + "/consent", { consentVersion: "training-consent-v1" });
+  const turn = post(path + "/turn", { text: "I need more time." });
+  await enteredSynthesis;
+  const endArrived = new Promise<void>((resolve) => {
+    server.on("request", (request) => {
+      if (request.url?.endsWith("/end")) request.once("end", () => setImmediate(resolve));
+    });
+  });
+  const end = post(path + "/end", {});
+  await endArrived;
+  assert.equal(store.get(sessionId).state, "GENERATING_RESPONSE");
+  const late = await post(path + "/turn", { text: "I need more time." });
+  assert.equal(late.status, 409);
+  release();
+  assert.equal((await turn).status, 200);
+  assert.equal((await end).status, 200);
+  assert.equal(store.get(sessionId).state, "ENDED_BY_LEARNER");
+  assert.equal(store.get(sessionId).recordingEnabled, false);
+  assert.equal(store.get(sessionId).timelineEvents.length, 1);
+  assert.equal((await post(path + "/turn", { text: "try again" })).status, 409);
 });

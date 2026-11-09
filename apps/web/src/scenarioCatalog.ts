@@ -26,3 +26,17 @@ export function scenarioTitle(scenario: ScenarioDocument): string {
 export function scenarioTacticCount(scenario: ScenarioDocument): number {
   return scenario.adaptive_policy?.tactics.length ?? 0;
 }
+
+export function trainingTitle(scenario: ScenarioDocument): string {
+  return scenario.scenario_id === "S-01" ? "Urgent account verification" : scenarioTitle(scenario);
+}
+
+export function trainingObjective(scenario: ScenarioDocument): string {
+  return scenario.scenario_id === "S-01"
+    ? "Pause under pressure and verify an unexpected account request through an official channel you already know."
+    : scenarioFocus(scenario);
+}
+
+export function trainingLanguage(scenario: ScenarioDocument): string {
+  return scenario.language === "hi-IN" || scenario.language === "hi-en" ? "Hindi / Hinglish" : scenario.language ?? "Unavailable";
+}

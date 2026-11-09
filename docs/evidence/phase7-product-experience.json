@@ -1,0 +1,658 @@
+{
+  "schemaVersion": 1,
+  "phase": "7",
+  "kind": "PRODUCT_EXPERIENCE_ACCEPTANCE",
+  "recordedOn": "2026-11-09",
+  "repository": {
+    "baseCommit": "de2f4e86e25f6c7abc5d3b27d7b740413291a3e7",
+    "initialWorkingTree": "clean",
+    "modified": [
+      "ROADMAP.md",
+      "apps/api/src/health.ts",
+      "apps/api/src/sessionApi.test.ts",
+      "apps/web/src/App.tsx",
+      "apps/web/src/audio/privacy.test.ts",
+      "apps/web/src/authoringDraft.test.ts",
+      "apps/web/src/components/AppShell.tsx",
+      "apps/web/src/components/AuthoringReviewPanel.tsx",
+      "apps/web/src/components/ConversationPanel.tsx",
+      "apps/web/src/components/ScenarioCard.tsx",
+      "apps/web/src/components/render.test.tsx",
+      "apps/web/src/healthClient.ts",
+      "apps/web/src/pages/AuthoringPage.tsx",
+      "apps/web/src/phase6Review.test.tsx",
+      "apps/web/src/route.ts",
+      "apps/web/src/scenarioCatalog.ts",
+      "apps/web/src/sessionApi.ts",
+      "apps/web/src/styles.css",
+      "docs/evidence/evidence-ledger.md",
+      "package.json"
+    ],
+    "added": [
+      "apps/web/src/pages/ResultsPages.tsx",
+      "apps/web/src/pages/TrainingPages.tsx",
+      "apps/web/src/phase7Experience.test.tsx",
+      "apps/web/src/trainingResults.ts",
+      "docs/demo/phase7-product-walkthrough.md",
+      "docs/evidence/phase7-product-experience.json",
+      "docs/evidence/phase7-product-experience.md",
+      "scripts/run-offline-demo.ts"
+    ]
+  },
+  "acceptance": {
+    "learner": "PASS",
+    "trainer": "PASS",
+    "dashboardAndResults": "PASS",
+    "runtimeIsolation": "VERIFIED",
+    "debriefEvidenceAccuracy": "VERIFIED",
+    "approvedTrainingRelease": {
+      "scenarioId": "S-01",
+      "version": "0.2.0",
+      "state": "PRESERVED"
+    },
+    "s92Approval": "PRESERVED",
+    "s92RuntimeEligible": false,
+    "phase7": "COMPLETE",
+    "offlineDemonstration": "READY",
+    "fullRegression": "PASS",
+    "loomDemo": "READY WITH LIMITATIONS",
+    "phase8": "NOT STARTED"
+  },
+  "productDecisions": {
+    "learner": "Server catalog only. Refresh availability at Start and require explicit mode-specific consent.",
+    "offline": "Approved typed S-01 path using the existing classifier, deterministic policy, trusted caller references and local mock adapters.",
+    "trainer": "Existing local CLI for create/import and privileged operations. Verified file previews and separate review, publication and availability summaries.",
+    "results": "Up to 20 session IDs in this tab. Backend in-memory safe session projections. Separate voice and offline counts.",
+    "safety": "Automatic permission remains user initiated. Browser stops capture/playback on End or exit. A previously admitted typed turn settles before End commits."
+  },
+  "browser": {
+    "observed": true,
+    "tool": "In-app browser",
+    "offlineOrigin": "http://127.0.0.1:5186",
+    "approvedSelection": "S-01 v0.2.0 only",
+    "consent": {
+      "offlineStartDisabledBeforeConsent": true,
+      "liveBriefingObservedAt": "http://127.0.0.1:5173/#/training/precall/S-01",
+      "voiceDisclosureVisible": true,
+      "microphoneConsentUnchecked": true,
+      "liveStartInvoked": false
+    },
+    "localSessions": [
+      {
+        "id": "d9e5e68d-7d2f-4894-adc3-a4f5a20422a7",
+        "scenario": "S-01",
+        "version": "0.2.0",
+        "mode": "MOCK",
+        "state": "COMPLETED",
+        "terminal": "SAFE_VERIFIED",
+        "turns": 2,
+        "labels": [
+          "STALLED",
+          "VERIFIED_INDEPENDENTLY"
+        ],
+        "next": [
+          "authority",
+          "system.safe-ending"
+        ],
+        "currentPressure": [
+          0,
+          1
+        ],
+        "packageHash": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+        "recordingEnabledAtEnd": false
+      },
+      {
+        "id": "0a7f452c-9bd2-45f8-95e1-069a246a6849",
+        "scenario": "S-01",
+        "version": "0.2.0",
+        "mode": "MOCK",
+        "state": "COMPLETED",
+        "terminal": "SAFE_WORD",
+        "turns": 1,
+        "labels": [
+          "UNKNOWN"
+        ],
+        "next": [
+          "system.safe-ending"
+        ],
+        "currentPressure": [
+          0
+        ],
+        "packageHash": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+        "recordingEnabledAtEnd": false
+      }
+    ],
+    "additionalObservedOutcome": "SAFE_FALLBACK from the initial practice sample, replaced with a verified sample for the two-turn demo",
+    "dashboard": {
+      "offlineRecords": 3,
+      "outcomes": {
+        "SAFE_VERIFIED": 1,
+        "SAFE_FALLBACK": 1,
+        "SAFE_WORD": 1
+      },
+      "historyRetainedAfterBrowserReload": true
+    },
+    "authoring": {
+      "S90": {
+        "source": "DETERMINISTIC_MOCK",
+        "errors": 0,
+        "warnings": 2
+      },
+      "S91": {
+        "source": "MANUAL_IMPORT",
+        "originVerification": "UNVERIFIED",
+        "errors": 0,
+        "warnings": 2
+      },
+      "S92": {
+        "standaloneMissingAncestor": "LINEAGE_INVALID",
+        "afterAncestor": {
+          "errors": 0,
+          "warnings": 0
+        },
+        "workflowExport": {
+          "lifecycle": "APPROVED",
+          "validation": "PASS",
+          "mandatoryChecksPassed": 20,
+          "publication": "PUBLICATION_BLOCKED",
+          "playable": false
+        },
+        "learnerRoute": "Scenario unavailable"
+      }
+    },
+    "accessibility": {
+      "skipLink": {
+        "focused": "main-content",
+        "routeUnchanged": true
+      },
+      "desktop": {
+        "viewportWidth": 1280,
+        "documentWidth": 1265
+      },
+      "tablet": {
+        "viewportWidth": 820,
+        "documentWidth": 805,
+        "historyTableWidth": 734,
+        "historyContainerWidth": 734,
+        "bodyTextPx": 13,
+        "mobileMenuVerified": true
+      }
+    }
+  },
+  "runtime": {
+    "offlineServerEnvironment": "test",
+    "offlineS92Denial": {
+      "status": 404,
+      "code": "SCENARIO_NOT_FOUND"
+    },
+    "providerCalls": {
+      "Prisma": 0,
+      "Timbre": 0,
+      "Evon": 0,
+      "OtherLLM": 0
+    },
+    "providerVerification": "Read the offline API credit counters after browser acceptance. Regression tests used injected fake adapters. The optional live briefing inspection made read-only app requests.",
+    "offlineSimulatedProjectUnits": {
+      "sttUsedUnits": 0,
+      "ttsUsedUnits": 0
+    }
+  },
+  "workspace": {
+    "matchedComparisons": 45,
+    "protectedComparisons": {
+      "originals": [
+        {
+          "path": "content/scenarios/S-01-urgent-account-verification.json",
+          "expected": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+          "before": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+          "after": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686"
+        },
+        {
+          "path": "content/scenarios/S-02-insurance-refund-trap.json",
+          "expected": "77a042e097f54260270446d090d213de464191af4693551a5e079e8db3636051",
+          "before": "77a042e097f54260270446d090d213de464191af4693551a5e079e8db3636051",
+          "after": "77a042e097f54260270446d090d213de464191af4693551a5e079e8db3636051"
+        },
+        {
+          "path": "content/scenarios/S-03-telecom-kyc-lockout.json",
+          "expected": "9f756fd605aa791c8c6ff01083685ee8220cdcc1cae260ba7d51bee18d516b38",
+          "before": "9f756fd605aa791c8c6ff01083685ee8220cdcc1cae260ba7d51bee18d516b38",
+          "after": "9f756fd605aa791c8c6ff01083685ee8220cdcc1cae260ba7d51bee18d516b38"
+        },
+        {
+          "path": "content/authoring/S-01-hi-IN.package.json",
+          "expected": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+          "before": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+          "after": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46"
+        },
+        {
+          "path": "content/authoring/examples/benefits-import.json",
+          "expected": "c3d09a4d2da11c0f46bca923786b7ee08c286fa04604610954cdd4f12b2b76dc",
+          "before": "c3d09a4d2da11c0f46bca923786b7ee08c286fa04604610954cdd4f12b2b76dc",
+          "after": "c3d09a4d2da11c0f46bca923786b7ee08c286fa04604610954cdd4f12b2b76dc"
+        },
+        {
+          "path": "content/authoring/examples/benefits-brief.json",
+          "expected": "bd16d3f132a1fa365d37cb85ad523ad6baa91b9ff360f651d291c301d9aae590",
+          "before": "bd16d3f132a1fa365d37cb85ad523ad6baa91b9ff360f651d291c301d9aae590",
+          "after": "bd16d3f132a1fa365d37cb85ad523ad6baa91b9ff360f651d291c301d9aae590"
+        },
+        {
+          "path": "packages/scenario-schema/src/benefitsTemplate.ts",
+          "expected": "583dd5d19090b8382c749788907464af6086cecd95779a5b23fa705bf1f05a6e",
+          "before": "583dd5d19090b8382c749788907464af6086cecd95779a5b23fa705bf1f05a6e",
+          "after": "583dd5d19090b8382c749788907464af6086cecd95779a5b23fa705bf1f05a6e"
+        },
+        {
+          "path": "docs/evidence/phase6c-review-packet-S92.md",
+          "expected": "87f163b2395b9d0d06bb84ee313f5ff4dc8710886eb536cc8f7763265b8bf417",
+          "before": "87f163b2395b9d0d06bb84ee313f5ff4dc8710886eb536cc8f7763265b8bf417",
+          "after": "87f163b2395b9d0d06bb84ee313f5ff4dc8710886eb536cc8f7763265b8bf417"
+        },
+        {
+          "path": "content/authoring/review-registry/commits/00000001.json",
+          "expected": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8",
+          "before": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8",
+          "after": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8"
+        },
+        {
+          "path": "content/authoring/review-registry/commits/00000002.json",
+          "expected": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7",
+          "before": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7",
+          "after": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7"
+        },
+        {
+          "path": "content/authoring/review-registry/commits/00000003.json",
+          "expected": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685",
+          "before": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685",
+          "after": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685"
+        },
+        {
+          "path": "D:\\vishing--vaccine\\.cache\\authoring\\import-fd46d669704caa567f76cba4d9c6db0dc9728c6a6c88b96d7b121455bae7d3b2.json",
+          "expected": "69a87fded55d26f8e965e5ef587f1d2fa7ee3b761579017d94ea33128671901e",
+          "before": "69a87fded55d26f8e965e5ef587f1d2fa7ee3b761579017d94ea33128671901e",
+          "after": "69a87fded55d26f8e965e5ef587f1d2fa7ee3b761579017d94ea33128671901e"
+        },
+        {
+          "path": "D:\\vishing--vaccine\\.cache\\authoring\\mock-80843162b78c5540dc3701cc770c1b2e7bc5544b2fafa1c93979c7bfc8d46235.json",
+          "expected": "5c81da57b14e376b5eaf254032bddb9748675ed9ca01892c54329d9d48363ed8",
+          "before": "5c81da57b14e376b5eaf254032bddb9748675ed9ca01892c54329d9d48363ed8",
+          "after": "5c81da57b14e376b5eaf254032bddb9748675ed9ca01892c54329d9d48363ed8"
+        },
+        {
+          "path": "D:\\vishing--vaccine\\.cache\\authoring\\mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5.json",
+          "expected": "f9cbb91a41bf097d1933ab908fda4297d121f7c8b733e5bab4fb8ae13e4acfaf",
+          "before": "f9cbb91a41bf097d1933ab908fda4297d121f7c8b733e5bab4fb8ae13e4acfaf",
+          "after": "f9cbb91a41bf097d1933ab908fda4297d121f7c8b733e5bab4fb8ae13e4acfaf"
+        }
+      ],
+      "phase5": [
+        {
+          "path": "apps/api/src/adaptivePolicy.ts",
+          "expected": "1a3d5519656384f4feb003577c9a4b1808d6e5e7aeb87551dd0adb649c1287e9",
+          "before": "1a3d5519656384f4feb003577c9a4b1808d6e5e7aeb87551dd0adb649c1287e9",
+          "after": "1a3d5519656384f4feb003577c9a4b1808d6e5e7aeb87551dd0adb649c1287e9"
+        },
+        {
+          "path": "apps/api/src/turnOrchestrator.ts",
+          "expected": "00fa15b8c87f9cf05201b8163ee2a662249de974320379591d767ea9350ded52",
+          "before": "00fa15b8c87f9cf05201b8163ee2a662249de974320379591d767ea9350ded52",
+          "after": "00fa15b8c87f9cf05201b8163ee2a662249de974320379591d767ea9350ded52"
+        },
+        {
+          "path": "apps/api/src/eventLog.ts",
+          "expected": "a363b0b87216c32cfd0616ddd1663affa45292164cac159f41935dc942d625ed",
+          "before": "a363b0b87216c32cfd0616ddd1663affa45292164cac159f41935dc942d625ed",
+          "after": "a363b0b87216c32cfd0616ddd1663affa45292164cac159f41935dc942d625ed"
+        },
+        {
+          "path": "apps/api/src/runtimeAudioIngress.ts",
+          "expected": "a816995d7f675d834ff4282bed9612ff9437ac1a14dd9344cfd3b3b5331ca220",
+          "before": "a816995d7f675d834ff4282bed9612ff9437ac1a14dd9344cfd3b3b5331ca220",
+          "after": "a816995d7f675d834ff4282bed9612ff9437ac1a14dd9344cfd3b3b5331ca220"
+        },
+        {
+          "path": "apps/api/src/conversationRuntime.ts",
+          "expected": "007c1131a11a2076f2a2a5030a7d258c6557921ace24c0e72ea0cadd1c76e3ba",
+          "before": "007c1131a11a2076f2a2a5030a7d258c6557921ace24c0e72ea0cadd1c76e3ba",
+          "after": "007c1131a11a2076f2a2a5030a7d258c6557921ace24c0e72ea0cadd1c76e3ba"
+        },
+        {
+          "path": "apps/api/src/session.ts",
+          "expected": "038ebac1f770e61ae2d741da9d5f2d26c6b37feeab24f1e7872e857d661b5077",
+          "before": "038ebac1f770e61ae2d741da9d5f2d26c6b37feeab24f1e7872e857d661b5077",
+          "after": "038ebac1f770e61ae2d741da9d5f2d26c6b37feeab24f1e7872e857d661b5077"
+        },
+        {
+          "path": "apps/web/src/audio/conversationController.ts",
+          "expected": "fd53ea04162670b6f704c396518a30ee5a3dbdc7327e115f6fa8a772c3ccac1f",
+          "before": "fd53ea04162670b6f704c396518a30ee5a3dbdc7327e115f6fa8a772c3ccac1f",
+          "after": "fd53ea04162670b6f704c396518a30ee5a3dbdc7327e115f6fa8a772c3ccac1f"
+        },
+        {
+          "path": "apps/web/src/audio/browserCapture.ts",
+          "expected": "97a3dda7289a44b7f188fa0a2e6f1e93009cf4f6e06f0748595f9ec21f3c1e68",
+          "before": "97a3dda7289a44b7f188fa0a2e6f1e93009cf4f6e06f0748595f9ec21f3c1e68",
+          "after": "97a3dda7289a44b7f188fa0a2e6f1e93009cf4f6e06f0748595f9ec21f3c1e68"
+        },
+        {
+          "path": "apps/web/src/audio/reusableMicrophone.ts",
+          "expected": "5c3e64a815b07fe28106bab8eb239d7ec2285d293612f1840acedaa0ae156cce",
+          "before": "5c3e64a815b07fe28106bab8eb239d7ec2285d293612f1840acedaa0ae156cce",
+          "after": "5c3e64a815b07fe28106bab8eb239d7ec2285d293612f1840acedaa0ae156cce"
+        },
+        {
+          "path": "apps/web/src/audio/callerPlayback.ts",
+          "expected": "f9b6e4054c5a61d754784092766f343e5d0e5f49ee39f6a9d211e735cd8477f9",
+          "before": "f9b6e4054c5a61d754784092766f343e5d0e5f49ee39f6a9d211e735cd8477f9",
+          "after": "f9b6e4054c5a61d754784092766f343e5d0e5f49ee39f6a9d211e735cd8477f9"
+        },
+        {
+          "path": "apps/api/src/callerAudio/catalog.ts",
+          "expected": "f326cce3bac7632a35350b34ae5ad86eb1e97bb01055ae253a10b1c8896e7c6a",
+          "before": "f326cce3bac7632a35350b34ae5ad86eb1e97bb01055ae253a10b1c8896e7c6a",
+          "after": "f326cce3bac7632a35350b34ae5ad86eb1e97bb01055ae253a10b1c8896e7c6a"
+        },
+        {
+          "path": "apps/api/src/callerAudio/service.ts",
+          "expected": "dad4528c80a9b29c2cf6af42094415986f331f599ac89982d90badd2ffc51fb6",
+          "before": "dad4528c80a9b29c2cf6af42094415986f331f599ac89982d90badd2ffc51fb6",
+          "after": "dad4528c80a9b29c2cf6af42094415986f331f599ac89982d90badd2ffc51fb6"
+        },
+        {
+          "path": "apps/api/src/providers/prisma/runtimeConfig.ts",
+          "expected": "f482aa4010e3d43dbede0169036f7cc444126ad0075c18ef27b9fac212321bf3",
+          "before": "f482aa4010e3d43dbede0169036f7cc444126ad0075c18ef27b9fac212321bf3",
+          "after": "f482aa4010e3d43dbede0169036f7cc444126ad0075c18ef27b9fac212321bf3"
+        },
+        {
+          "path": "apps/api/src/providers/timbre/runtimeConfig.ts",
+          "expected": "2aa5280b50e14baef0d3529a6f91d61fcecd4dc9291cdc7d5c4b0f0f2ba66e19",
+          "before": "2aa5280b50e14baef0d3529a6f91d61fcecd4dc9291cdc7d5c4b0f0f2ba66e19",
+          "after": "2aa5280b50e14baef0d3529a6f91d61fcecd4dc9291cdc7d5c4b0f0f2ba66e19"
+        },
+        {
+          "path": "content/scenarios/S-01-urgent-account-verification.json",
+          "expected": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+          "before": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+          "after": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686"
+        },
+        {
+          "path": "content/authoring/S-01-hi-IN.package.json",
+          "expected": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+          "before": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+          "after": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46"
+        }
+      ],
+      "s01Lines": [
+        {
+          "path": "content/authoring/S-01-hi-IN.lines.json",
+          "expected": "ce778347e70460534559cf082e12f4396feb1709c76e13140e6aa25fcd2ed350",
+          "before": "ce778347e70460534559cf082e12f4396feb1709c76e13140e6aa25fcd2ed350",
+          "after": "ce778347e70460534559cf082e12f4396feb1709c76e13140e6aa25fcd2ed350"
+        }
+      ],
+      "localFiles": [
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000001.json",
+          "expected": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8",
+          "before": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8",
+          "after": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000002.json",
+          "expected": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7",
+          "before": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7",
+          "after": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000003.json",
+          "expected": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685",
+          "before": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685",
+          "after": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000004.json",
+          "expected": "b39c647c52577d3a4be8379820baf4c5b6c122ed5df9e890c145b05f5b804281",
+          "before": "b39c647c52577d3a4be8379820baf4c5b6c122ed5df9e890c145b05f5b804281",
+          "after": "b39c647c52577d3a4be8379820baf4c5b6c122ed5df9e890c145b05f5b804281"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000005.json",
+          "expected": "ac8d9de93609bd52ed8cf0e51ffc6e2355f541f2a8ae5976338f78916e0e7251",
+          "before": "ac8d9de93609bd52ed8cf0e51ffc6e2355f541f2a8ae5976338f78916e0e7251",
+          "after": "ac8d9de93609bd52ed8cf0e51ffc6e2355f541f2a8ae5976338f78916e0e7251"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000006.json",
+          "expected": "50a65f02df3bf6639f08b64d371eb443fda4b891d7541beb8056d0c502c68606",
+          "before": "50a65f02df3bf6639f08b64d371eb443fda4b891d7541beb8056d0c502c68606",
+          "after": "50a65f02df3bf6639f08b64d371eb443fda4b891d7541beb8056d0c502c68606"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000007.json",
+          "expected": "cade13ffc42e7c7117190a47f7e3bf34fab62b88d9c58f41dbdcc1fb17734471",
+          "before": "cade13ffc42e7c7117190a47f7e3bf34fab62b88d9c58f41dbdcc1fb17734471",
+          "after": "cade13ffc42e7c7117190a47f7e3bf34fab62b88d9c58f41dbdcc1fb17734471"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000008.json",
+          "expected": "4cdfe2f1c1ac7c3360d7c56c8c97fb7f3415e317700090cbf8806915630610c3",
+          "before": "4cdfe2f1c1ac7c3360d7c56c8c97fb7f3415e317700090cbf8806915630610c3",
+          "after": "4cdfe2f1c1ac7c3360d7c56c8c97fb7f3415e317700090cbf8806915630610c3"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000009.json",
+          "expected": "70ccd06dd3632348cf600e294c1bd5ff3ce2df2649c880fb90bc43194fd19ae7",
+          "before": "70ccd06dd3632348cf600e294c1bd5ff3ce2df2649c880fb90bc43194fd19ae7",
+          "after": "70ccd06dd3632348cf600e294c1bd5ff3ce2df2649c880fb90bc43194fd19ae7"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\commits\\00000010.json",
+          "expected": "91224cdd728581c1683b8cc69b2f9ee720e79e3efe25a43a624788ffe7f5c533",
+          "before": "91224cdd728581c1683b8cc69b2f9ee720e79e3efe25a43a624788ffe7f5c533",
+          "after": "91224cdd728581c1683b8cc69b2f9ee720e79e3efe25a43a624788ffe7f5c533"
+        },
+        {
+          "path": "content\\authoring\\review-registry\\actors.json",
+          "expected": "74e16cbea7c6b58e350ed53e1e2a33e221a97bec08a5034be7f834d908822ee4",
+          "before": "74e16cbea7c6b58e350ed53e1e2a33e221a97bec08a5034be7f834d908822ee4",
+          "after": "74e16cbea7c6b58e350ed53e1e2a33e221a97bec08a5034be7f834d908822ee4"
+        },
+        {
+          "path": "content/authoring/examples/S-92-v0.1.1.candidate.json",
+          "expected": "f60635b005676c1849da7783a2a553fc7408dfc09ba4fc8db728c454bd33f545",
+          "before": "f60635b005676c1849da7783a2a553fc7408dfc09ba4fc8db728c454bd33f545",
+          "after": "f60635b005676c1849da7783a2a553fc7408dfc09ba4fc8db728c454bd33f545"
+        },
+        {
+          "path": ".cache/authoring/S-92-v0.1.1-approved.workflow.json",
+          "expected": "4b5a64198cf58e9e62d237357900e76c7082078f1f5cf4a2017b810528b238e5",
+          "before": "4b5a64198cf58e9e62d237357900e76c7082078f1f5cf4a2017b810528b238e5",
+          "after": "4b5a64198cf58e9e62d237357900e76c7082078f1f5cf4a2017b810528b238e5"
+        },
+        {
+          "path": "D:\\vishing--vaccine\\.cache\\authoring\\import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337.json",
+          "expected": "6b5b25a0f0139cb21c047436327c417babfa1d941d55ea162976331ee2ce1ac6",
+          "before": "6b5b25a0f0139cb21c047436327c417babfa1d941d55ea162976331ee2ce1ac6",
+          "after": "6b5b25a0f0139cb21c047436327c417babfa1d941d55ea162976331ee2ce1ac6"
+        }
+      ]
+    },
+    "verifiedAfterFullCheck": true,
+    "realCatalog": [
+      {
+        "id": "S-01",
+        "version": "0.2.0"
+      }
+    ],
+    "legacyStates": [
+      {
+        "id": "S-01",
+        "version": "0.2.0",
+        "lifecycle": "RUNTIME_ELIGIBLE"
+      },
+      {
+        "id": "S-02",
+        "version": "0.1.0-draft",
+        "lifecycle": "DRAFT"
+      },
+      {
+        "id": "S-03",
+        "version": "0.1.0-draft",
+        "lifecycle": "DRAFT"
+      }
+    ],
+    "registry": {
+      "sequence": 10,
+      "headHash": "eeaf713a8dbc985e343c63dd250854a614d6c518b0957e29cdc948d945869140",
+      "candidates": [
+        {
+          "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+          "scenarioId": "S-92",
+          "version": "0.1.0",
+          "lifecycle": "DRAFT",
+          "reviewDecision": "rejected",
+          "approvalId": null
+        },
+        {
+          "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+          "scenarioId": "S-92",
+          "version": "0.1.1",
+          "lifecycle": "APPROVED",
+          "reviewDecision": "approved",
+          "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699"
+        }
+      ]
+    },
+    "verifiedExportHash": "4a072af06a793eec95297c645e029ddc1600e4c719b4cc3e1c00253812f7b82b",
+    "auditCount": 13,
+    "S92": {
+      "exportPath": ".cache/authoring/S-92-v0.1.1-approved.workflow.json",
+      "exportHash": "4a072af06a793eec95297c645e029ddc1600e4c719b4cc3e1c00253812f7b82b",
+      "lifecycle": "APPROVED",
+      "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+      "artifactHash": "de53489b134b9789a7000cb4df7bd9a8dc0c5e7e61b406f384e6f70d416eddc7",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "runtimeEligible": false,
+      "validation": "PASS",
+      "findings": {
+        "errors": 0,
+        "warnings": 0,
+        "info": 1
+      },
+      "publication": {
+        "publicationId": "381164a8-076f-46ab-b397-efe57285d63a",
+        "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+        "actor": {
+          "actorId": "local-publisher",
+          "role": "PUBLISHER"
+        },
+        "requestedAt": "2026-11-08T07:10:38.095Z",
+        "status": "PUBLICATION_BLOCKED",
+        "target": "current-real-conversation",
+        "compatibilityVersion": "s01-real-conversation-v1",
+        "reasons": [
+          "RUNTIME_SCENARIO_UNREGISTERED",
+          "REVIEWED_RUNTIME_PACKAGE_MISSING",
+          "AUTHORING_GRAPH_NOT_RUNTIME_POLICY",
+          "TERMINAL_MAPPING_NOT_INTEGRATED",
+          "LANGUAGE_UNSUPPORTED",
+          "VOICE_NOT_VERIFIED",
+          "PRESSURE_PROFILE_UNSUPPORTED"
+        ]
+      }
+    }
+  },
+  "checks": {
+    "focused": {
+      "command": "npm run test:phase7",
+      "exitCode": 0,
+      "tests": 40,
+      "pass": 40,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "log": ".cache/authoring/phase7-focused-final.tap",
+      "startedUtc": "2026-11-09T12:37:14.3949862Z",
+      "finishedUtc": "2026-11-09T12:37:31.9797857Z",
+      "newTests": [
+        "7A End cannot be overwritten by a typed turn already in flight",
+        "7A and 7C browser to API: consent, approved S-01 policy, terminal debrief and history after reload",
+        "7A reload closes an interrupted call and manual End is idempotent",
+        "7A unavailable and withdrawn catalog, invalid session start, and explicit retry fail closed",
+        "7A a failed response lookup never retries input automatically and allows an explicit retry",
+        "7A explicit voice permission handles denial and exit while permission is pending",
+        "7A evidence debrief describes all six behaviors and only recorded caller exposure",
+        "7A terminal outcomes and missing optional evidence retain their separate meaning",
+        "7C history validates tab IDs, deduplicates, sorts and excludes active records from distribution"
+      ]
+    },
+    "phase6e": {
+      "command": "npm run test:phase6e",
+      "exitCode": 0,
+      "tests": 214,
+      "pass": 214,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "log": ".cache/authoring/phase7-phase6e-final.tap",
+      "startedUtc": "2026-11-09T12:37:32.1597785Z",
+      "finishedUtc": "2026-11-09T12:39:36.2700296Z"
+    },
+    "privacy": {
+      "command": "npx tsx --tsconfig apps/web/tsconfig.app.json --test apps/web/src/audio/privacy.test.ts",
+      "exitCode": 0,
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "log": ".cache/authoring/phase7-privacy.tap"
+    },
+    "full": {
+      "command": "npm run check",
+      "exitCode": 0,
+      "tests": 1200,
+      "pass": 1200,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "startedUtc": "2026-11-09T12:48:14.2908497Z",
+      "finishedUtc": "2026-11-09T12:51:33.3427806Z",
+      "log": ".cache/authoring/phase7-check.tap",
+      "stages": [
+        "> vishing-vaccine@0.1.0 typecheck",
+        "> vishing-vaccine@0.1.0 lint",
+        "> vishing-vaccine@0.1.0 test",
+        "> vishing-vaccine@0.1.0 validate:scenarios",
+        "> vishing-vaccine@0.1.0 build",
+        "> @vaccine/api@0.1.0 build",
+        "> @vaccine/web@0.1.0 build",
+        "> vishing-vaccine@0.1.0 secret-scan",
+        "Secret scan passed: no high-confidence key patterns, non-empty secret examples, or web-bundle credential values found."
+      ],
+      "bundleWarning": [
+        "dist/assets/index-CMIoyJMq.js   535.19 kB │ gzip: 156.44 kB",
+        "(!) Some chunks are larger than 500 kB after minification. Consider:"
+      ]
+    },
+    "whitespace": {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  },
+  "limitations": [
+    "The Loom path is verified in offline typed mode. Live audio timing and cleanup were verified with existing fake-provider tests, and no fresh physical microphone/provider run was performed.",
+    "Session history is bounded to the browser tab and current API process. The API restart clears results.",
+    "Browser review is a verified local export and proposal surface. Trusted review/publication changes remain in the local CLI.",
+    "The existing Vite chunk-size warning remains nonblocking."
+  ],
+  "runbook": "docs/demo/phase7-product-walkthrough.md",
+  "report": "docs/evidence/phase7-product-experience.md"
+}

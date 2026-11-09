@@ -71,6 +71,8 @@ export function createApiServer(options: HealthServerOptions): Server {
   const scenarios = testDirectory ? loadTestScenarios(testDirectory) : catalog.legacyScenarios();
   const store = options.sessionStore ?? new InMemorySessionStore();
   const browserAudio = new BrowserAudioIngress(options.environment, store);
+  const pendingTypedTurns = new Map<string, Promise<unknown>>();
+  const endingTypedSessions = new Set<string>();
   const apiBudget = options.budget ?? { mode: "development" as const, developmentCap: 100, publicDemoCap: 100, reserveCap: 0, usedUnits: 0 };
   const orchestrator = new TurnOrchestrator({
     store, scenarios,
@@ -280,9 +282,16 @@ export function createApiServer(options: HealthServerOptions): Server {
       if (parsed.data.timingFixture && options.environment !== "development" && options.environment !== "test") {
         throw new ApplicationError("INVALID_REQUEST", "Timing fixtures are available only in development and test environments.");
       }
-      const result = await (publishedSessions.get(sessionId)?.pipeline ?? orchestrator).processTurn(sessionId, parsed.data.text, parsed.data.timingFixture);
-      if (publishedSessions.has(sessionId)) await guardSession(sessionId, false);
-      sendJson(response, 200, { ...result, session: safeSession(result.session) });
+      if (endingTypedSessions.has(sessionId)) throw new ApplicationError("INVALID_STATE", "The session is ending.");
+      const work = (publishedSessions.get(sessionId)?.pipeline ?? orchestrator).processTurn(sessionId, parsed.data.text, parsed.data.timingFixture);
+      pendingTypedTurns.set(sessionId, work);
+      try {
+        const result = await work;
+        if (publishedSessions.has(sessionId)) await guardSession(sessionId, false);
+        sendJson(response, 200, { ...result, session: safeSession(result.session) });
+      } finally {
+        if (pendingTypedTurns.get(sessionId) === work) pendingTypedTurns.delete(sessionId);
+      }
       return;
     }
     if (request.method === "POST" && action === "end") {
@@ -291,6 +300,13 @@ export function createApiServer(options: HealthServerOptions): Server {
       callerAudio.cancelSession(sessionId);
       const body = await readBody(request, true);
       if (!EndSessionRequestSchema.safeParse(body).success) throw new ApplicationError("INVALID_REQUEST", "End-session does not accept arbitrary fields.");
+      const typedTurn = pendingTypedTurns.get(sessionId);
+      if (typedTurn) {
+        endingTypedSessions.add(sessionId);
+        // Finish already-admitted local mock work before committing End. Live audio is cancelled above.
+        try { await typedTurn; } catch { /* The request owns its own typed error. */ }
+        finally { endingTypedSessions.delete(sessionId); }
+      }
       const state = store.get(sessionId);
       const ended = endSession(state, (options.now ?? (() => new Date()))());
       store.update(ended);

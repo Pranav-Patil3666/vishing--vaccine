@@ -14,7 +14,7 @@ test("shell and signal components render simulation labels and responsive naviga
     <PressureTimeline points={[]} />
   </AppShell>);
   assert.match(markup, /SIMULATION ONLY/u);
-  assert.match(markup, /Scenario library/u);
+  assert.match(markup, />Training<\/span>/u);
   assert.match(markup, /VOICE SECURITY LAB/u);
   assert.match(markup, /No call events yet/u);
   assert.match(markup, /Voice security visualization: idle/u);

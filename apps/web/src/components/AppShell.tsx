@@ -1,26 +1,34 @@
 import { Activity, AudioLines, BookOpenCheck, LayoutDashboard, Menu, Mic2, Radio, ShieldCheck, Sparkles, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ApiHealthResponse } from "@vaccine/contracts";
 import type { AppRoute } from "../route.js";
 import { routeHash } from "../route.js";
 
 const navigation = [
-  { label: "Command center", route: { page: "dashboard" } as const, icon: LayoutDashboard },
-  { label: "Scenario library", route: { page: "scenarios" } as const, icon: BookOpenCheck },
+  { label: "Overview", route: { page: "dashboard" } as const, icon: LayoutDashboard },
+  { label: "Training", route: { page: "scenarios" } as const, icon: BookOpenCheck },
   { label: "Scenario authoring", route: { page: "authoring" } as const, icon: Sparkles },
   { label: "Session history", route: { page: "sessions" } as const, icon: Activity },
 ];
 
-export function AppShell({ route, health, children }: {
+export function AppShell({ route, health, healthChecked = true, children }: {
   route: AppRoute;
   health: ApiHealthResponse | null;
+  healthChecked?: boolean;
   children: ReactNode;
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const active = route.page === "scenario" ? "scenarios" : route.page === "precall" || route.page === "live" || route.page === "debrief" ? "sessions" : route.page;
+  const active = route.page === "scenario" || route.page === "precall" || route.page === "live" ? "scenarios"
+    : route.page === "debrief" ? "sessions" : route.page;
+  const main = useRef<HTMLElement>(null);
+  const hash = routeHash(route);
+  const previousHash = useRef(hash);
+  useEffect(() => {
+    if (previousHash.current !== hash) { previousHash.current = hash; main.current?.focus(); }
+  }, [hash]);
 
   return <div className="app-frame">
-    <a className="skip-link" href="#main-content">Skip to content</a>
+    <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); main.current?.focus(); }}>Skip to content</a>
     <div className="ambient ambient-one" aria-hidden="true" />
     <div className="ambient ambient-two" aria-hidden="true" />
     <aside className={`sidebar ${mobileNavOpen ? "sidebar-open" : ""}`} aria-label="Primary navigation">
@@ -29,11 +37,11 @@ export function AppShell({ route, health, children }: {
         <span><strong>Vishing Vaccine</strong><small>VOICE SECURITY LAB</small></span>
       </a>
       <div className="sidebar-label">WORKSPACE</div>
-      <nav className="side-nav">
+      <nav id="workspace-navigation" className="side-nav">
         {navigation.map(({ label, route: target, icon: Icon }) => <a key={label}
           href={routeHash(target)} className={`nav-link ${active === target.page ? "nav-link-active" : ""}`}
           aria-current={active === target.page ? "page" : undefined} onClick={() => setMobileNavOpen(false)}>
-          <Icon size={18} strokeWidth={1.8} /><span>{label}</span>{label === "Scenario authoring" && <span className="nav-new">MOCK</span>}
+          <Icon size={18} strokeWidth={1.8} /><span>{label}</span>
         </a>)}
       </nav>
       <div className="sidebar-spacer" />
@@ -47,17 +55,17 @@ export function AppShell({ route, health, children }: {
     {mobileNavOpen && <button className="nav-scrim" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />}
     <div className="workspace">
       <header className="topbar">
-        <button className="icon-button mobile-menu" aria-label={mobileNavOpen ? "Close menu" : "Open menu"} onClick={() => setMobileNavOpen(!mobileNavOpen)}>
+        <button type="button" className="icon-button mobile-menu" aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileNavOpen} aria-controls="workspace-navigation" onClick={() => setMobileNavOpen(!mobileNavOpen)}>
           {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
         <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{navigation.find((item) => item.route.page === active)?.label ?? "Training session"}</strong></div>
         <div className="topbar-right">
           <span className="environment-pill"><span className="pulse-dot" /> SIMULATION ONLY</span>
-          <span className={`api-pill ${health ? "api-up" : "api-down"}`}><Radio size={14} /> {health ? "API ONLINE" : "API OFFLINE"}</span>
-          <div className="avatar" aria-label="Admin profile">AD</div>
+          <span className={`api-pill ${health ? "api-up" : "api-down"}`}><Radio size={14} /> {!healthChecked ? "CHECKING API" : health ? "API ONLINE" : "API OFFLINE"}</span>
         </div>
       </header>
-      <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
+      <main id="main-content" className="main-content" tabIndex={-1} ref={main}>{children}</main>
       <footer className="workspace-footer"><span>VISHING VACCINE</span><span>SIMULATED TRAINING · NO REAL CREDENTIALS</span></footer>
     </div>
   </div>;

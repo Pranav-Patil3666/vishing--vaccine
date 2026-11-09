@@ -22,11 +22,11 @@ type TurnApiResponse = z.infer<typeof TurnApiResponseSchema>;
 type DraftScenarioPackage = z.infer<typeof DraftScenarioPackageSchema>;
 
 export class SessionApiError extends Error {
-  constructor(message: string, readonly status?: number, readonly technical?: TechnicalFailure) {
+  constructor(message: string, readonly status?: number, readonly technical?: TechnicalFailure, readonly apiCode?: string) {
     super(message);
     this.name = "SessionApiError";
   }
-  get code() { return this.technical?.causeCode; }
+  get code() { return this.technical?.causeCode ?? this.apiCode; }
 }
 
 const SessionEnvelopeSchema = z.object({
@@ -37,7 +37,7 @@ const SessionEnvelopeSchema = z.object({
 export interface ApiClient {
   listRuntimeScenarios?(): Promise<ScenarioDocument[]>;
   createAudioForwarder(sessionId: string, onError: (error: BrowserAudioError) => void): AudioForwarder;
-  createDemoSession(input: { scenarioId: string; scenarioVersion: string; language: string; runtimeMode?: "REAL_STT" | "REAL_CONVERSATION" }): Promise<SafeSession>;
+  createDemoSession(input: { scenarioId: string; scenarioVersion: string; language: string; demoMode?: false; runtimeMode?: "REAL_STT" | "REAL_CONVERSATION" }): Promise<SafeSession>;
   conversationAction?(sessionId: string, action: "start" | "caller-start" | "caller-ended" | "fail", body: unknown, signal?: AbortSignal): Promise<SafeSession>;
   createRealAudioForwarder?(sessionId: string, onError: (error: BrowserAudioError) => void, onResult: (result: RealVoiceTurnResult) => void): AudioForwarder;
   getRealVoiceStatus?(sessionId: string): Promise<RealVoiceStatus>;
@@ -46,20 +46,21 @@ export interface ApiClient {
   getRuntimeCredit?(): Promise<RuntimeCreditSnapshot>;
   grantConsent(sessionId: string): Promise<SafeSession>;
   submitMockTurn(sessionId: string, text: string, timingFixture?: AudioTimingFixture): Promise<TurnApiResponse>;
-  endSession(sessionId: string): Promise<SafeSession>;
+  endSession(sessionId: string, keepalive?: boolean): Promise<SafeSession>;
   getSession(sessionId: string): Promise<SafeSession>;
   generateMockDraft(brief: ScenarioBrief): Promise<DraftScenarioPackage>;
 }
 
 export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): ApiClient {
-  async function request<S extends z.ZodTypeAny>(path: string, schema: S, body?: unknown, method = "POST", signal?: AbortSignal): Promise<z.output<S>> {
+  async function request<S extends z.ZodTypeAny>(path: string, schema: S, body?: unknown, method = "POST", signal?: AbortSignal, keepalive = false): Promise<z.output<S>> {
     const base = baseUrl.trim();
     const url = base ? new URL(path, base.endsWith("/") ? base : `${base}/`).toString() : path;
     let response: Response;
     try {
       response = await fetcher(url, {
         method,
-        ...(signal ? { signal } : {}),
+        ...(keepalive ? { keepalive: true } : { signal: signal ?? AbortSignal.timeout(10_000) }),
+        ...(method === "GET" ? { cache: "no-store" } : {}),
         headers: { accept: "application/json", ...(body === undefined ? {} : { "content-type": "application/json" }) },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
@@ -70,8 +71,9 @@ export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): Ap
     try { payload = await response.json(); }
     catch { throw new SessionApiError("The API returned an unreadable response.", response.status); }
     if (!response.ok) {
-      const parsed = z.object({ error: z.object({ message: z.string().optional() }).optional() }).safeParse(payload);
-      throw new SessionApiError(parsed.success ? parsed.data.error?.message ?? `The API returned ${response.status}.` : `The API returned ${response.status}.`, response.status);
+      const parsed = z.object({ error: z.object({ message: z.string().optional(), code: z.string().optional() }).optional() }).safeParse(payload);
+      const detail = parsed.success ? parsed.data.error : undefined;
+      throw new SessionApiError(detail?.message ?? `The API returned ${response.status}.`, response.status, undefined, detail?.code);
     }
     const parsed = schema.safeParse(payload);
     if (!parsed.success) throw new SessionApiError("The API response did not match its shared contract.", response.status);
@@ -123,7 +125,7 @@ export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): Ap
       }
     },
     async createDemoSession(input) {
-      const created = await request("/api/sessions", SessionCreateResponseSchema, { ...input, demoMode: input.runtimeMode === undefined });
+      const created = await request("/api/sessions", SessionCreateResponseSchema, { ...input, demoMode: input.demoMode ?? input.runtimeMode === undefined });
       return SafeSessionSchema.parse(created.session);
     },
     async grantConsent(sessionId) {
@@ -134,8 +136,8 @@ export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): Ap
       const result = await request(`/api/sessions/${encodeURIComponent(sessionId)}/turn`, TurnApiResponseSchema, { text, ...(timingFixture ? { timingFixture } : {}) });
       return { ...result, session: SafeSessionSchema.parse(result.session) };
     },
-    async endSession(sessionId) {
-      const result = await request(`/api/sessions/${encodeURIComponent(sessionId)}/end`, z.object({ session: SafeSessionSchema }).passthrough(), {});
+    async endSession(sessionId, keepalive) {
+      const result = await request(`/api/sessions/${encodeURIComponent(sessionId)}/end`, z.object({ session: SafeSessionSchema }).passthrough(), {}, "POST", undefined, keepalive);
       return SafeSessionSchema.parse(result.session);
     },
     async getSession(sessionId) {

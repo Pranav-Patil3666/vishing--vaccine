@@ -109,14 +109,9 @@ test("local draft review renders all authored content and keeps backend actions 
 
   const card = renderToStaticMarkup(createElement(ScenarioCard, {
     scenario: draft.scenario,
-    isLocalDraft: true,
-    onOpen: () => undefined,
+    eligible: false,
     onStart: () => undefined,
   }));
-  assert.match(card, /Draft \(local\)/u);
-  assert.match(card, /NOT SUBMITTED/u);
-  assert.match(card, /button-outline button-small" type="button" disabled=""/u);
-  assert.match(card, /Preview demo/u);
-  assert.match(card, /Open in authoring/u);
-  assert.match(card, /aria-disabled="true"/u);
+  assert.match(card, /DRAFT · NOT PLAYABLE/u);
+  assert.doesNotMatch(card, /Choose scenario|<button/u);
 });

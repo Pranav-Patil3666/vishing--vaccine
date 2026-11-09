@@ -10,14 +10,17 @@ export type AppRoute =
 
 export function parseHashRoute(hash: string): AppRoute {
   const [page, id] = hash.replace(/^#\/?/u, "").split("/");
+  const decode = (value: string) => {
+    try { return decodeURIComponent(value); } catch { return value; }
+  };
   switch (page) {
-    case "scenarios": return id ? { page: "scenario", scenarioId: decodeURIComponent(id) } : { page: "scenarios" };
+    case "scenarios": return id ? { page: "scenario", scenarioId: decode(id) } : { page: "scenarios" };
     case "authoring": return { page: "authoring" };
     case "sessions": return { page: "sessions" };
     case "training": return id === "precall"
-      ? { page: "precall", scenarioId: decodeURIComponent(hash.replace(/^#\/?training\/precall\/?/u, "") || "S-01") }
-      : id ? { page: "live", sessionId: decodeURIComponent(id) } : { page: "dashboard" };
-    case "debrief": return id ? { page: "debrief", sessionId: decodeURIComponent(id) } : { page: "dashboard" };
+      ? { page: "precall", scenarioId: decode(hash.replace(/^#\/?training\/precall\/?/u, "") || "S-01") }
+      : id ? { page: "live", sessionId: decode(id) } : { page: "dashboard" };
+    case "debrief": return id ? { page: "debrief", sessionId: decode(id) } : { page: "dashboard" };
     case "dashboard": return { page: "dashboard" };
     default: return { page: "dashboard" };
   }

@@ -12,7 +12,7 @@ export async function fetchApiHealth(apiBaseUrl = "", fetcher: typeof fetch = fe
   const endpoint = baseUrl ? new URL("/health", baseUrl).toString() : "/health";
   let response: Response;
   try {
-    response = await fetcher(endpoint, { method: "GET", headers: { accept: "application/json" } });
+    response = await fetcher(endpoint, { method: "GET", headers: { accept: "application/json" }, signal: AbortSignal.timeout(5000) });
   } catch {
     throw new ApiHealthError("The API could not be reached. Start the local API service and retry.");
   }

@@ -155,10 +155,11 @@ test("Authoring revision preview verifies selected ancestors and replaces stale 
   assert.doesNotMatch(withAncestor, /LINEAGE_INVALID/u);
   assert.match(await select("Saved draft JSON", revised.record), /LINEAGE_INVALID/u);
   const fromExport = await select("Workflow export JSON", view);
-  for (const expected of ["APPROVED", "Review eligibility Yes", "Submitted validation current", "Runtime eligible false", "PUBLICATION_BLOCKED"]) {
+  for (const expected of ["APPROVED", "Review eligibility Yes", "Submitted validation current", "Runtime eligible false",
+    "PUBLICATION_BLOCKED", "20/20 mandatory checks passed", "Not playable", "A reviewed runtime package is missing."]) {
     assert.ok(fromExport.includes(expected), expected);
   }
-  assert.doesNotMatch(fromExport, /LINEAGE_INVALID|Human approval absent/u);
+  assert.doesNotMatch(fromExport, /LINEAGE_INVALID|Human approval absent|Publish to runtime/u);
   assert.deepEqual(await h.store.status(), before);
 });
 

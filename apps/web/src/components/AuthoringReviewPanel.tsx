@@ -3,9 +3,25 @@ import {
   AuthoringCandidateSchema, AuthoringReviewError, ReviewOperationSchema, canSubmitForSafetyReview,
   checklistAllowsApproval, currentPublicationCompatibility, parseDraftJson, parseReviewJson, reviewChecklist,
   reviewJsonLimit, validateAuthoringDraft, verifyReviewExport, warningAllowsApproval,
-  type ReviewAction, type ReviewExport, type ReviewOperation, type SavedDraft, type AuthoringValidationResult,
+  type ReviewAction, type ReviewExport, type ReviewOperation, type SavedDraft, type AuthoringValidationResult, type publicationReasons,
 } from "@vaccine/scenario-schema";
 import safety from "../../../../content/safety/review-reference-lists.json";
+
+const compatibilityLabels: Record<(typeof publicationReasons)[number], string> = {
+  RUNTIME_SCENARIO_UNREGISTERED: "This scenario is not registered for the live conversation runtime.",
+  LANGUAGE_UNSUPPORTED: "The language is not supported by this target.",
+  VOICE_NOT_VERIFIED: "The required voice has not been verified for this target.",
+  TURN_POLICY_UNSUPPORTED: "The turn policy is incompatible with this target.",
+  PRESSURE_PROFILE_UNSUPPORTED: "The pressure profile is incompatible with this target.",
+  REVIEWED_RUNTIME_PACKAGE_MISSING: "A reviewed runtime package is missing.",
+  AUTHORING_GRAPH_NOT_RUNTIME_POLICY: "The authored decision graph does not match the runtime policy.",
+  TERMINAL_MAPPING_NOT_INTEGRATED: "Ending responses are not mapped to the runtime.",
+  PUBLICATION_HELD: "A publication hold is in effect.",
+  VALIDATION_STALE: "Validation must be refreshed.",
+  OFFLINE_PROFILE_REQUIRED: "The required typed-practice profile is missing.",
+  GRAPH_POLICY_MISMATCH: "The authored routes do not match the executable policy.",
+  RELEASE_VALIDATION_FAILED: "The compiled release did not pass validation.",
+};
 
 export function reviewUiCapabilities(view: ReviewExport, fresh: AuthoringValidationResult, snapshotCurrent: boolean) {
   const { item } = view;
@@ -91,21 +107,40 @@ export function ReviewWorkflowDetails({
   const warnings = review?.snapshot.validation.findings.filter((finding) => finding.severity === "WARNING") ?? [];
   const compatibility = item.approval ? currentPublicationCompatibility(item.approval, item.publicationHold !== null) : null;
   const failedItems = Object.entries(review?.checklist ?? {}).filter(([, entry]) => entry && ["FAIL", "NEEDS_REVISION"].includes(entry.decision)).map(([key]) => key);
+  const mandatory = Object.entries(reviewChecklist).filter(([, definition]) => definition.critical);
+  const passed = mandatory.filter(([key]) => review?.checklist[key as keyof typeof reviewChecklist]?.decision === "PASS").length;
+  const approvedRelease = item.publications.find((entry) => entry.status === "PUBLISHED");
+  const lastPublication = item.publications.at(-1);
+  const reviewStatus = review?.decision === "rejected"
+    ? review.decisionDetails?.action === "request-changes" ? "CHANGES REQUESTED" : "REJECTED" : item.lifecycle;
+  const scenario = item.record.candidate.draft.scenario;
   return <section className="panel authoring-result-panel">
-    <div className="panel-heading"><h2>Review and publication</h2><span className="status-badge status-draft">{item.lifecycle}</span></div>
+    <div className="panel-heading"><h2>Review and publication</h2><span className={`status-badge ${item.approval ? "status-approved" : "status-draft"}`}>{reviewStatus}</span></div>
+    <div className="workflow-status-grid">
+      <div><span>HUMAN REVIEW</span><strong>{item.approval ? "Approved" : reviewStatus.replaceAll("_", " ")}</strong>
+        <small>{review ? `${passed}/${mandatory.length} mandatory checks passed` : "No review has been submitted"}</small></div>
+      <div><span>PUBLICATION</span><strong>{item.publicationHold ? "Held" : lastPublication?.status ?? "No attempt recorded"}</strong>
+        <small>{lastPublication?.status === "PUBLICATION_BLOCKED" ? "The target's compatibility checks blocked this attempt." : "Publication is a separate decision."}</small></div>
+      <div><span>RUNTIME AVAILABILITY IN THIS EXPORT</span><strong>{item.publicationHold ? "Unavailable · hold" : approvedRelease ? "Published for typed practice" : "Not playable"}</strong>
+        <small>Check Training for the current playable catalog.</small></div>
+    </div>
     <div className="inspector-field">
-      <strong>{item.record.candidate.details.title} · {item.record.candidate.draft.scenario.version}</strong>
+      <strong>{scenario.scenario_id} · v{scenario.version} · {item.record.candidate.details.title}</strong>
       <p>Source {item.record.provenance.source} · Author {item.author.actorId}</p>
       <p>Workflow export from {view.exportedAt} · Registry sequence {view.sequence}</p>
       <p>Local CLI controls persistent changes. This file is a read-only snapshot. Refresh it after each committed action.</p>
       <p>Revalidated {fresh.status} · Review eligibility {fresh.reviewEligible ? "Yes" : "No"} · Submitted validation {snapshotCurrent ? "current" : "unavailable or stale"}</p>
       <p>Errors {fresh.summary.errors} · Warnings {fresh.summary.warnings} · Info {fresh.summary.info}</p>
+      <p>Validator {fresh.validationVersion}{fresh.graph ? ` · ${fresh.graph.terminalLeaves} terminal paths · maximum depth ${fresh.graph.maximumDepth}` : ""}</p>
+      <p className="release-fingerprint">{review ? "Reviewed content" : "Candidate content"} {item.record.contentHash}</p>
       <p>Reviewer {review?.startedBy?.actorId ?? "not assigned"} · Decision {review?.decision ?? "not submitted"}</p>
-      {review?.decision === "rejected" && <p>Returned for changes. Create a new revision before another review.</p>}
-      <button className="button button-outline button-small" disabled={!capabilities.submit}
-        onClick={() => exportOperation("submit", { validation: fresh })}>Download submit proposal</button>
-      <button className="button button-outline button-small" disabled={!capabilities.start}
-        onClick={() => exportOperation("start", { reviewId: review?.reviewId })}>Download start-review proposal</button>
+      {review && <p className="release-fingerprint">Review {review.reviewId} · {review.reviewCompletedAt ?? "Decision pending"} · {review.warnings.length} warning dispositions</p>}
+      {item.approval && <p className="release-fingerprint">Approval {item.approval.approvalId} · {item.approval.approvedAt}</p>}
+      {review?.decision === "rejected" && <p>Create a new revision before another review.</p>}
+      {capabilities.submit && <button className="button button-outline button-small"
+        onClick={() => exportOperation("submit", { validation: fresh })}>Download submit proposal</button>}
+      {capabilities.start && <button className="button button-outline button-small"
+        onClick={() => exportOperation("start", { reviewId: review?.reviewId })}>Download start-review proposal</button>}
     </div>
     <details><summary>Current automated validation findings</summary>
       {fresh.findings.map((finding) => <div className="inspector-field" key={finding.ruleId + finding.path}>
@@ -187,17 +222,18 @@ export function ReviewWorkflowDetails({
         {item.approval && <p>Historical approval at {item.approval.approvedAt} · {item.publicationHold ? "Publication held" : item.publications.some((entry) => entry.status === "PUBLISHED") ? "Published for offline practice" : "Runtime eligible false"}</p>}
         <p>{review?.notes}</p><p>{review?.decisionReason}</p>
         <p>Publication target current-real-conversation</p>
-        <p>{compatibility?.reasons.join(", ") ?? "Human approval is required before a publication request."}</p>
-        <button className="button button-outline" disabled={!capabilities.publishRequest}
+        <p>{compatibility ? `Compatibility for the current live target: ${compatibility.reasons.map((reason) => compatibilityLabels[reason]).join(" ")}` : "Human approval is required before a publication request."}</p>
+        {capabilities.publishRequest && <button className="button button-outline"
           onClick={() => exportOperation("publish", { approvalId: item.approval?.approvalId, confirmed: true, target: "current-real-conversation" })}>
-          Download publication-request proposal</button>
-        <button className="button button-outline" disabled>Publish to runtime · unsupported by current target</button>
+          Download publication-request proposal</button>}
         {item.record.candidate.details.runtimeProfile === "offline-adaptive-v1" && <button className="button button-outline" disabled={!capabilities.publishRequest || Boolean(item.publicationHold)}
           onClick={() => exportOperation("publish", { approvalId: item.approval?.approvalId, confirmed: true, target: "offline-adaptive" })}>
           Download offline publication proposal</button>}
-        {item.publications.map((publication) => <p key={publication.publicationId}>
-          {publication.status} · {publication.publicationId} · {publication.reasons.join(", ")}
-        </p>)}
+        {item.publications.length === 0 && <p>No publication attempt is present in this export.</p>}
+        {item.publications.map((publication) => <div key={publication.publicationId} className="publication-attempt">
+          <strong>{publication.status}</strong><p className="release-fingerprint">{publication.publicationId} · {publication.requestedAt} · {publication.actor.actorId}</p>
+          {publication.reasons.length > 0 && <ul>{publication.reasons.map((reason) => <li key={reason}>{compatibilityLabels[reason]} <small>{reason}</small></li>)}</ul>}
+        </div>)}
       </div>
     </details>
     <details><summary>Version and audit history</summary>
