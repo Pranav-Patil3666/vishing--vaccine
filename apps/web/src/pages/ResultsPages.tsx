@@ -95,7 +95,7 @@ export function SessionHistoryPage(props: ResultsProps) {
     {!groups.length && !loading && <ScreenMessage title="No session results available" action="Choose a scenario" onAction={() => navigate({ page: "scenarios" })}>Complete or stop a practice call to add its results. The API clears session data on restart.</ScreenMessage>}
     {groups.map(({ title, records }) => <section className="panel session-summary-panel" key={title}>
       <div className="panel-heading"><h2>{title}</h2><span className="panel-count">{records.length} sessions</span></div>
-      <div className="summary-table-wrap"><table className="summary-table">
+    <div className="summary-table-wrap" role="region" aria-label={`${title} results`} tabIndex={0}><table className="summary-table">
         <thead><tr>{["Started", "Scenario", "Status", "Outcome", "Turns", "Details"].map((column) => <th key={column} scope="col">{column}</th>)}</tr></thead>
         <tbody>{records.map((record) => <tr key={record.sessionId}>
           <td><SessionDate session={record} /></td>
@@ -117,19 +117,21 @@ export function DebriefPage({ session, lookup, canPractice, navigate }: {
   const debrief = session.pressureDebrief?.sessionId === session.sessionId
     && session.pressureDebrief.sourceTurnIds.length === events.length
     && session.pressureDebrief.sourceTurnIds.every((id, index) => id === events[index]?.turnId) ? session.pressureDebrief : null;
-  const strengths = events.flatMap((event, index) => behaviorFeedback[event.behavior.label].coaching === "strength" ? [index] : []);
-  const practice = events.flatMap((event, index) => behaviorFeedback[event.behavior.label].coaching === "practice" ? [index] : []);
+  const strengths = events.flatMap((event, index) => event.terminalState !== "SAFE_WORD" && behaviorFeedback[event.behavior.label].coaching === "strength" ? [index] : []);
+  const practice = events.flatMap((event, index) => event.terminalState !== "SAFE_WORD" && behaviorFeedback[event.behavior.label].coaching === "practice" ? [index] : []);
   const tactics = [...new Set(events.flatMap((event) => event.callerTacticCategory ? [event.callerTacticCategory] : []))];
-  const notes = status === "Stopped" ? "This call stopped before a normal ending. The debrief uses any committed turns."
+  const notes = session.terminalState === "SAFE_WORD" ? "The safe word ended the simulation."
+    : status === "Stopped" ? "This call stopped before a normal ending. The debrief uses any committed turns."
     : status === "Technical stop" ? "The call could not finish. The debrief uses any committed turns."
     : session.terminalState === "MAX_TURNS" ? "The practice reached its planned turn limit."
     : session.terminalState === "SAFE_FALLBACK" ? "The system ended practice with a safe response when it could not choose a more specific continuation."
     : session.terminalState === "SAFE_VERIFIED" ? "The learner response indicated a decision to verify independently."
     : session.terminalState === "DUMMY_SECRET_DISCLOSED" ? "The session detected a synthetic practice token." : null;
-  return <div className="page-stack">
+  return <div className="page-stack debrief-page">
     <div className="debrief-hero"><div><span className="eyebrow"><span className="eyebrow-line" /> POST-SIMULATION REVIEW</span>
       <h1>Session debrief</h1><p>{titleFor(session, lookup)} · {session.scenarioId} v{session.scenarioVersion}</p></div>
-      <div className="debrief-outcome outcome-review"><span><ShieldCheck size={23} /></span>
+      <div className={`debrief-outcome ${session.terminalState === "SAFE_VERIFIED" ? "outcome-safe" : "outcome-review"}`}>
+        <span aria-hidden="true">{status === "Stopped" ? <CircleStop size={23} /> : <ShieldCheck size={23} />}</span>
         <div><small>{status.toUpperCase()}</small><strong>{sessionOutcome(session)}</strong></div></div></div>
     <div className="library-toolbar debrief-facts"><span>{sessionMode(session)}</span><span>{events.length} committed turn{events.length === 1 ? "" : "s"}</span>
       <span>Started <SessionDate session={session} /></span></div>
@@ -138,8 +140,10 @@ export function DebriefPage({ session, lookup, canPractice, navigate }: {
       <section className="panel session-summary-panel" aria-label="What happened">
         <div className="panel-heading"><h2>What happened</h2><span className="panel-count">{events.length} turn{events.length === 1 ? "" : "s"}</span></div>
         {events.length ? <ol className="decision-list">{events.map((event, index) => {
-          const feedback = behaviorFeedback[event.behavior.label];
-          const reviewed = debrief?.reviewedEntries?.find((entry) => entry.turnId === event.turnId);
+          const stopped = event.terminalState === "SAFE_WORD";
+          const feedback = stopped ? { label: "Stopped the simulation", evidence: "The learner used the safe word to end the call." }
+            : behaviorFeedback[event.behavior.label];
+          const reviewed = stopped ? undefined : debrief?.reviewedEntries?.find((entry) => entry.turnId === event.turnId);
           return <li key={event.turnId}><div className="decision-heading"><span>Turn {index + 1}</span><strong>{feedback.label}</strong></div>
             <p>{feedback.evidence}</p>
             {event.callerTacticCategory && <small>Caller presented {tacticLabels[event.callerTacticCategory].toLowerCase()}.</small>}
@@ -161,7 +165,8 @@ export function DebriefPage({ session, lookup, canPractice, navigate }: {
     </div>
     {events.length > 0 && <details className="panel debrief-evidence"><summary>Turn evidence and pressure timeline</summary>
       <PressureTimeline points={session.pressureTimeline} />
-      {debrief && <p>Observable rubric: {debrief.observableScoring.pointsAwarded} / {debrief.observableScoring.pointsPossible} points. Only recorded evidence is scored.</p>}
+      {debrief && events.some((event) => event.terminalState !== "SAFE_WORD") &&
+        <p>Observable rubric: {debrief.observableScoring.pointsAwarded} / {debrief.observableScoring.pointsPossible} points. Only recorded evidence is scored.</p>}
       {session.runtimeRelease && <p className="release-fingerprint">Pinned package {session.runtimeRelease.packageHash}</p>}
     </details>}
     <div className="debrief-actions">

@@ -115,23 +115,25 @@ export function ReviewWorkflowDetails({
     ? review.decisionDetails?.action === "request-changes" ? "CHANGES REQUESTED" : "REJECTED" : item.lifecycle;
   const scenario = item.record.candidate.draft.scenario;
   return <section className="panel authoring-result-panel">
-    <div className="panel-heading"><h2>Review and publication</h2><span className={`status-badge ${item.approval ? "status-approved" : "status-draft"}`}>{reviewStatus}</span></div>
+    <div className="panel-heading"><h2>Review and publication</h2><span className={`status-badge ${item.approval ? "status-ai" : "status-draft"}`}>{reviewStatus}</span></div>
     <div className="workflow-status-grid">
       <div><span>HUMAN REVIEW</span><strong>{item.approval ? "Approved" : reviewStatus.replaceAll("_", " ")}</strong>
         <small>{review ? `${passed}/${mandatory.length} mandatory checks passed` : "No review has been submitted"}</small></div>
-      <div><span>PUBLICATION</span><strong>{item.publicationHold ? "Held" : lastPublication?.status ?? "No attempt recorded"}</strong>
+      <div><span>PUBLICATION</span><strong className={lastPublication?.status === "PUBLICATION_BLOCKED" ? "workflow-blocked" : undefined}>{item.publicationHold ? "Held" : lastPublication?.status ?? "No attempt recorded"}</strong>
         <small>{lastPublication?.status === "PUBLICATION_BLOCKED" ? "The target's compatibility checks blocked this attempt." : "Publication is a separate decision."}</small></div>
       <div><span>RUNTIME AVAILABILITY IN THIS EXPORT</span><strong>{item.publicationHold ? "Unavailable · hold" : approvedRelease ? "Published for typed practice" : "Not playable"}</strong>
         <small>Check Training for the current playable catalog.</small></div>
+    </div>
+    <div className="workflow-validation">
+      <strong>Revalidated {fresh.status}</strong><span>Errors {fresh.summary.errors} · Warnings {fresh.summary.warnings} · Info {fresh.summary.info}</span>
+      <span>Submitted validation {snapshotCurrent ? "current" : "unavailable or stale"}</span>
     </div>
     <div className="inspector-field">
       <strong>{scenario.scenario_id} · v{scenario.version} · {item.record.candidate.details.title}</strong>
       <p>Source {item.record.provenance.source} · Author {item.author.actorId}</p>
       <p>Workflow export from {view.exportedAt} · Registry sequence {view.sequence}</p>
       <p>Local CLI controls persistent changes. This file is a read-only snapshot. Refresh it after each committed action.</p>
-      <p>Revalidated {fresh.status} · Review eligibility {fresh.reviewEligible ? "Yes" : "No"} · Submitted validation {snapshotCurrent ? "current" : "unavailable or stale"}</p>
-      <p>Errors {fresh.summary.errors} · Warnings {fresh.summary.warnings} · Info {fresh.summary.info}</p>
-      <p>Validator {fresh.validationVersion}{fresh.graph ? ` · ${fresh.graph.terminalLeaves} terminal paths · maximum depth ${fresh.graph.maximumDepth}` : ""}</p>
+      <p>Review eligibility {fresh.reviewEligible ? "Yes" : "No"} · Validator {fresh.validationVersion}{fresh.graph ? ` · ${fresh.graph.terminalLeaves} terminal paths · maximum depth ${fresh.graph.maximumDepth}` : ""}</p>
       <p className="release-fingerprint">{review ? "Reviewed content" : "Candidate content"} {item.record.contentHash}</p>
       <p>Reviewer {review?.startedBy?.actorId ?? "not assigned"} · Decision {review?.decision ?? "not submitted"}</p>
       {review && <p className="release-fingerprint">Review {review.reviewId} · {review.reviewCompletedAt ?? "Decision pending"} · {review.warnings.length} warning dispositions</p>}

@@ -229,7 +229,52 @@ test("7A a failed response lookup never retries input automatically and allows a
   await h.click("End simulation"); await h.waitFor(/Stopped by learner/u);
 });
 
-test("7A explicit voice permission handles denial and exit while permission is pending", async (t) => {
+test("8C reload keeps an interrupted call closed to input until End is confirmed", async (t) => {
+  const h = await appHarness(t, "#/training/precall/S-01");
+  await h.consent(); await h.click("Start simulation"); await h.waitFor(/Ready for your response/u);
+  const id = h.store.values()[0]!.sessionId;
+  const end = `/api/sessions/${id}/end`;
+  await h.click("Ask for time"); await h.click("Submit response"); await h.waitFor(/1 \/ 3/u);
+  h.intercept((path) => path === end ? new Response("", { status: 503 }) : undefined);
+  await h.unmount(); await h.mount();
+  await h.waitFor(/Call interrupted/u);
+  assert.doesNotMatch(h.text(), /Submit response|Practice conversation/u);
+  assert.equal(h.dom.window.sessionStorage.getItem(activeSessionKey), id);
+
+  h.intercept(() => undefined);
+  const retry = h.button("Retry End simulation");
+  await act(async () => { retry.click(); retry.click(); });
+  await h.waitFor(/Stopped by learner/u);
+  assert.equal(h.count("POST", end), 2);
+  assert.equal(h.count("POST", `/api/sessions/${id}/turn`), 1);
+  assert.equal(h.store.get(id).timelineEvents.length, 1);
+  assert.equal(h.dom.window.sessionStorage.getItem(activeSessionKey), null);
+  assert.equal(h.microphoneRequests(), 0);
+});
+
+test("8C an unconfirmed response cannot be resubmitted and an expired session returns to Training", async (t) => {
+  const h = await appHarness(t, "#/training/precall/S-01");
+  await h.consent(); await h.click("Start simulation"); await h.waitFor(/Ready for your response/u);
+  const id = h.store.values()[0]!.sessionId;
+  const path = `/api/sessions/${id}`;
+  h.intercept((url) => url.startsWith(path) ? new Response("", { status: 503 }) : undefined);
+  await h.click("Ask for time"); await h.click("Submit response");
+  await h.waitFor(/did not confirm the end of this call/u);
+  assert.doesNotMatch(h.text(), /Submit response|Practice conversation/u);
+  assert.equal(h.count("POST", `${path}/turn`), 1);
+  assert.equal(h.count("POST", `${path}/end`), 1);
+
+  h.intercept((url) => url.startsWith(path) ? new Response("", { status: 404 }) : undefined);
+  await h.click("Retry End simulation"); await h.waitFor(/Session no longer available/u);
+  assert.equal(h.dom.window.sessionStorage.getItem(activeSessionKey), null);
+  assert.equal(h.dom.window.sessionStorage.getItem(sessionHistoryKey), "[]");
+  assert.doesNotMatch(h.text(), /Retry End simulation|Open debrief|Submit response/u);
+  await h.click("Back to training"); await h.waitFor(/Choose a practice call/u);
+  assert.equal(h.count("POST", `${path}/turn`), 1);
+  assert.equal(h.providerStarts(), 0);
+});
+
+test("7A and 8C explicit voice permission handles unavailable capture and exit while permission is pending", async (t) => {
   const h = await appHarness(t, "#/training/precall/S-01", "development");
   async function voiceReady() {
     await h.waitFor(/Live voice · automatic conversation/u);
@@ -241,14 +286,27 @@ test("7A explicit voice permission handles denial and exit while permission is p
     await h.consent(); await h.click("Start simulation");
     await h.waitFor(/Start automatic conversation/u);
   }
+  async function checkTechnicalStop(message: RegExp) {
+    await h.click("Start automatic conversation");
+    await h.waitFor(message);
+    await h.waitFor(/Open debrief/u);
+    await h.click("Open debrief"); await h.waitFor(/TECHNICAL STOP/u);
+    assert.match(h.text(), /No learner turn was committed/u);
+    await h.click("Practice again");
+  }
   await voiceReady();
   assert.equal(h.microphoneRequests(), 0);
-  await h.click("Start automatic conversation");
-  await h.waitFor(/Microphone permission was denied/u);
-  await h.waitFor(/Open debrief/u);
-  await h.click("Open debrief"); await h.waitFor(/TECHNICAL STOP/u);
-  assert.match(h.text(), /No learner turn was committed/u);
-  await h.click("Practice again"); await voiceReady();
+  await checkTechnicalStop(/Microphone permission was denied/u);
+  await voiceReady();
+  h.permission(async () => { throw new DOMException("device absent", "NotFoundError"); });
+  await checkTechnicalStop(/No available microphone was found/u);
+  await voiceReady();
+  assert.equal(h.microphoneRequests(), 2);
+  Reflect.set(globalThis, "isSecureContext", false);
+  try { await checkTechnicalStop(/secure page with Web Audio and AudioWorklet support/u); }
+  finally { Reflect.set(globalThis, "isSecureContext", true); }
+  assert.equal(h.microphoneRequests(), 2);
+  await voiceReady();
   let allow: ((stream: MediaStream) => void) | undefined;
   let stopped = 0;
   h.permission(() => new Promise((resolve) => { allow = resolve; }));
@@ -261,7 +319,7 @@ test("7A explicit voice permission handles denial and exit while permission is p
   assert.equal(stopped, 1);
   assert.equal(h.providerStarts(), 0);
   assert.equal(h.count("POST", `/api/sessions/${id}/conversation/start`), 0);
-  assert.equal(h.microphoneRequests(), 2);
+  assert.equal(h.microphoneRequests(), 3);
 });
 
 function result(overrides: Partial<SafeSession> = {}): SafeSession {
@@ -310,6 +368,22 @@ test("7A terminal outcomes and missing optional evidence retain their separate m
     assert.match(html, /No learner turn was committed|Time unavailable/u);
     assert.doesNotMatch(html, /Observable rubric|What you handled well|What to practice/u);
   }
+});
+
+test("8A the safe word is a stop control in the debrief and contributes no behavior count", async (t) => {
+  const h = await appHarness(t);
+  const { sessionId } = await h.api.createDemoSession({ scenarioId: "S-01", scenarioVersion: "0.2.0", language: "hi-IN", demoMode: false });
+  await h.api.grantConsent(sessionId);
+  const { session } = await h.api.submitMockTurn(sessionId, "stop simulation");
+  assert.equal(session.terminalState, "SAFE_WORD");
+  assert.equal(session.timelineEvents.length, 1);
+  assert.equal(session.timelineEvents[0]?.behavior.label, "UNKNOWN");
+  assert.deepEqual(summarizeSessions([session]).behaviors, []);
+  await h.goto(`#/debrief/${sessionId}`);
+  await h.waitFor(/Stopped the simulation/u);
+  assert.match(h.text(), /Safe word used/u);
+  assert.match(h.text(), /Stop phrase used/u);
+  assert.doesNotMatch(h.text(), /Unclear response|Observable rubric|What to practice/u);
 });
 
 test("7C history validates tab IDs, deduplicates, sorts and excludes active records from distribution", () => {

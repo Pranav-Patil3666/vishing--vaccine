@@ -6,7 +6,7 @@
 
 **Date:** Friday, 2026-10-02  
 **Version:** 1.1  
-**Status:** Execution-ready, pending organizer/API verification gates
+**Status:** Offline Loom prototype frozen as of 2026-11-09
 
 **Implementation milestone — 2026-10-26:** Phase 5A–5F and overall Phase 5 **COMPLETE**. Fresh user-reported SAFE_VERIFIED and MAX_TURNS paths match offline expectations, with automatic terminal playback, no extra learner listening turn and microphone indicator cleanup confirmed. See the [Phase 5 final acceptance record](docs/evidence/phase5-final-acceptance.md) for validation, observed evidence and limits. Phase 6 has **not started**. The dated planning assumptions below remain historical.
 
@@ -20,7 +20,9 @@
 
 **Phase 6E final acceptance — 2026-11-09. COMPLETE.** Mock generation and manual import independently reached validation, test review, explicit publication, typed practice and debrief in disposable stores. Browser lineage and runtime isolation passed. S-01 remains the only real-workspace playable scenario. S-92 remains approved and runtime-ineligible with its historical publication block. The future Evon authoring adapter is documented. [Acceptance report and offline guide](docs/evidence/phase6e-end-to-end-acceptance.md)
 
-**Phase 7 product acceptance — 2026-11-09. COMPLETE.** The browser walkthrough connected approved S-01 practice, an evidence-based debrief, the separate S-92 trainer approval example, and recent session outcomes. The focused suite passed 40 tests, Phase 6 acceptance passed 214, and the full check passed 1,200. All protected fingerprints matched and real provider calls were zero. The offline walkthrough is ready for Loom. Phase 8 **NOT STARTED**. [Phase 7 evidence](docs/evidence/phase7-product-experience.md) · [Demo runbook](docs/demo/phase7-product-walkthrough.md)
+**Phase 7 product acceptance — 2026-11-09. COMPLETE.** The browser walkthrough connected approved S-01 practice, an evidence-based debrief, the separate S-92 trainer approval example, and recent session outcomes. The focused suite passed 40 tests, Phase 6 acceptance passed 214, and the full check passed 1,200. All protected fingerprints matched and real provider calls were zero. [Phase 7 evidence](docs/evidence/phase7-product-experience.md) · [Phase 7 walkthrough](docs/demo/phase7-product-walkthrough.md)
+
+**Phase 8 final stabilization — 2026-11-09. COMPLETE.** The offline Loom flow is verified across four S-01 two-turn runs, including a tab reload and an API restart. Safe-word termination, trainer lineage and the historical S-92 publication block, session history, and interruption recovery passed. The full check passed 1,203 tests, 45 fingerprints matched, and real provider calls totaled zero. The prototype behavior is frozen for the demonstration. The final Git checkpoint remains an owner action. [Acceptance evidence](docs/evidence/phase8-final-stabilization.md) · [Final Loom runbook](docs/demo/phase8-final-loom-runbook.md)
 
 **Status legend**
 

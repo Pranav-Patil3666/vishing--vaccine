@@ -63,6 +63,7 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
   const [ending, setEnding] = useState(false);
   const [initialActive] = useState(() => parseSessionIds([readStorage(activeSessionKey)])[0] ?? null);
   const [restoring, setRestoring] = useState(Boolean(initialActive));
+  const [recovery, setRecovery] = useState<{ id: string; state: "interrupted" | "expired" } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyIssue, setHistoryIssue] = useState<string | null>(null);
   const [lookup, setLookup] = useState<{ id: string; issue: string | null } | null>(null);
@@ -111,6 +112,15 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
     writeStorage(activeSessionKey, id);
   }
 
+  function expireSession(id: string) {
+    setActive(null);
+    saveIds(ids.current.filter((saved) => saved !== id));
+    seen.current = new Map(seen.current);
+    seen.current.delete(id);
+    setRecords(seen.current);
+    setRecovery({ id, state: "expired" });
+  }
+
   function readSession(id: string) {
     const pending = pendingReads.current.get(id);
     if (pending) return pending;
@@ -132,10 +142,19 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
       const current = seen.current.get(id);
       const ended = current && sessionStatus(current) !== "In progress" ? current : await api.endSession(id);
       if (ended.sessionId !== id) throw new Error("The session identity did not match.");
-      if (active.current === id) setActive(null);
+      if (active.current === id) {
+        setActive(null);
+        setRecovery(null);
+      }
       put(ended);
       return ended;
-    })().finally(() => pendingEnds.current.delete(id));
+    })().catch((cause: unknown) => {
+      if (active.current === id) {
+        if (cause instanceof SessionApiError && cause.status === 404) expireSession(id);
+        else setRecovery({ id, state: "interrupted" });
+      }
+      throw cause;
+    }).finally(() => pendingEnds.current.delete(id));
     pendingEnds.current.set(id, request);
     return request;
   }
@@ -224,8 +243,10 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
             put(past, true);
             await endSession(initialActive);
           } catch (cause) {
-            if (cause instanceof SessionApiError && cause.status === 404) setActive(null);
-            else setError("The previous call could not be closed. Reconnect before starting another.");
+            if (active.current === initialActive) {
+              if (cause instanceof SessionApiError && cause.status === 404) expireSession(initialActive);
+              else setRecovery({ id: initialActive, state: "interrupted" });
+            }
           } finally { setRestoring(false); }
         }
         await refreshHistory();
@@ -240,7 +261,7 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
   const routeSessionId = route.page === "live" || route.page === "debrief" ? route.sessionId : undefined;
   const session = routeSessionId ? records.get(routeSessionId) : undefined;
   useEffect(() => {
-    if (!routeSessionId || restoring || seen.current.has(routeSessionId)) return;
+    if (!routeSessionId || restoring || recovery?.id === routeSessionId || seen.current.has(routeSessionId)) return;
     let interested = true;
     setLookup({ id: routeSessionId, issue: null });
     void readSession(routeSessionId).then((record) => { if (interested) put(record, true); })
@@ -248,7 +269,7 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
         if (interested) setLookup({ id: routeSessionId, issue: safeError(cause, "The session could not be loaded.") });
       });
     return () => { interested = false; };
-  }, [api, routeSessionId, restoring, lookupAttempt]);
+  }, [api, routeSessionId, restoring, recovery, lookupAttempt]);
 
   function updateCall(record: SafeSession) {
     if (active.current === record.sessionId && !pendingEnds.current.has(record.sessionId) && isOnCall(record.sessionId)) put(record);
@@ -271,8 +292,7 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
       if (active.current) {
         try { await endSession(active.current); }
         catch (cause) {
-          if (cause instanceof SessionApiError && cause.status === 404) setActive(null);
-          else throw cause;
+          if (!(cause instanceof SessionApiError && cause.status === 404)) throw cause;
         }
       }
       const current = await refreshCatalog(false);
@@ -299,7 +319,7 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
   }
 
   async function submitTurn(text: string, timing?: AudioTimingFixture) {
-    if (!session || typed.current || pendingEnds.current.has(session.sessionId) || active.current !== session.sessionId
+    if (!session || recovery?.id === session.sessionId || typed.current || pendingEnds.current.has(session.sessionId) || active.current !== session.sessionId
       || session.consent.status !== "granted" || sessionStatus(session) !== "In progress") return false;
     const id = session.sessionId;
     setProcessing(true); setError(null);
@@ -317,7 +337,7 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
         // A response may have committed before the connection failed. Reload once and never resend the input.
         const latest = await readSession(id).catch(() => null);
         if (!isOnCall(id) || pendingEnds.current.has(id)) return false;
-        if (latest && latest.turnNumber > session.turnNumber) {
+        if (latest && (latest.turnNumber > session.turnNumber || sessionStatus(latest) !== "In progress")) {
           if (sessionStatus(latest) !== "In progress") finishCall(latest);
           else updateCall(latest);
           return true;
@@ -326,24 +346,26 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
           updateCall(latest);
           setError(safeError(cause, "The response could not be processed. You can retry or end the simulation."));
         } else {
-          stopMedia.current?.();
-          setError(safeError(cause, "The response could not be confirmed. End the session before starting again."));
-          void endSession(id).catch(() => undefined);
+          setRecovery({ id, state: "interrupted" });
+          void endCall(id);
         }
       }
       return false;
     } finally { typed.current = null; setProcessing(false); }
   }
 
-  async function endCall() {
-    if (!session || pendingEnds.current.has(session.sessionId)) return;
-    const id = session.sessionId;
+  async function endCall(id: string) {
+    if (pendingEnds.current.has(id)) return;
     setEnding(true); setError(null);
     try {
       await endSession(id);
+      if (recovery?.id === id) void refreshHealth();
       if (isOnCall(id)) navigate({ page: "debrief", sessionId: id });
     } catch (cause) {
-      if (isOnCall(id)) setError(safeError(cause, "The call stopped locally. Reconnect and retry End simulation to recover the result."));
+      if (!(cause instanceof SessionApiError && cause.status === 404) && isOnCall(id)) {
+        setError("The local API did not confirm the end of this call.");
+      }
+      void refreshHealth();
     } finally { setEnding(false); }
   }
 
@@ -373,6 +395,14 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
       case "live":
       case "debrief": {
         if (restoring) return <ScreenMessage title="Closing the interrupted call" loading>Reloading never restarts the microphone or caller audio.</ScreenMessage>;
+        if (recovery?.id === route.sessionId) {
+          if (recovery.state === "expired") return <ScreenMessage title="Session no longer available" action="Back to training" onAction={training}>
+            The local API may have restarted. Choose a scenario and review consent to start a new call.</ScreenMessage>;
+          return <ScreenMessage title="Call interrupted" action={ending ? "Ending simulation…" : "Retry End simulation"} busy={ending}
+            onAction={() => void endCall(route.sessionId)}>Practice is paused. Reconnect to the local API, then end the call to recover any committed turns.</ScreenMessage>;
+        }
+        if (!ending && pendingEnds.current.has(route.sessionId)) return <ScreenMessage title="Closing the interrupted call" loading>
+          Waiting for the local API to finish the session.</ScreenMessage>;
         if (!session) {
           const issue = lookup?.id === route.sessionId ? lookup.issue : null;
           return issue ? <ScreenMessage title="Session unavailable" action="Retry lookup" onAction={() => setLookupAttempt((attempt) => attempt + 1)}>{issue}</ScreenMessage>
@@ -386,7 +416,7 @@ export function App({ client, loadHealth = defaultHealth, development = import.m
         if (route.page === "live" && active.current === session.sessionId) {
           const scenario = available.find((entry) => entry.scenario_id === session.scenarioId && entry.version === session.scenarioVersion);
           return <ActiveCall key={session.sessionId} session={session} {...(scenario ? { scenario } : {})} api={api}
-            health={health} busy={processing} ending={ending} stopControl={stopMedia} onEnd={() => void endCall()}
+            health={health} busy={processing} ending={ending} stopControl={stopMedia} onEnd={() => void endCall(session.sessionId)}
             onSession={updateCall} onFinished={finishCall} onSubmit={submitTurn} />;
         }
         if (finished) return <ScreenMessage title="This call has ended" action="Open debrief"

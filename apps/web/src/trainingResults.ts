@@ -76,7 +76,7 @@ export function summarizeSessions(sessions: readonly SafeSession[]) {
   const tactics = new Map<TacticCategory, number>();
   for (const record of records) {
     for (const event of record.timelineEvents) {
-      behaviors.set(event.behavior.label, (behaviors.get(event.behavior.label) ?? 0) + 1);
+      if (event.terminalState !== "SAFE_WORD") behaviors.set(event.behavior.label, (behaviors.get(event.behavior.label) ?? 0) + 1);
       if (event.callerTacticCategory) tactics.set(event.callerTacticCategory, (tactics.get(event.callerTacticCategory) ?? 0) + 1);
     }
     const status = sessionStatus(record);

@@ -17,13 +17,13 @@ export type CatalogState =
   | { status: "loading" | "unavailable" }
   | { status: "ready"; scenarios: readonly ScenarioDocument[] };
 
-export function ScreenMessage({ title, children, action, onAction, loading = false }: {
-  title: string; children: ReactNode; action?: string; onAction?: () => void; loading?: boolean;
+export function ScreenMessage({ title, children, action, onAction, loading = false, busy = false }: {
+  title: string; children: ReactNode; action?: string; onAction?: () => void; loading?: boolean; busy?: boolean;
 }) {
   return <section className="empty-state" role={loading ? "status" : undefined}>
     <div className="empty-state-icon" aria-hidden="true"><ShieldCheck size={23} /></div>
     <h2>{title}</h2><p>{children}</p>
-    {action && <button className="button button-primary" type="button" onClick={onAction}>{action} <ArrowRight size={15} /></button>}
+    {action && <button className="button button-primary" type="button" onClick={onAction} disabled={busy}>{action} <ArrowRight size={15} /></button>}
   </section>;
 }
 
@@ -139,7 +139,7 @@ export function ActiveCall({ session, scenario, api, health, busy, ending, stopC
     {session.runtimeMode === "REAL_STT" && <RealVoiceTurnPanel session={session} api={api} onResult={updateTurn} stopControl={realStop} />}
     {offline && <section className="panel learner-input-panel offline-call">
       <div className="panel-heading"><div><span className="eyebrow">OFFLINE DEMONSTRATION · TYPED PRACTICE</span><h2>Practice conversation</h2></div><Mic2 size={20} aria-hidden="true" /></div>
-      <p role="status">{ending ? "Ending simulation…" : finished ? sessionStatus(session) : busy ? "Processing your response…" : "Ready for your response"}</p>
+      <p className="offline-call-status" role="status">{ending ? "Ending simulation…" : finished ? sessionStatus(session) : busy ? "Processing your response…" : "Ready for your response"}</p>
       <div className="mock-prompt"><span className="prompt-mark" aria-hidden="true">SIM</span><p>{callerLine ?? "Approved caller text is unavailable for this version."}</p>
         <small>Approved caller text · no caller audio</small></div>
       <form onSubmit={(event) => void submit(event)}>
