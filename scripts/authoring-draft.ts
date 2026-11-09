@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { DraftAuthoringError, parseAuthoringCandidate, parseDraftJson, type SavedDraft } from "@vaccine/scenario-schema";
+import { DraftAuthoringError, parseDraftJson, type SavedDraft } from "@vaccine/scenario-schema";
 import { LocalDraftStore, readAuthorSelectedJson } from "../apps/api/src/authoring/draftStore.js";
 
 const workspace = fileURLToPath(new URL("../", import.meta.url));
@@ -33,8 +33,9 @@ async function main() {
     case "show": return summary(await store.load(input));
     case "export": return (await store.load(input)).candidate;
     case "validate": {
-      const candidate = parseAuthoringCandidate(parseDraftJson((await readAuthorSelectedJson(input)).bytes), safety);
-      return { structuralValidation: "PASS", status: candidate.draft.status, runtimeEligible: candidate.draft.runtimeEligible };
+      const report = await store.validateBytes((await readAuthorSelectedJson(input)).bytes);
+      if (report.status === "FAIL") process.exitCode = 1;
+      return report;
     }
     default: throw new DraftAuthoringError("INVALID_DRAFT_PATH");
   }

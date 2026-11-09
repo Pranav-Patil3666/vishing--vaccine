@@ -11,7 +11,7 @@ import {
   CallerAudioAssetSchema, CallerAudioStatusSchema, type CallerAudioAsset, type CallerAudioStatus,
   RuntimeCreditSnapshotSchema, type RuntimeCreditSnapshot, type TechnicalFailure, type TechnicalStage,
 } from "@vaccine/contracts";
-import { DraftScenarioPackageSchema } from "@vaccine/scenario-schema";
+import { DraftScenarioPackageSchema, ScenarioDocumentSchema, type ScenarioDocument } from "@vaccine/scenario-schema";
 import { z } from "zod";
 import { DevelopmentAudioForwarder, type AudioForwarder } from "./audio/transport.js";
 import type { BrowserAudioError } from "./audio/errors.js";
@@ -35,6 +35,7 @@ const SessionEnvelopeSchema = z.object({
 }).strict();
 
 export interface ApiClient {
+  listRuntimeScenarios?(): Promise<ScenarioDocument[]>;
   createAudioForwarder(sessionId: string, onError: (error: BrowserAudioError) => void): AudioForwarder;
   createDemoSession(input: { scenarioId: string; scenarioVersion: string; language: string; runtimeMode?: "REAL_STT" | "REAL_CONVERSATION" }): Promise<SafeSession>;
   conversationAction?(sessionId: string, action: "start" | "caller-start" | "caller-ended" | "fail", body: unknown, signal?: AbortSignal): Promise<SafeSession>;
@@ -78,6 +79,10 @@ export function createApiClient(baseUrl = "", fetcher: typeof fetch = fetch): Ap
   }
 
   return {
+    async listRuntimeScenarios() {
+      const result = await request("/api/runtime/scenarios", z.object({ scenarios: z.array(ScenarioDocumentSchema) }).strict(), undefined, "GET", AbortSignal.timeout(5000));
+      return result.scenarios;
+    },
     async conversationAction(sessionId, action, body, signal) {
       const timeout = signal ? AbortSignal.any([signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000);
       const result = await request(`/api/sessions/${encodeURIComponent(sessionId)}/conversation/${action}`, z.object({ session: SafeSessionSchema }).strict(), body, "POST", timeout);

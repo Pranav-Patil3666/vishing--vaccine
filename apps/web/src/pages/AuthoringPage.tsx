@@ -1,10 +1,11 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { AlertCircle, FolderOpen, WandSparkles } from "lucide-react";
 import {
-  canonicalDraftJson, draftBehaviors, draftJsonLimit, DraftAuthoringError, parseDraftJson, parseSavedDraft,
-  type SavedDraft,
+  AuthoringReviewError, canonicalDraftJson, draftBehaviors, draftJsonLimit, DraftAuthoringError, parseDraftJson, parseSavedDraft,
+  validateAuthoringDraft, type AuthoringValidationResult, type SavedDraft,
 } from "@vaccine/scenario-schema";
 import safetyReferences from "../../../../content/safety/review-reference-lists.json";
+import { readReviewPreview, ReviewWorkflowDetails } from "../components/AuthoringReviewPanel.js";
 
 export async function readDraftPreview(file: Pick<File, "arrayBuffer" | "size">): Promise<SavedDraft> {
   if (file.size > draftJsonLimit) throw new DraftAuthoringError("IMPORT_TOO_LARGE");
@@ -23,7 +24,31 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   </section>;
 }
 
-export function AuthoringDraftPreview({ saved }: { saved: SavedDraft }) {
+export function AuthoringValidationFindings({ result }: { result: AuthoringValidationResult }) {
+  return <Section title="Automated safety and schema validation">
+    <div className="inspector-field" role="status">
+      <strong>Safety validation {result.status}</strong>
+      <p>Review eligible {result.reviewEligible ? "Yes" : "No"} · DRAFT</p>
+      <p>Errors {result.summary.errors} · Warnings {result.summary.warnings} · Info {result.summary.info}</p>
+      <p>Validator {result.validationVersion} · Checked {result.checkedAt}</p>
+      <p style={{ overflowWrap: "anywhere" }}>Candidate {result.candidateId ?? "Unsaved or invalid identity"}</p>
+      <p style={{ overflowWrap: "anywhere" }}>Validated content {result.sourceHash ?? "Unavailable"}</p>
+      <p>Human review is required before any later approval.</p>
+    </div>
+    {result.findings.map((finding) => <div className="inspector-field" key={finding.ruleId + finding.path}>
+      <strong>{finding.severity} · {finding.category} · {finding.ruleId}</strong>
+      <p>Path {finding.path}</p>
+      <p>{finding.message}</p><p>{finding.remediation}</p>
+    </div>)}
+    {result.graph && <div className="inspector-field">
+      <strong>Bounded draft graph</strong>
+      <p>Prefixes {result.graph.reachablePrefixes} · Terminal leaves {result.graph.terminalLeaves} · Maximum depth {result.graph.maximumDepth}</p>
+      <p>Reachable draft pressures {result.graph.reachablePressures.join(", ")} · Unreached authored variants {result.graph.unreachableAuthoredVariants.length}</p>
+    </div>}
+  </Section>;
+}
+
+export function AuthoringDraftPreview({ saved, sourceSnapshot = false }: { saved: SavedDraft; sourceSnapshot?: boolean }) {
   const { candidate: { draft, details, schemaVersion }, provenance } = saved;
   const { scenario } = draft;
   const mock = provenance.source === "DETERMINISTIC_MOCK";
@@ -36,7 +61,7 @@ export function AuthoringDraftPreview({ saved }: { saved: SavedDraft }) {
         <p>{details.audience} · {details.difficulty} · {scenario.language} · {details.scriptPreference} · {details.register}</p>
         <p>{details.premise}</p>
         {scenario.learning_objectives.map((objective, index) => <p key={index}>{objective}</p>)}
-        <p>Structural validation {saved.structuralValidation} · Safety review pending · Human approval absent</p>
+        <p>Structural validation {saved.structuralValidation} · {sourceSnapshot ? "Immutable source snapshot" : "Human approval absent from this file"}</p>
         <p style={{ overflowWrap: "anywhere" }}>Candidate {saved.candidateId}</p>
         {saved.previousCandidateId && <p style={{ overflowWrap: "anywhere" }}>Previous draft {saved.previousCandidateId}</p>}
         <p>Source {provenance.source} · Saved {saved.createdAt}</p>
@@ -92,22 +117,56 @@ export function AuthoringDraftPreview({ saved }: { saved: SavedDraft }) {
 
 export function AuthoringPage() {
   const [saved, setSaved] = useState<SavedDraft | null>(null);
+  const [validation, setValidation] = useState<AuthoringValidationResult | null>(null);
+  const [workflow, setWorkflow] = useState<Awaited<ReturnType<typeof readReviewPreview>> | null>(null);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loading = useRef(false);
 
-  async function openDraft(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0];
+  async function openFiles(event: ChangeEvent<HTMLInputElement>, kind: "draft" | "ancestors" | "workflow") {
+    const files = Array.from(event.currentTarget.files ?? []);
     event.currentTarget.value = "";
-    if (!file || loading.current) return;
+    const file = files[0];
+    if (!file || loading.current || (kind === "ancestors" && !saved)) return;
     loading.current = true;
     setReading(true);
     setError(null);
-    setSaved(null);
+    setValidation(null);
+    setWorkflow(null);
+    if (kind !== "ancestors") setSaved(null);
     try {
-      setSaved(await readDraftPreview(file));
+      if (kind === "workflow") {
+        setWorkflow(await readReviewPreview(file));
+        return;
+      }
+      if (kind === "ancestors" && saved) {
+        if (files.length > 32) {
+          setError("Select at most 32 saved ancestor records.");
+          setValidation(await validateAuthoringDraft(saved, { safety: safetyReferences }));
+          return;
+        }
+        const lineage = await Promise.all(files.map(readDraftPreview));
+        setValidation(await validateAuthoringDraft(saved, { safety: safetyReferences, lineage }));
+        return;
+      }
+      if (file.size > draftJsonLimit) {
+        setValidation(await validateAuthoringDraft(new Uint8Array(draftJsonLimit + 1), { safety: safetyReferences }));
+        return;
+      }
+      const contents = await file.arrayBuffer();
+      const bytes = new Uint8Array(contents);
+      setValidation(await validateAuthoringDraft(bytes, { safety: safetyReferences }));
+      setSaved(await readDraftPreview({ size: contents.byteLength, arrayBuffer: async () => contents }));
     } catch (cause) {
-      setError(cause instanceof DraftAuthoringError ? `${cause.code} · ${cause.message}` : "Could not read the saved draft.");
+      if (kind === "ancestors" && saved) setValidation(await validateAuthoringDraft(saved, { safety: safetyReferences }));
+      if (kind === "workflow") {
+        setError(cause instanceof AuthoringReviewError ? `${cause.code} · ${cause.message}` : "The workflow export could not be verified.");
+      } else if (kind === "ancestors") {
+        setError("An ancestor file could not be verified. Select the original saved ancestor records.");
+      } else {
+        setError(cause instanceof DraftAuthoringError
+          ? `${cause.code} · See the validation findings for corrections.` : "Could not read the saved draft.");
+      }
     } finally {
       loading.current = false;
       setReading(false);
@@ -118,7 +177,7 @@ export function AuthoringPage() {
     <div className="page-heading">
       <div><div className="eyebrow"><WandSparkles size={14} /> OFFLINE CONTENT WORKFLOW</div>
         <h1>Scenario authoring</h1><p>Deterministic mock-assisted authoring and manual JSON draft import.</p></div>
-      <span className="status-badge status-draft">DRAFT PREVIEW</span>
+      <span className="status-badge status-draft">{workflow ? "WORKFLOW PREVIEW" : "DRAFT PREVIEW"}</span>
     </div>
     <section className="panel authoring-brief-panel">
       <div className="panel-heading"><h2>Open a saved draft</h2></div>
@@ -127,12 +186,29 @@ export function AuthoringPage() {
         <code>npm run authoring:draft -- generate content/authoring/examples/benefits-brief.json</code>
         <code>npm run authoring:draft -- import content/authoring/examples/benefits-import.json</code>
         <label><span><FolderOpen size={14} /> Saved draft JSON</span>
-          <input type="file" accept=".json,application/json" disabled={reading} onChange={(event) => void openDraft(event)} />
+          <input type="file" accept=".json,application/json" disabled={reading} onChange={(event) => void openFiles(event, "draft")} />
         </label>
-        {reading && <p role="status">Checking draft structure and content hash…</p>}
-        {error && <div className="inline-error" role="alert"><AlertCircle size={16} />{error}</div>}
+        {saved?.previousCandidateId && <>
+          <p>For a revision, select every saved ancestor in its chain. A workflow export includes the available ancestors and review history.</p>
+          <label>Saved ancestor JSON files
+            <input type="file" multiple accept=".json,application/json" disabled={reading} onChange={(event) => void openFiles(event, "ancestors")} />
+          </label>
+        </>}
       </div>
     </section>
+    <section className="panel authoring-brief-panel">
+      <div className="panel-heading"><h2>Local human review workflow</h2></div>
+      <div className="authoring-form">
+        <p>Open a workflow export to verify the candidate, lineage and persisted review state together.</p>
+        <code>npm run --silent authoring:review -- help</code>
+        <label>Workflow export JSON<input type="file" accept=".json,application/json" disabled={reading} onChange={(event) => void openFiles(event, "workflow")} /></label>
+      </div>
+    </section>
+    {reading && <p role="status">Checking structure, content hashes and lineage…</p>}
+    {error && <div className="inline-error" role="alert"><AlertCircle size={16} />{error}</div>}
+    {validation && <AuthoringValidationFindings result={validation} />}
     {saved && <AuthoringDraftPreview saved={saved} />}
+    {workflow && <ReviewWorkflowDetails key={workflow.view.exportHash} {...workflow}
+      renderCandidate={(candidate) => <AuthoringDraftPreview saved={candidate} sourceSnapshot />} />}
   </div>;
 }

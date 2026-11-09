@@ -12,7 +12,17 @@
 
 **Implementation milestone — 2026-11-06:** Phase 6A **COMPLETE**. The local authoring CLI generates and imports validated drafts, and the Authoring page previews saved records. Phase 6B has not started. [Phase 6A evidence and walkthrough](docs/evidence/phase6a-mock-authoring-import.md)
 
+**Implementation milestone — 2026-11-07:** Phase 6B **COMPLETE**. Automated validation reports precise findings and binds review eligibility to current content, validator version and local safety configuration. S-90/S-91 each have zero errors and two human-review warnings while retaining DRAFT status. Phase 6C has not started. [Phase 6B evidence](docs/evidence/phase6b-safety-schema-validation.md)
+
+**Implementation milestone — 2026-11-08:** Phase 6C engineering and handoff **COMPLETE; HUMAN REVIEW PENDING**. Local review/checklist/warning/approval/revision/audit/publication gates are tested offline. The owner's changes were recorded against preserved S-92 v0.1.0; new S-92 v0.1.1 is an unsubmitted DRAFT with PASS validation, zero errors/warnings and no human decisions, approval or publication. S-01 runtime and original S-90/S-91 remain unchanged. New-candidate publication remains incompatible with the current runtime. Phase 6D and 6E **NOT STARTED**. [Evidence and manual guide](docs/evidence/phase6c-human-review-approval.md), [exact review packet](docs/evidence/phase6c-review-packet-S92-v0.1.1.md)
+
+**Phase 6D final acceptance — 2026-11-09. COMPLETE.** The server authorizes runtime from the fingerprint-bound S-01 release and verified successful journal publications. Sessions pin exact release identities. A disposable publication passed all 79 graph prefixes and 66 leaves and executed through typed practice. Ten new isolation tests passed within the 1,185-test full check. Protected fingerprints match and real provider calls were zero. S-92 remains APPROVED and runtime-ineligible with its historical publication block. Phase 6E **NOT STARTED**. [Runtime isolation evidence](docs/evidence/phase6d-runtime-isolation.md)
+
+**Phase 6E final acceptance — 2026-11-09. COMPLETE.** Mock generation and manual import independently reached validation, test review, explicit publication, typed practice and debrief in disposable stores. Browser lineage and runtime isolation passed. S-01 remains the only real-workspace playable scenario. S-92 remains approved and runtime-ineligible with its historical publication block. The future Evon authoring adapter is documented. [Acceptance report and offline guide](docs/evidence/phase6e-end-to-end-acceptance.md)
+
 **Status legend**
+
+**Phase 6C final acceptance — 2026-11-08: COMPLETE.** The owner approved exact S-92 v0.1.1 hash 7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337 after current validation and checklist confirmation. One separately authorized publication attempt was PUBLICATION_BLOCKED by seven actual compatibility reasons. Approval remains intact, runtime eligibility false; fresh CLI processes preserve approval and publication audit records. Final full check1175/1175, diff and protected fingerprints pass; zero real provider calls. S-01 and original drafts remain unchanged. Phase 6D **NOT STARTED**. [Final acceptance and exact reasons](docs/evidence/phase6c-human-review-approval.md#final-acceptance--genuine-approval-and-controlled-publication)
 
 - `[VERIFIED src]` = checked against a primary/current source on 2026-10-02; source URL is recorded in Appendix H.
 - `[VERIFIED supplied source]` = directly grounded in the contest terms supplied with this roadmap request.

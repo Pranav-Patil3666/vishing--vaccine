@@ -1,0 +1,99 @@
+{
+  "kind": "AUTHORING_REVISION_DIFF_NOT_APPROVAL",
+  "date": "2026-11-08",
+  "old": {
+    "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+    "version": "0.1.0",
+    "contentHash": "c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+    "reviewId": "e254f44b-160b-485f-b8ba-86524ddfb468"
+  },
+  "new": {
+    "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "version": "0.1.1",
+    "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "createdAt": "2026-11-08T05:47:57.576Z",
+    "author": {
+      "actorId": "local-author",
+      "role": "AUTHOR"
+    }
+  },
+  "revisionReason": "Owner requested changes: add explicit outcome-neutral COMPLIED guidance distinct from dummy disclosure, and visible unsolicited synthetic-disclosure context. No checklist approval or warning acceptance was authorized.",
+  "changes": [
+    {
+      "path": "/details/debriefs/3/limitations",
+      "before": "This records a practice action and makes no claim about real credential exposure.",
+      "after": "DUMMY-1234 jaise fictional training-only token ko bina poochhe bolna bhi synthetic disclosure hai. Yeh real credential exposure ya request par agreement establish nahi karta; simulation safely khatam hoti hai."
+    },
+    {
+      "path": "/details/debriefs/6",
+      "before": null,
+      "after": {
+        "templateId": "complied",
+        "behavior": "COMPLIED",
+        "outcome": null,
+        "redFlags": [
+          "RF-01",
+          "RF-02",
+          "RF-03",
+          "RF-07",
+          "RF-08"
+        ],
+        "scoring": "Record COMPLIED only when committed behavior shows agreement without a dummy value. Verification, disclosure, enrollment and transaction completion remain unscored without their own evidence. Agreement alone earns no independent-verification credit.",
+        "nextAction": "Call ko rokein. Apne familiar employee directory ya bookmarked training portal ko khud kholkar request independently check karein.",
+        "limitations": "Haan kehne se dummy disclosure, real enrollment ya transaction completion establish nahi hota. Dummy token bina kisi aur agreement ke bhi bola ja sakta hai; us observation ka label DISCLOSED_DUMMY_SECRET hai.",
+        "takeaway": "Call par haan aur token batana alag observations hain. Aage koi action lene se pehle apne known channel se verify karein."
+      }
+    },
+    {
+      "path": "/details/premise",
+      "before": "A caller claims a wellness enrollment is pending at Fictional Meghdoot Works. The employee chooses whether to confirm on the call or check the request independently.",
+      "after": "Meghdoot Works ki fictional wellness simulation mein learner call par confirmation de ya apne known channel se jaanch kare. Unsolicited synthetic disclosure bhi model ho sakta hai: fictional training-only DUMMY-1234 token bina poochhe bola ja sakta hai. Caller koi real OTP, password ya account value nahi maangta. Ise sirf synthetic disclosure darj karke simulation safely rokte hain; yeh real credential exposure nahi hai. Unverified caller ko asli secrets na dein."
+    },
+    {
+      "path": "/draft/debriefTemplateVariants/6",
+      "before": null,
+      "after": {
+        "templateId": "complied",
+        "language": "hi-en",
+        "kind": "risky",
+        "text": "COMPLIED mein learner ne suggested confirmation ya action ke liye haan kahi, bina dummy token bataye. Yeh agreement hai; token disclosure ka saboot nahi. Unverified caller ki request par aage badhne se pehle apne known channel se jaanch karein.",
+        "status": "DRAFT"
+      }
+    },
+    {
+      "path": "/draft/importableArtifacts/0/artifactId",
+      "before": "S-92-0.1.0-scenario",
+      "after": "S-92-0.1.1-scenario"
+    },
+    {
+      "path": "/draft/importableArtifacts/0/scenario/version",
+      "before": "0.1.0",
+      "after": "0.1.1"
+    },
+    {
+      "path": "/draft/packageId",
+      "before": "S-92-0.1.0-draft",
+      "after": "S-92-0.1.1-draft"
+    },
+    {
+      "path": "/draft/scenario/version",
+      "before": "0.1.0",
+      "after": "0.1.1"
+    }
+  ],
+  "unchanged": [
+    "opening",
+    "all 15 tactic variants and educational annotations",
+    "all 18 learner utterances and interpretations",
+    "five tactic identifiers",
+    "decision graph and graph references",
+    "four terminal responses",
+    "three-turn bound",
+    "pressure metadata",
+    "red flags",
+    "safe actions",
+    "existing six template texts",
+    "approved runtime S-01"
+  ],
+  "parentReviewBinding": "Parent candidate ID resolves to the preserved registry review; the candidate contract has no separate parentReviewId field."
+}

@@ -3,9 +3,11 @@ import { link, lstat, mkdir, open, readdir, unlink } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import {
   benefitsTemplate, canonicalDraftJson, DeterministicMockScenarioGenerator, draftJsonFilename, draftJsonLimit, DraftAuthoringError,
-  parseAuthoringCandidate, parseDraftJson, parseMockDraftBrief, parseSavedDraft,
+  offlineAdaptiveMockGeneratorVersion, parseAuthoringCandidate, parseDraftJson, parseMockDraftBrief, parseSavedDraft,
+  validateAuthoringDraft,
   type AuthoringCandidate, type SavedDraft, type ScenarioSafetyOptions,
 } from "@vaccine/scenario-schema";
+import { OfflineAdaptiveMockGenerator } from "./offlineAdaptiveMockGenerator.js";
 
 const savedId = /^(?:mock|import)-[0-9a-f]{64}$/u;
 export const draftFingerprint = (value: string | Uint8Array) => createHash("sha256").update(value).digest("hex");
@@ -46,7 +48,7 @@ export async function readAuthorSelectedJson(inputPath: string) {
   const originalFilename = basename(inputPath);
   // Local file selection can be absolute. Device, network, alternate streams and symlink inputs are excluded.
   const localPath = resolve(inputPath);
-  if (/^[\\/]{2}/u.test(localPath) || /^[\\/]{2}/u.test(inputPath)
+  if (inputPath.split(/[\\/]/u).includes("..") || /^[\\/]{2}/u.test(localPath) || /^[\\/]{2}/u.test(inputPath)
     || localPath.replace(/^[a-z]:/iu, "").includes(":")
     || extname(originalFilename).toLowerCase() !== ".json" || !draftJsonFilename.test(originalFilename)) {
     throw new DraftAuthoringError("INVALID_DRAFT_PATH");
@@ -86,10 +88,14 @@ export class LocalDraftStore {
 
   async generate(briefValue: unknown, previousCandidateId: string | null = null) {
     const brief = parseMockDraftBrief(briefValue);
-    const candidate = new DeterministicMockScenarioGenerator().generateDraft(brief);
+    const generator = brief.runtimeProfile === "offline-adaptive-v1"
+      ? new OfflineAdaptiveMockGenerator() : new DeterministicMockScenarioGenerator();
+    const candidate = generator.generateDraft(brief);
+    const generatorVersion = brief.runtimeProfile === "offline-adaptive-v1"
+      ? offlineAdaptiveMockGeneratorVersion : benefitsTemplate.generatorVersion;
     return this.save(candidate, {
       source: "DETERMINISTIC_MOCK", templateFamily: benefitsTemplate.family, templateVersion: benefitsTemplate.version,
-      generatorVersion: benefitsTemplate.generatorVersion, briefFingerprint: draftFingerprint(canonicalDraftJson(brief)),
+      generatorVersion, briefFingerprint: draftFingerprint(canonicalDraftJson(brief)),
     }, previousCandidateId);
   }
 
@@ -100,6 +106,28 @@ export class LocalDraftStore {
       source: "MANUAL_IMPORT", originalFilename, sourceFingerprint: draftFingerprint(bytes),
       declaredOrigin: candidate.declaredOrigin ?? null, verification: "UNVERIFIED",
     }, previousCandidateId);
+  }
+
+  async createRevision(parent: SavedDraft, input: unknown) {
+    const candidate = parseAuthoringCandidate(input, this.safety);
+    const prior = await this.load(parent.candidateId);
+    if (canonicalDraftJson(prior) !== canonicalDraftJson(parent)
+      || candidate.draft.scenario.scenario_id !== prior.candidate.draft.scenario.scenario_id
+      || candidate.draft.scenario.version === prior.candidate.draft.scenario.version) {
+      throw new DraftAuthoringError("INVALID_CANDIDATE_REFERENCE", "previousCandidateId");
+    }
+    try {
+      return await this.save(candidate, {
+        source: "MANUAL_IMPORT", originalFilename: "revision.json",
+        sourceFingerprint: draftFingerprint(canonicalDraftJson(input)),
+        declaredOrigin: candidate.declaredOrigin ?? null, verification: "UNVERIFIED",
+      }, parent.candidateId);
+    } catch (error) {
+      if (!(error instanceof DraftAuthoringError) || error.code !== "CANDIDATE_ALREADY_EXISTS") throw error;
+      const existing = await this.load(`import-${draftFingerprint(canonicalDraftJson(candidate))}`);
+      if (existing.previousCandidateId !== parent.candidateId || canonicalDraftJson(existing.candidate) !== canonicalDraftJson(candidate)) throw error;
+      return existing;
+    }
   }
 
   private async save(input: AuthoringCandidate, provenance: SavedDraft["provenance"], previousCandidateId: string | null) {
@@ -158,6 +186,24 @@ export class LocalDraftStore {
       if (error instanceof DraftAuthoringError) throw error;
       throw new DraftAuthoringError("DRAFT_STORAGE_FAILED");
     }
+  }
+
+  async validateBytes(bytes: Uint8Array) {
+    let input: unknown;
+    try { input = parseDraftJson(bytes); }
+    catch { return validateAuthoringDraft(bytes, { safety: this.safety }); }
+    const lineage: SavedDraft[] = [];
+    const seen = new Set<string>();
+    let previous = input && typeof input === "object" && "previousCandidateId" in input ? input.previousCandidateId : null;
+    while (typeof previous === "string" && !seen.has(previous) && seen.size < 32) {
+      seen.add(previous);
+      try {
+        const ancestor = await this.load(previous);
+        lineage.push(ancestor);
+        previous = ancestor.previousCandidateId;
+      } catch { break; }
+    }
+    return validateAuthoringDraft(input, { safety: this.safety, lineage });
   }
 
   async list() {

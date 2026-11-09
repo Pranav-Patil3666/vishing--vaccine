@@ -5,3 +5,6 @@ export * from "./phase6Draft.js";
 export * from "./benefitsTemplate.js";
 export * from "./authoringRules.js";
 export * from "./authoringValidation.js";
+export * from "./authoringReview.js";
+export * from "./runtimeRelease.js";
+export { scanAuthoringText } from "./authoringContentSafety.js";

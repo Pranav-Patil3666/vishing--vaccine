@@ -23,12 +23,12 @@ import { fetchApiHealth } from "./healthClient.js";
 import { parseClientEnvironment } from "./environment.js";
 import { createApiClient } from "./sessionApi.js";
 import { parseHashRoute, routeHash, type AppRoute } from "./route.js";
-import { scenarioById, scenarioCatalog, scenarioFocus, scenarioTitle } from "./scenarioCatalog.js";
+import { scenarioCatalog, scenarioFocus, scenarioTitle } from "./scenarioCatalog.js";
 import { useBrowserAudio } from "./audio/useBrowserAudio.js";
 import { BrowserAudioPanel } from "./components/BrowserAudioPanel.js";
 import { RealVoiceTurnPanel } from "./components/RealVoiceTurnPanel.js";
 import { ConversationPanel } from "./components/ConversationPanel.js";
-import { isScenarioRuntimeEligible } from "@vaccine/scenario-schema";
+import type { ScenarioDocument } from "@vaccine/scenario-schema";
 
 const publicEnvironment = parseClientEnvironment({
   VITE_PUBLIC_APP_NAME: import.meta.env.VITE_PUBLIC_APP_NAME,
@@ -56,6 +56,10 @@ export function App() {
   const [lastTurn, setLastTurn] = useState<TurnTelemetry | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [playable, setPlayable] = useState<ScenarioDocument[]>([]);
+  const scenarios = useMemo(() => [...new Map([
+    ...scenarioCatalog, ...playable,
+  ].map((scenario) => [scenario.scenario_id, scenario])).values()], [playable]);
 
   function navigate(next: AppRoute) {
     window.location.hash = routeHash(next);
@@ -67,10 +71,16 @@ export function App() {
     finally { setHealthChecked(true); }
   }
 
+  async function refreshCatalog() {
+    try { const current = await api.listRuntimeScenarios?.() ?? []; setPlayable(current); return current; }
+    catch { setPlayable([]); return []; }
+  }
+
   useEffect(() => {
     const onHashChange = () => setRoute(parseHashRoute(window.location.hash));
     window.addEventListener("hashchange", onHashChange);
     void checkHealth();
+    void refreshCatalog();
     const sessionId = window.sessionStorage.getItem("vv.active-session-id");
     if (sessionId) void api.getSession(sessionId).then(setSession).catch(() => window.sessionStorage.removeItem("vv.active-session-id"));
     return () => window.removeEventListener("hashchange", onHashChange);
@@ -83,10 +93,16 @@ export function App() {
   }, [api, route, session?.sessionId]);
 
   async function startSimulation(scenarioId: string, runtimeMode: "MOCK" | "REAL_STT" | "REAL_CONVERSATION" = "MOCK") {
-    const scenario = scenarioById(scenarioId);
+    const scenario = scenarios.find((entry) => entry.scenario_id === scenarioId);
     if (!scenario) { setError("That training scenario is not available."); return; }
     setBusy(true); setError(null);
     try {
+      if (scenario.lifecycle_status !== "DRAFT") {
+        const current = await refreshCatalog();
+        if (!current.some((entry) => entry.scenario_id === scenarioId && entry.version === scenario.version)) {
+          throw new Error("That published scenario version is no longer available. Choose a current version from the library.");
+        }
+      }
       const created = await api.createDemoSession({ scenarioId: scenario.scenario_id, scenarioVersion: scenario.version,
         language: runtimeMode !== "MOCK" ? "hi-IN" : scenario.language ?? "pending-verification",
         ...(runtimeMode !== "MOCK" ? { runtimeMode } : {}) });
@@ -122,14 +138,14 @@ export function App() {
   }
 
   const page = renderPage({
-    route, health, healthChecked, session, lastTurn, busy, error, api,
+    route, health, healthChecked, session, lastTurn, busy, error, api, scenarios, playable,
     onClearError: () => setError(null),
     onNavigate: navigate,
     onStart: (scenarioId) => navigate({ page: "precall", scenarioId }),
     onStartConfirmed: startSimulation,
     onSubmitTurn: submitTurn,
     onEnd: endSimulation,
-    onRefreshHealth: checkHealth,
+    onRefreshHealth: async () => { await Promise.all([checkHealth(), refreshCatalog()]); },
     onRealTurn: (result) => { setSession(result.turn.session); setLastTurn({ branch: result.turn.branch, response: result.turn.response }); },
     onSession: setSession,
     onConversationFinished: (ended) => { setSession(ended); navigate({ page: "debrief", sessionId: ended.sessionId }); },
@@ -151,6 +167,8 @@ interface PageProps {
   busy: boolean;
   error: string | null;
   api: ReturnType<typeof createApiClient>;
+  scenarios: ScenarioDocument[];
+  playable: ScenarioDocument[];
   onClearError: () => void;
   onNavigate: (route: AppRoute) => void;
   onStart: (scenarioId: string) => void;
@@ -161,6 +179,10 @@ interface PageProps {
   onSubmitTurn: (text: string, timingFixture?: AudioTimingFixture) => Promise<void>;
   onEnd: () => Promise<void>;
   onRefreshHealth: () => Promise<void>;
+}
+
+function catalogAllows(playable: ScenarioDocument[], scenario: ScenarioDocument) {
+  return playable.some((entry) => entry.scenario_id === scenario.scenario_id && entry.version === scenario.version);
 }
 
 function renderPage(props: PageProps) {
@@ -177,7 +199,7 @@ function renderPage(props: PageProps) {
 }
 
 function DashboardPage(props: PageProps) {
-  const { session, health, healthChecked, onNavigate, onStart, onRefreshHealth, busy } = props;
+  const { session, health, healthChecked, onNavigate, onStart, onRefreshHealth, busy, scenarios, playable } = props;
   const latency = meanLatency(session);
   const latestBehavior = session?.behaviorHistory.at(-1)?.label;
   const activeCount = session && !terminalState(session) ? 1 : 0;
@@ -197,13 +219,13 @@ function DashboardPage(props: PageProps) {
       </div>
     </section>
     <section className="metric-grid" aria-label="Training metrics">
-      <MetricCard label="Training scenarios" value={String(scenarioCatalog.length)} detail={`${scenarioCatalog.length} draft source packages`} icon={BookOpenCheck} tone="orange" />
-      <MetricCard label="Runtime eligible" value={String(scenarioCatalog.filter((item) => item.lifecycle_status === "RUNTIME_ELIGIBLE" && item.review_status === "approved").length)} detail="Current catalog · shared schema" icon={ShieldCheck} tone="green" />
+      <MetricCard label="Training scenarios" value={String(scenarios.length)} detail="Scenario library" icon={BookOpenCheck} tone="orange" />
+      <MetricCard label="Runtime eligible" value={String(playable.length)} detail="Verified server catalog" icon={ShieldCheck} tone="green" />
       <MetricCard label="Active demo session" value={String(activeCount)} detail="In-memory · not persisted" icon={Radio} tone="gold" />
       <MetricCard label="Mean response latency" value={latency === null ? "—" : `${Math.round(latency)} ms`} detail={latency === null ? "No measured session timing" : "Current session · fixture timing"} icon={Clock3} tone="blue" unknown={latency === null} />
     </section>
     <div className="section-heading"><div><span className="eyebrow">TRAINING LIBRARY</span><h2>Scenario tracks</h2><p>Fictional organizations · draft-safe fallback only</p></div><button className="button button-ghost" onClick={() => onNavigate({ page: "scenarios" })}>View library <ArrowRight size={15} /></button></div>
-    <div className="scenario-grid scenario-grid-home">{scenarioCatalog.slice(0, 3).map((scenario, index) => <ScenarioCard key={scenario.scenario_id} scenario={scenario} featured={index === 0} onOpen={() => onNavigate({ page: "scenario", scenarioId: scenario.scenario_id })} onStart={() => onStart(scenario.scenario_id)} />)}</div>
+    <div className="scenario-grid scenario-grid-home">{scenarios.slice(0, 3).map((scenario, index) => <ScenarioCard key={scenario.scenario_id} scenario={scenario} eligible={catalogAllows(playable, scenario)} featured={index === 0} onOpen={() => onNavigate({ page: "scenario", scenarioId: scenario.scenario_id })} onStart={() => onStart(scenario.scenario_id)} />)}</div>
     <section className="process-panel"><div className="section-heading"><div><span className="eyebrow">HOW THE SIMULATION WORKS</span><h2>A bounded practice loop</h2></div><span className="process-label"><Radio size={14} /> DETERMINISTIC · MOCK</span></div>
       <div className="process-track">{[
         { number: "01", title: "Select scenario", detail: "Fictional training content", Icon: BookOpenCheck },
@@ -216,26 +238,27 @@ function DashboardPage(props: PageProps) {
   </div>;
 }
 
-function ScenarioLibraryPage({ onNavigate, onStart }: PageProps) {
+function ScenarioLibraryPage({ onNavigate, onStart, scenarios, playable }: PageProps) {
   return <div className="page-stack">
     <div className="page-heading"><div><div className="eyebrow"><BookOpenCheck size={14} /> SCENARIO LIBRARY</div><h1>Training scenarios</h1><p>Inspect the structured source content and its review state before starting a metadata-only demo.</p></div><button className="button button-primary" onClick={() => onNavigate({ page: "authoring" })}><Sparkles size={16} /> Create scenario</button></div>
-    <div className="library-toolbar"><span><span className="tiny-dot" /> {scenarioCatalog.length} scenario records</span><span>Local drafts are available in Authoring</span></div>
-    <div className="scenario-grid">{scenarioCatalog.map((scenario) => <ScenarioCard key={scenario.scenario_id} scenario={scenario} onOpen={() => onNavigate({ page: "scenario", scenarioId: scenario.scenario_id })} onStart={() => onStart(scenario.scenario_id)} />)}</div>
+    <div className="library-toolbar"><span><span className="tiny-dot" /> {scenarios.length} scenario records</span><span>Local drafts are available in Authoring</span></div>
+    <div className="scenario-grid">{scenarios.map((scenario) => <ScenarioCard key={scenario.scenario_id} scenario={scenario} eligible={catalogAllows(playable, scenario)} onOpen={() => onNavigate({ page: "scenario", scenarioId: scenario.scenario_id })} onStart={() => onStart(scenario.scenario_id)} />)}</div>
     <div className="note-banner"><ShieldAlert size={17} /><div><strong>Draft content is not caller dialogue</strong><span>These source packages are not runtime eligible. Demo sessions use the system-safe fallback and do not play caller audio.</span></div></div>
   </div>;
 }
 
-function ScenarioReviewPage({ scenarioId, onNavigate, onStart }: PageProps & { scenarioId: string }) {
-  const scenario = scenarioById(scenarioId);
+function ScenarioReviewPage({ scenarioId, onNavigate, onStart, scenarios, playable }: PageProps & { scenarioId: string }) {
+  const scenario = scenarios.find((entry) => entry.scenario_id === scenarioId);
   const [selectedNodeId, setSelectedNodeId] = useState(scenario?.nodes[0]?.id ?? "");
   if (!scenario) return <EmptyState icon={CircleHelp} title="Scenario not found" text="Choose a scenario from the library." action="Back to library" onAction={() => onNavigate({ page: "scenarios" })} />;
+  const eligible = catalogAllows(playable, scenario);
   const selectedNode = scenario.nodes.find((node) => node.id === selectedNodeId) ?? scenario.nodes[0];
   const selectedResponse = selectedNode ? scenario.responses[selectedNode.response_id] : undefined;
   return <div className="page-stack">
     <button className="back-link" onClick={() => onNavigate({ page: "scenarios" })}><ChevronLeft size={16} /> Scenario library</button>
-    <div className="page-heading scenario-detail-heading"><div><div className="eyebrow">{scenario.scenario_id} <i>·</i> VERSION {scenario.version}</div><h1>{scenarioTitle(scenario)}</h1><p>{scenarioFocus(scenario)}</p></div><span className="status-badge status-draft">DRAFT · FALLBACK ONLY</span></div>
+    <div className="page-heading scenario-detail-heading"><div><div className="eyebrow">{scenario.scenario_id} <i>·</i> VERSION {scenario.version}</div><h1>{scenarioTitle(scenario)}</h1><p>{scenarioFocus(scenario)}</p></div><span className={`status-badge ${eligible ? "status-approved" : "status-draft"}`}>{eligible ? "RUNTIME ELIGIBLE" : scenario.lifecycle_status === "DRAFT" ? "DRAFT · FALLBACK ONLY" : "UNAVAILABLE"}</span></div>
     <div className="review-overview"><div className="review-overview-main"><div className="review-meta-line"><span>FICTIONAL ORGANIZATION</span><strong>{scenario.fictional_organization.name}</strong><span className="fictional-chip"><ShieldCheck size={13} /> TRAINING ONLY</span></div><p>{scenario.safety_constraints[0]}</p><div className="scenario-tags">{scenario.red_flag_ids.map((flag) => <span key={flag}>{flag}</span>)}</div></div>
-      <div className="review-status-card"><span className="eyebrow">RUNTIME GATE</span><LockKeyhole size={21} /><strong>NOT ELIGIBLE</strong><small>Human review and provider language/voice checks are incomplete.</small></div></div>
+      <div className="review-status-card"><span className="eyebrow">RUNTIME GATE</span><LockKeyhole size={21} /><strong>{eligible ? "VERIFIED RELEASE" : "NOT ELIGIBLE"}</strong><small>{eligible ? "Available in the current server catalog." : "This version has no current runtime authorization."}</small></div></div>
     <div className="review-layout">
       <section className="panel tree-panel"><div className="panel-heading"><div><span className="eyebrow">SCENARIO TREE</span><h2>Conversation steps</h2></div><span className="panel-count">{scenario.nodes.length} nodes</span></div>
         <div className="scenario-tree">{scenario.nodes.map((node, index) => <button type="button" className={`tree-node ${selectedNode?.id === node.id ? "tree-node-selected" : ""}`} key={node.id} onClick={() => setSelectedNodeId(node.id)}>
@@ -249,7 +272,7 @@ function ScenarioReviewPage({ scenarioId, onNavigate, onStart }: PageProps & { s
           <div className="inspector-field"><span>EXPECTED LEARNER BEHAVIOR</span>{selectedNode.learner_expected_behavior.map((behavior) => <p key={behavior}>{behavior}</p>)}</div>
           <div className="inspector-field"><span>SAFE FALLBACK</span><strong>{selectedNode.safe_fallback_response_id}</strong></div>
           <div className="inspector-field"><span>SAFETY CONSTRAINTS</span>{selectedNode.safety_constraints.map((constraint) => <p key={constraint}>{constraint}</p>)}</div>
-          <div className="inspector-actions"><button className="button button-primary" onClick={() => onStart(scenario.scenario_id)}>Preview safe demo <Play size={14} /></button><span>Text input only · no caller audio</span></div></>}
+          <div className="inspector-actions"><button className="button button-primary" disabled={!eligible && scenario.lifecycle_status !== "DRAFT"} onClick={() => onStart(scenario.scenario_id)}>Preview safe demo <Play size={14} /></button><span>Choose the available mode on the briefing screen.</span></div></>}
       </section>
       <aside className="panel safety-inspector"><div className="panel-heading"><div><span className="eyebrow">REVIEW INSPECTOR</span><h2>Safety & metadata</h2></div><ShieldAlert size={18} /></div>
         <div className="safety-inspector-list"><div><span>CONTENT STATUS</span><strong><span className="status-dot dot-draft" /> {scenario.lifecycle_status}</strong></div><div><span>REVIEW STATUS</span><strong>{scenario.review_status.toUpperCase()}</strong></div><div><span>LANGUAGE</span><strong>{scenario.language ?? "Pending verification"}</strong></div><div><span>VOICE</span><strong>{scenario.voice_id ?? "Not configured"}</strong></div><div><span>ADAPTIVE TACTICS</span><strong>{scenario.adaptive_policy?.tactics.length ?? 0} configured</strong></div><div><span>SIMULATION LABEL</span><strong className="text-safe">{scenario.safety_metadata?.visible_simulation_label ? "Required" : "Not specified"}</strong></div></div>
@@ -259,23 +282,25 @@ function ScenarioReviewPage({ scenarioId, onNavigate, onStart }: PageProps & { s
   </div>;
 }
 
-function PreCallPage({ scenarioId, onNavigate, onStartConfirmed, busy }: PageProps & { scenarioId: string }) {
-  const scenario = scenarioById(scenarioId);
+function PreCallPage({ scenarioId, onNavigate, onStartConfirmed, busy, scenarios, playable }: PageProps & { scenarioId: string }) {
+  const scenario = scenarios.find((entry) => entry.scenario_id === scenarioId);
   const [consented, setConsented] = useState(false);
   const [runtimeMode, setRuntimeMode] = useState<"MOCK" | "REAL_STT" | "REAL_CONVERSATION">("MOCK");
   if (!scenario) return <EmptyState icon={CircleHelp} title="Scenario not found" text="Choose a current training scenario first." action="Open library" onAction={() => onNavigate({ page: "scenarios" })} />;
+  const eligible = catalogAllows(playable, scenario);
+  const voiceAllowed = eligible && scenario.scenario_id === "S-01" && scenario.language === "hi-IN" && Boolean(scenario.adaptive_policy);
   return <div className="precall-wrap">
     <button className="back-link" onClick={() => onNavigate({ page: "scenarios" })}><ChevronLeft size={16} /> Back to scenarios</button>
     <div className="precall-header"><div className="eyebrow"><span className="pulse-dot" /> REQUIRED BEFORE SESSION</div><h1>Know what this<br /><em>simulation is.</em></h1><p>Review the safety details before entering a training session.</p></div>
     <div className="precall-layout"><section className="panel scenario-brief-card"><div className="precall-disclosure-visual"><VoiceSecurityCore compact activity="idle" /><div className="precall-badges"><span className="status-badge status-draft">{runtimeMode === "REAL_CONVERSATION" ? "AUTOMATIC · MAXIMUM 3 TURNS" : runtimeMode === "REAL_STT" ? "REAL STT · ONE TURN" : "MOCK PRACTICE"}</span><span className="status-badge status-ai">AI-GENERATED VOICE · SIMULATION</span></div></div>
       <div className="scenario-brief-content"><span className="eyebrow">{scenario.scenario_id} · {scenario.version}</span><h2>{scenarioTitle(scenario)}</h2><p>{scenarioFocus(scenario)}</p><div className="brief-details"><span><small>ORGANIZATION</small><strong>Fictional training content</strong></span><span><small>LANGUAGE</small><strong>{scenario.language ?? "Pending verification"}</strong></span><span><small>SESSION LENGTH</small><strong>Not measured</strong></span></div></div>
     </section><section className="panel consent-panel"><div className="panel-heading"><div><span className="eyebrow">SAFETY BRIEFING</span><h2>Before you begin</h2></div><ShieldCheck size={20} /></div>
-      {import.meta.env.DEV && scenario.scenario_id === "S-01" && <div className="fixture-controls">
+      {import.meta.env.DEV && voiceAllowed && <div className="fixture-controls">
         <label><input type="radio" name="runtime-mode" checked={runtimeMode === "MOCK"} onChange={() => { setRuntimeMode("MOCK"); setConsented(false); }} /> Mock typing</label>
         <label><input type="radio" name="runtime-mode" checked={runtimeMode === "REAL_STT"} onChange={() => { setRuntimeMode("REAL_STT"); setConsented(false); }} /> REAL STT · one hi-IN voice turn</label>
         <label><input type="radio" name="runtime-mode" checked={runtimeMode === "REAL_CONVERSATION"} onChange={() => { setRuntimeMode("REAL_CONVERSATION"); setConsented(false); }} /> Automatic S-01 conversation · maximum 3 learner turns</label>
         {runtimeMode === "REAL_CONVERSATION" && <p>Approved AI-generated caller audio plays automatically. Your microphone streams learner turns transiently to Prisma. A safe ending finishes playback before the debrief opens.</p>}
-        {runtimeMode === "REAL_STT" && <p>{isScenarioRuntimeEligible(scenario) && scenario.language === "hi-IN" && scenario.adaptive_policy
+        {runtimeMode === "REAL_STT" && <p>{voiceAllowed
           ? "Audio will stream transiently to Prisma after separate microphone consent. Caller playback remains a mock cue."
           : "Blocked: approved S-01 Hindi/Hinglish runtime content is required. The current draft remains unavailable for real turns."}</p>}
       </div>}
@@ -283,13 +308,13 @@ function PreCallPage({ scenarioId, onNavigate, onStartConfirmed, busy }: PagePro
       <label className="consent-check"><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} /><span>{runtimeMode !== "MOCK"
         ? "I understand this is a simulation, will use only DUMMY-0000 format dummy information, and consent to this real transcription training session."
         : "I understand this is a simulation, will use dummy information only, and consent to this typed mock training session."}</span></label>
-      <button className="button button-primary button-wide" type="button" onClick={() => void onStartConfirmed(scenario.scenario_id, runtimeMode)} disabled={!consented || busy || (runtimeMode !== "MOCK" && (!isScenarioRuntimeEligible(scenario) || scenario.language !== "hi-IN" || !scenario.adaptive_policy))}>{busy ? "Preparing session…" : "Start simulation"}<ArrowRight size={16} /></button>
+      <button className="button button-primary button-wide" type="button" onClick={() => void onStartConfirmed(scenario.scenario_id, runtimeMode)} disabled={!consented || busy || (!eligible && scenario.lifecycle_status !== "DRAFT") || (runtimeMode !== "MOCK" && !voiceAllowed)}>{busy ? "Preparing session…" : "Start simulation"}<ArrowRight size={16} /></button>
       <p className="consent-version">CONSENT IS RECORDED BY THE LOCAL SESSION API · SESSION AUDIO RETENTION: NONE</p>
     </section></div>
   </div>;
 }
 
-function LiveCallPage({ session, lastTurn, sessionId, health, busy, onNavigate, onSubmitTurn, onEnd, onRealTurn, onSession, onConversationFinished, api }: PageProps & { sessionId: string }) {
+function LiveCallPage({ session, lastTurn, sessionId, health, busy, onNavigate, onSubmitTurn, onEnd, onRealTurn, onSession, onConversationFinished, api, scenarios, playable }: PageProps & { sessionId: string }) {
   const [text, setText] = useState("");
   const [useFixture, setUseFixture] = useState(false);
   const [noResponse, setNoResponse] = useState(false);
@@ -298,10 +323,10 @@ function LiveCallPage({ session, lastTurn, sessionId, health, busy, onNavigate, 
   const conversationMode = currentSession?.runtimeMode === "REAL_CONVERSATION";
   const realMode = currentSession?.runtimeMode === "REAL_STT" || conversationMode;
   const realStop = useRef<(() => void) | null>(null);
-  const audioEnabled = import.meta.env.DEV && canUseFixtures && !realMode;
+  const audioEnabled = import.meta.env.DEV && canUseFixtures && !realMode && !currentSession?.runtimeRelease?.publicationId;
   const audio = useBrowserAudio(currentSession, api, audioEnabled);
   const audioState = audio.diagnostics?.state;
-  const scenario = scenarioById(currentSession?.scenarioId);
+  const scenario = [...playable, ...scenarios].find((entry) => entry.scenario_id === currentSession?.scenarioId && entry.version === currentSession.scenarioVersion);
   const lastEvent = currentSession?.timelineEvents.at(-1);
   if (!currentSession) return <LoadingState title="Loading session telemetry" text="Reading the safe session projection from the local API." />;
   const completed = terminalState(currentSession);
@@ -378,9 +403,9 @@ function DebriefPage({ session, sessionId, onNavigate }: PageProps & { sessionId
   </div>;
 }
 
-function SessionHistoryPage({ session, onNavigate }: PageProps) {
+function SessionHistoryPage({ session, onNavigate, scenarios, playable }: PageProps) {
   if (!session) return <div className="page-stack"><div className="page-heading"><div><div className="eyebrow"><Activity size={14} /> SESSION INSPECTION</div><h1>Session history</h1><p>Current API storage is in-memory and does not retain history across restarts.</p></div></div><EmptyState icon={Radio} title="No active session" text="Start a simulation to inspect its event timeline and debrief." action="Choose a scenario" onAction={() => onNavigate({ page: "scenarios" })} /></div>;
-  const scenario = scenarioById(session.scenarioId);
+  const scenario = [...playable, ...scenarios].find((entry) => entry.scenario_id === session.scenarioId && entry.version === session.scenarioVersion);
   return <div className="page-stack"><div className="page-heading"><div><div className="eyebrow"><Activity size={14} /> SESSION INSPECTION</div><h1>Session history</h1><p>Only the current in-memory mock session is available. No persistent history endpoint is configured.</p></div><span className="status-badge status-ai">IN-MEMORY DEMO</span></div>
     <article className="session-history-card"><div className="session-history-mark"><AudioLines size={22} /></div><div className="session-history-main"><span className="mono-eyebrow">{session.sessionId}</span><h2>{scenario ? scenarioTitle(scenario) : session.scenarioId}</h2><p>{scenario ? scenarioFocus(scenario) : "Scenario details unavailable."}</p><div className="session-history-tags"><span>{session.state.replaceAll("_", " ")}</span><span>{session.turnNumber} turn{session.turnNumber === 1 ? "" : "s"}</span><span>{session.scenarioRuntimeStatus}</span><span>Consent {session.consent.status}</span></div></div><div className="session-history-actions"><button className="button button-outline button-small" onClick={() => onNavigate(terminalState(session) ? { page: "debrief", sessionId: session.sessionId } : { page: "live", sessionId: session.sessionId })}>{terminalState(session) ? "Open debrief" : "Resume session"}<ArrowUpRight size={14} /></button></div></article>
     <section className="panel timeline-panel"><div className="panel-heading"><div><span className="eyebrow">PRESSURE CURVE</span><h2>Conversation events</h2></div><span className="panel-count">{session.pressureTimeline.length} events</span></div><PressureTimeline points={session.pressureTimeline} /></section>

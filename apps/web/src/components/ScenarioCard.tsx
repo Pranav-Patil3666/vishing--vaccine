@@ -4,14 +4,16 @@ import { scenarioFocus, scenarioTitle, scenarioTacticCount } from "../scenarioCa
 
 const workflowHelperId = (scenarioId: string) => `workflow-helper-${scenarioId}`;
 
-export function ScenarioCard({ scenario, featured = false, isLocalDraft = false, onOpen, onStart }: {
+export function ScenarioCard({ scenario, featured = false, isLocalDraft = false, eligible, onOpen, onStart }: {
   scenario: ScenarioDocument;
   featured?: boolean;
   isLocalDraft?: boolean;
+  eligible?: boolean;
   onOpen: () => void;
   onStart: () => void;
 }) {
-  const runtimeEligible = scenario.lifecycle_status === "RUNTIME_ELIGIBLE" && scenario.review_status === "approved";
+  const runtimeEligible = eligible ?? (scenario.lifecycle_status === "RUNTIME_ELIGIBLE" && scenario.review_status === "approved");
+  const unavailable = isLocalDraft || (eligible === false && scenario.lifecycle_status !== "DRAFT");
   return <article className={`scenario-card ${featured ? "scenario-card-featured" : ""} ${isLocalDraft ? "scenario-card-local" : ""}`}>
     <div className="scenario-card-top"><span className="scenario-id">{scenario.scenario_id} <i>·</i> v{scenario.version}</span>
       {isLocalDraft ? <div className="scenario-card-statuses"><span className="status-badge status-draft">Draft (local)</span><span className="status-badge status-not-submitted">NOT SUBMITTED</span></div> : <span className={`status-badge ${runtimeEligible ? "status-approved" : "status-draft"}`}>{runtimeEligible ? "RUNTIME ELIGIBLE" : scenario.review_status === "in_review" ? "IN REVIEW" : "DRAFT"}</span>}
@@ -26,7 +28,7 @@ export function ScenarioCard({ scenario, featured = false, isLocalDraft = false,
       <span><LockKeyhole size={13} /> {runtimeEligible ? "Approved" : isLocalDraft ? "Local draft" : "Fallback only"}</span>
     </div>
     <div className="scenario-card-actions"><button className="button button-ghost button-small" type="button" onClick={onOpen}>Inspect scenario <ChevronRight size={15} /></button>
-      <button className="button button-outline button-small" type="button" onClick={onStart} disabled={isLocalDraft} title={isLocalDraft ? "Available after backend workflow integration." : undefined} aria-describedby={isLocalDraft ? workflowHelperId(scenario.scenario_id) : undefined}>Preview demo <ArrowUpRight size={14} /></button></div>
+      <button className="button button-outline button-small" type="button" onClick={onStart} disabled={unavailable} title={isLocalDraft ? "Available after backend workflow integration." : undefined} aria-describedby={isLocalDraft ? workflowHelperId(scenario.scenario_id) : undefined}>Preview demo <ArrowUpRight size={14} /></button></div>
     <div className="scenario-workflow">
       <div className="scenario-local-workflow-actions">
         <button type="button" aria-disabled="true" aria-describedby={workflowHelperId(scenario.scenario_id)} title="Available after backend workflow integration.">Edit</button>

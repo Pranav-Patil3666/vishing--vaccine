@@ -6,7 +6,7 @@ export function authoringText(value: string) {
 }
 
 export const independentCue = /(?:known|familiar|independen|trusted|saved|bookmark|jaana.pehchana|स्वतंत्र|परिचित|जानती हुई|पहले से)/iu;
-export const stopCue = /\b(?:end|stop|khatam|rokte|rokna|terminate)\b|खत्म|रोक|समाप्त/iu;
+export const stopCue = /\b(?:end|stop|khatam|rokte|rokna|terminate)\b|turn limit.{0,15}poori|खत्म|रोक|समाप्त|बारी सीमा पूरी/iu;
 export const simulationCue = /\b(?:this is (?:a |an )?(?:training )?simulation|yeh simulation hai|this is (?:a )?practice|practice call)\b|यह.{0,10}(?:सिमुलेशन|अभ्यास)/iu;
 
 export function affirmativeMatch(value: string, pattern: RegExp) {
@@ -38,6 +38,7 @@ export function scanAuthoringText(
     seen.add(original);
     const text = authoringText(original);
     if (brands.some((pattern) => pattern.test(text))) add("REAL_BRAND", path);
+    if (/\b(?:Mr|Ms|Mrs|Dr)\.?\s+\p{Lu}[\p{L}-]+\s+\p{Lu}[\p{L}-]+/u.test(text)) add("ENTITY_REVIEW", path);
     if (phrases.some((pattern) => affirmativeMatch(text, pattern))) add("OPERATIONAL_INSTRUCTION", path);
 
     const dummyMatches = [...text.matchAll(/DUMMY-[\p{L}\p{N}_-]*/giu)];
@@ -48,7 +49,8 @@ export function scanAuthoringText(
     }
     const masked = text.replace(/(?<![\p{L}\p{N}_-])DUMMY-[0-9]{4}(?![\p{L}\p{N}_-])/gu, "SYNTHETICVALUE")
       .replace(/\b(?:19|20)\d{2}[-/]\d{1,2}[-/]\d{1,2}\b/gu, "DATE");
-    const hasSecret = /\b(?:otp|pin|cvv|cvc|password|passcode|api[ _-]?key|auth(?:entication)?[ _-]?token|recovery[ _-]?code|secret)\s*(?:(?:is|hai)\s+|[:=#-]\s*)[\p{L}\p{N}+/_=-]{3,}\b/iu.test(masked)
+    const credentialValues = [...masked.matchAll(/\b(?:otp|pin|cvv|cvc|password|passcode|api[ _-]?key|auth(?:entication)?[ _-]?token|recovery[ _-]?code|secret)\s*(?:(?:is|hai)\s+|[:=#-]\s*)([\p{L}\p{N}+/_=-]{3,})\b/giu)];
+    const hasSecret = credentialValues.some((match) => !/^(?:private|confidential|sensitive|unsafe|fictional|synthetic|requested|mentioned|untrusted)$/iu.test(match[1]!))
       || /(?:ओटीपी|पासवर्ड|पिन|सीवीवी)\s*[:=#-]?\s*[0-9]{3,}/u.test(masked)
       || /\b(?:sk-[a-z0-9_-]{12,}|AKIA[A-Z0-9]{16}|eyJ[a-zA-Z0-9_-]{12,}\.[a-zA-Z0-9_-]+)\b/u.test(masked)
       || /\b[0-9]{6,19}\b/u.test(masked);
@@ -73,4 +75,3 @@ export function inspectDebriefClaim(text: string, path: (string | number)[], add
     add("DEBRIEF_FABRICATION", path);
   }
 }
-

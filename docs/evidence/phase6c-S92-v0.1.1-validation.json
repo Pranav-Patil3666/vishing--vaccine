@@ -1,0 +1,62 @@
+{
+  "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+  "scenarioId": "S-92",
+  "scenarioVersion": "0.1.1",
+  "schemaVersion": 1,
+  "validationVersion": "1.0.0",
+  "checkedAt": "2026-11-08T05:48:50.406Z",
+  "sourceHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+  "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+  "status": "PASS",
+  "structuralValidation": "PASS",
+  "reviewEligible": true,
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+    "info": 1
+  },
+  "findings": [
+    {
+      "ruleId": "CONTENT_REVIEW",
+      "category": "SAFETY",
+      "severity": "INFO",
+      "message": "Human safety and linguistic review is required after automated validation.",
+      "remediation": "Review fictional framing, educational purpose and language before any later approval.",
+      "path": "/"
+    }
+  ],
+  "graph": {
+    "complete": true,
+    "reachablePrefixes": 79,
+    "terminalLeaves": 66,
+    "maximumDepth": 3,
+    "reachableResponseIds": [
+      "authority.medium",
+      "ending.dummy",
+      "ending.turn-limit",
+      "ending.verified",
+      "fear.medium",
+      "system.opening",
+      "system.safe-fallback"
+    ],
+    "reachablePressures": [
+      0,
+      2
+    ],
+    "unreachableAuthoredVariants": [
+      "authority.high",
+      "authority.low",
+      "fear.high",
+      "fear.low",
+      "isolation.high",
+      "isolation.low",
+      "isolation.medium",
+      "reward.high",
+      "reward.low",
+      "reward.medium",
+      "urgency.high",
+      "urgency.low",
+      "urgency.medium"
+    ]
+  }
+}

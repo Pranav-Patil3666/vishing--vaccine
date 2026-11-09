@@ -1,0 +1,3034 @@
+{
+  "date": "2026-11-08",
+  "kind": "PHASE6C_CONTROLLED_PUBLICATION_AND_FRESH_PROCESS_RELOAD",
+  "lifecycle": "APPROVED",
+  "runtimeEligible": false,
+  "publication": {
+    "publicationId": "381164a8-076f-46ab-b397-efe57285d63a",
+    "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+    "target": "current-real-conversation",
+    "status": "PUBLICATION_BLOCKED",
+    "actor": {
+      "actorId": "local-publisher",
+      "role": "PUBLISHER"
+    },
+    "requestedAt": "2026-11-08T07:10:38.095Z",
+    "compatibilityVersion": "s01-real-conversation-v1",
+    "reasons": [
+      "RUNTIME_SCENARIO_UNREGISTERED",
+      "REVIEWED_RUNTIME_PACKAGE_MISSING",
+      "AUTHORING_GRAPH_NOT_RUNTIME_POLICY",
+      "TERMINAL_MAPPING_NOT_INTEGRATED",
+      "LANGUAGE_UNSUPPORTED",
+      "VOICE_NOT_VERIFIED",
+      "PRESSURE_PROFILE_UNSUPPORTED"
+    ]
+  },
+  "approval": {
+    "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+    "status": "APPROVED",
+    "runtimeEligible": false,
+    "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "snapshotHash": "4a03f67a86ca19ba5d257ec8d2ce24e0154d9c48d5f061e74454bc5c1e238c15",
+    "validationVersion": "1.0.0",
+    "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+    "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+    "reviewer": {
+      "actorId": "local-reviewer",
+      "role": "REVIEWER"
+    },
+    "approvedAt": "2026-11-08T07:06:29.184Z",
+    "humanReview": {
+      "decision": "approved",
+      "reviewerId": "local-reviewer",
+      "reviewedAt": "2026-11-08T07:06:29.184Z",
+      "checklist": {
+        "fictionalOrganization": true,
+        "syntheticDataOnly": true,
+        "noSecurityBypassInstructions": true,
+        "safeEndingAvailable": true,
+        "simulationLabelVisible": true,
+        "aiVoiceDisclosureRequired": true,
+        "consentBeforeRecording": true,
+        "noAudioRetentionByDefault": true
+      },
+      "notes": [
+        "The repository owner explicitly confirmed personal review of S-92 v0.1.1, all 20 mandatory items as PASS including safeguards 18-20, and translation equivalence NOT_APPLICABLE because no formal translation-equivalence claim exists. Recorded through local-reviewer under LOCAL_OS_DEMO; timestamps represent recording operations. No publication or runtime enablement authorized.",
+        "Explicit human approval in chat applies only to candidate hash 7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337. Fresh validation is unchanged and has zero errors and warnings; all existing approval gates must pass. No warning acceptances are needed."
+      ]
+    },
+    "record": {
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "createdAt": "2026-11-08T05:47:57.576Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "previousCandidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "structuralValidation": "PASS",
+      "provenance": {
+        "source": "MANUAL_IMPORT",
+        "originalFilename": "revision.json",
+        "sourceFingerprint": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+        "declaredOrigin": null,
+        "verification": "UNVERIFIED"
+      },
+      "candidate": {
+        "schemaVersion": 1,
+        "draft": {
+          "packageId": "S-92-0.1.1-draft",
+          "source": "offline_authoring",
+          "target": "offline_pre_generated",
+          "scenarioBrief": {
+            "scenarioId": "S-92",
+            "learningObjective": "Verify a fictional employee benefits request through a channel you already know.",
+            "redFlags": [
+              "RF-01",
+              "RF-02",
+              "RF-03",
+              "RF-07",
+              "RF-08"
+            ],
+            "language": "hi-en"
+          },
+          "scenario": {
+            "scenario_id": "S-92",
+            "version": "0.1.1",
+            "lifecycle_status": "DRAFT",
+            "language": "hi-en",
+            "voice_id": null,
+            "fictional_organization": {
+              "name": "Fictional Meghdoot Works",
+              "training_only": true
+            },
+            "simulation": true,
+            "opening_line": "Yeh simulation hai. Main fictional Meghdoot Works ke benefits desk se bol raha hoon. Practice wellness enrollment ki ek confirmation pending hai. Kya abhi baat kar sakte hain?",
+            "learning_objectives": [
+              "Verify a fictional employee benefits request through a channel you already know."
+            ],
+            "red_flag_ids": [
+              "RF-01",
+              "RF-02",
+              "RF-03",
+              "RF-07",
+              "RF-08"
+            ],
+            "responses": {
+              "system.opening": {
+                "text": "Yeh simulation hai. Main fictional Meghdoot Works ke benefits desk se bol raha hoon. Practice wellness enrollment ki ek confirmation pending hai. Kya abhi baat kar sakte hain?",
+                "safety_status": "draft"
+              },
+              "urgency.low": {
+                "text": "Meghdoot ki practice wellness list aaj review ho rahi hai. Kya aap apna decision jaldi bata sakte hain?",
+                "safety_status": "draft"
+              },
+              "urgency.medium": {
+                "text": "Meghdoot ke practice wellness form ka aaj ka batch band hone wala hai. Main is call mein hi aapka jawab note kar loon?",
+                "safety_status": "draft"
+              },
+              "urgency.high": {
+                "text": "Meghdoot ke practice wellness slot par timer chal raha hai. Agli baat se pehle mujhe haan ya na chahiye.",
+                "safety_status": "draft"
+              },
+              "authority.low": {
+                "text": "Meghdoot benefits desk mein yeh practice wellness request mere naam par aayi hai. Aap meri baat par status confirm kar sakte hain.",
+                "safety_status": "draft"
+              },
+              "authority.medium": {
+                "text": "Meghdoot ki practice wellness queue mein supervisor ne mere liye approval mark kiya hai. Isi call par confirmation de dijiye.",
+                "safety_status": "draft"
+              },
+              "authority.high": {
+                "text": "Meghdoot ki practice wellness list ka final sign-off mere desk ke paas hai. Mere kehne par confirmation kar dijiye.",
+                "safety_status": "draft"
+              },
+              "isolation.low": {
+                "text": "Meghdoot ki practice wellness entry pehle hum dono dekh lete hain. Team ko baad mein batayenge.",
+                "safety_status": "draft"
+              },
+              "isolation.medium": {
+                "text": "Meghdoot ke is practice wellness review ka zikr abhi group mein mat kijiye. Pehle mujhe yahin jawab de dijiye.",
+                "safety_status": "draft"
+              },
+              "isolation.high": {
+                "text": "Meghdoot ki is practice wellness call mein kisi aur desk ko mat jodiye. Main aapse akele mein confirmation chahta hoon.",
+                "safety_status": "draft"
+              },
+              "fear.low": {
+                "text": "Meghdoot ki practice wellness confirmation aaj na mili toh entry agle review tak pending reh sakti hai.",
+                "safety_status": "draft"
+              },
+              "fear.medium": {
+                "text": "Meghdoot ki practice wellness entry ko hold par rakhne ka note hai. Aap abhi confirm kar dein toh main note hata sakta hoon.",
+                "safety_status": "draft"
+              },
+              "fear.high": {
+                "text": "Meghdoot ke practice wellness round mein bina jawab wali entry list se hat sakti hai. Kya main abhi aapki haan likh doon?",
+                "safety_status": "draft"
+              },
+              "reward.low": {
+                "text": "Meghdoot ke practice wellness form ki confirmation par ek demo participation badge mil sakta hai.",
+                "safety_status": "draft"
+              },
+              "reward.medium": {
+                "text": "Meghdoot ke practice wellness round mein jo isi call par haan bolte hain, unke liye demo workshop ki pehli choice hai.",
+                "safety_status": "draft"
+              },
+              "reward.high": {
+                "text": "Meghdoot ka practice wellness bonus badge isi call ki confirmation ke saath milne ka offer hai. Kya aap ise lena chahenge?",
+                "safety_status": "draft"
+              },
+              "ending.verified": {
+                "text": "Aapne apna jaana-pehchana channel chuna. Meghdoot ki practice call yahin khatam hai.",
+                "safety_status": "draft"
+              },
+              "ending.dummy": {
+                "text": "Demo token bol diya gaya. Meghdoot ki practice call yahin rokte hain. Agli baar kisi caller ko asli value na batayein.",
+                "safety_status": "draft"
+              },
+              "system.safe-fallback": {
+                "text": "Jawab clear nahi tha. Meghdoot ki practice call yahin rokte hain. Apne known channel se jaanch karein.",
+                "safety_status": "system_safe_template"
+              },
+              "ending.turn-limit": {
+                "text": "Meghdoot ki practice call ki turn limit poori ho gayi. Koi confirmation zaroori nahi hai. Ab debrief dekhein.",
+                "safety_status": "draft"
+              },
+              "system.safe-ending": {
+                "text": "Yeh practice call ab khatam hai. Agla kadam lene se pehle known channel se check karein.",
+                "safety_status": "system_safe_template"
+              }
+            },
+            "nodes": [
+              {
+                "id": "opening-decision",
+                "parent_node_id": null,
+                "trigger_rules": [],
+                "response_id": "system.opening",
+                "learner_expected_behavior": [
+                  "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+                ],
+                "next_node_id": "authority-decision",
+                "safe_fallback_response_id": "system.safe-fallback",
+                "debrief_tags": [
+                  "RF-01"
+                ],
+                "safety_constraints": [
+                  "Fictional simulation with synthetic examples only."
+                ],
+                "branch_status": "draft"
+              },
+              {
+                "id": "authority-decision",
+                "parent_node_id": "opening-decision",
+                "trigger_rules": [
+                  {
+                    "type": "normalized_text",
+                    "text": "abhi confirm nahi karunga"
+                  }
+                ],
+                "response_id": "authority.medium",
+                "learner_expected_behavior": [
+                  "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+                ],
+                "next_node_id": "consequence-decision",
+                "safe_fallback_response_id": "system.safe-fallback",
+                "debrief_tags": [
+                  "RF-02"
+                ],
+                "safety_constraints": [
+                  "Fictional simulation with synthetic examples only."
+                ],
+                "branch_status": "draft"
+              },
+              {
+                "id": "consequence-decision",
+                "parent_node_id": "authority-decision",
+                "trigger_rules": [
+                  {
+                    "type": "normalized_text",
+                    "text": "pehle dekh leta hoon"
+                  }
+                ],
+                "response_id": "fear.medium",
+                "learner_expected_behavior": [
+                  "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+                ],
+                "next_node_id": null,
+                "safe_fallback_response_id": "system.safe-fallback",
+                "debrief_tags": [
+                  "RF-07"
+                ],
+                "safety_constraints": [
+                  "Fictional simulation with synthetic examples only."
+                ],
+                "branch_status": "draft"
+              }
+            ],
+            "adaptive_policy": {
+              "max_pressure_level": 3,
+              "max_turns": 3,
+              "safe_word": "stop simulation",
+              "escalation_behaviors": [
+                "COMPLIED"
+              ],
+              "terminal_states": [
+                "SAFE_VERIFIED",
+                "DUMMY_SECRET_DISCLOSED",
+                "SAFE_FALLBACK",
+                "MAX_TURNS",
+                "SAFE_WORD",
+                "LEARNER_ENDED"
+              ],
+              "tactics": [
+                {
+                  "tactic_id": "urgency.low",
+                  "category": "URGENCY",
+                  "pressure_level": 1,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "urgency.low"
+                  ]
+                },
+                {
+                  "tactic_id": "urgency.medium",
+                  "category": "URGENCY",
+                  "pressure_level": 2,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "urgency.medium"
+                  ]
+                },
+                {
+                  "tactic_id": "urgency.high",
+                  "category": "URGENCY",
+                  "pressure_level": 3,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "urgency.high"
+                  ]
+                },
+                {
+                  "tactic_id": "authority.low",
+                  "category": "AUTHORITY",
+                  "pressure_level": 1,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "authority.low"
+                  ]
+                },
+                {
+                  "tactic_id": "authority.medium",
+                  "category": "AUTHORITY",
+                  "pressure_level": 2,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "authority.medium"
+                  ]
+                },
+                {
+                  "tactic_id": "authority.high",
+                  "category": "AUTHORITY",
+                  "pressure_level": 3,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "authority.high"
+                  ]
+                },
+                {
+                  "tactic_id": "isolation.low",
+                  "category": "ISOLATION",
+                  "pressure_level": 1,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "isolation.low"
+                  ]
+                },
+                {
+                  "tactic_id": "isolation.medium",
+                  "category": "ISOLATION",
+                  "pressure_level": 2,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "isolation.medium"
+                  ]
+                },
+                {
+                  "tactic_id": "isolation.high",
+                  "category": "ISOLATION",
+                  "pressure_level": 3,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "isolation.high"
+                  ]
+                },
+                {
+                  "tactic_id": "fear.low",
+                  "category": "FEAR_CONSEQUENCE",
+                  "pressure_level": 1,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "fear.low"
+                  ]
+                },
+                {
+                  "tactic_id": "fear.medium",
+                  "category": "FEAR_CONSEQUENCE",
+                  "pressure_level": 2,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "fear.medium"
+                  ]
+                },
+                {
+                  "tactic_id": "fear.high",
+                  "category": "FEAR_CONSEQUENCE",
+                  "pressure_level": 3,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "fear.high"
+                  ]
+                },
+                {
+                  "tactic_id": "reward.low",
+                  "category": "REWARD_FAKE_HELP",
+                  "pressure_level": 1,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "reward.low"
+                  ]
+                },
+                {
+                  "tactic_id": "reward.medium",
+                  "category": "REWARD_FAKE_HELP",
+                  "pressure_level": 2,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "reward.medium"
+                  ]
+                },
+                {
+                  "tactic_id": "reward.high",
+                  "category": "REWARD_FAKE_HELP",
+                  "pressure_level": 3,
+                  "prompts_dummy_secret": false,
+                  "behavior_targets": [
+                    "REFUSED",
+                    "STALLED",
+                    "COMPLIED"
+                  ],
+                  "response_ids": [
+                    "reward.high"
+                  ]
+                }
+              ]
+            },
+            "safety_metadata": {
+              "visible_simulation_label": true,
+              "ai_voice_disclosure_required": true,
+              "consent_before_recording": true,
+              "audio_retention": "none_by_default",
+              "dummy_data_mode": "synthetic_only",
+              "safe_ending_response_id": "system.safe-ending"
+            },
+            "safety_constraints": [
+              "Use fictional benefits requests and synthetic practice data.",
+              "End the simulation on the safe word or learner stop."
+            ],
+            "review_status": "draft",
+            "reviewed_by": null,
+            "reviewed_at": null
+          },
+          "tacticPool": [
+            {
+              "tacticId": "urgency.low",
+              "category": "URGENCY",
+              "pressureLevel": 1,
+              "responseIds": [
+                "urgency.low"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "urgency.medium",
+              "category": "URGENCY",
+              "pressureLevel": 2,
+              "responseIds": [
+                "urgency.medium"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "urgency.high",
+              "category": "URGENCY",
+              "pressureLevel": 3,
+              "responseIds": [
+                "urgency.high"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "authority.low",
+              "category": "AUTHORITY",
+              "pressureLevel": 1,
+              "responseIds": [
+                "authority.low"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "authority.medium",
+              "category": "AUTHORITY",
+              "pressureLevel": 2,
+              "responseIds": [
+                "authority.medium"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "authority.high",
+              "category": "AUTHORITY",
+              "pressureLevel": 3,
+              "responseIds": [
+                "authority.high"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "isolation.low",
+              "category": "ISOLATION",
+              "pressureLevel": 1,
+              "responseIds": [
+                "isolation.low"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "isolation.medium",
+              "category": "ISOLATION",
+              "pressureLevel": 2,
+              "responseIds": [
+                "isolation.medium"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "isolation.high",
+              "category": "ISOLATION",
+              "pressureLevel": 3,
+              "responseIds": [
+                "isolation.high"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "fear.low",
+              "category": "FEAR_CONSEQUENCE",
+              "pressureLevel": 1,
+              "responseIds": [
+                "fear.low"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "fear.medium",
+              "category": "FEAR_CONSEQUENCE",
+              "pressureLevel": 2,
+              "responseIds": [
+                "fear.medium"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "fear.high",
+              "category": "FEAR_CONSEQUENCE",
+              "pressureLevel": 3,
+              "responseIds": [
+                "fear.high"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "reward.low",
+              "category": "REWARD_FAKE_HELP",
+              "pressureLevel": 1,
+              "responseIds": [
+                "reward.low"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "reward.medium",
+              "category": "REWARD_FAKE_HELP",
+              "pressureLevel": 2,
+              "responseIds": [
+                "reward.medium"
+              ],
+              "status": "DRAFT"
+            },
+            {
+              "tacticId": "reward.high",
+              "category": "REWARD_FAKE_HELP",
+              "pressureLevel": 3,
+              "responseIds": [
+                "reward.high"
+              ],
+              "status": "DRAFT"
+            }
+          ],
+          "candidateApprovedResponses": [
+            {
+              "responseId": "system.opening",
+              "text": "Yeh simulation hai. Main fictional Meghdoot Works ke benefits desk se bol raha hoon. Practice wellness enrollment ki ek confirmation pending hai. Kya abhi baat kar sakte hain?",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "urgency.low",
+              "text": "Meghdoot ki practice wellness list aaj review ho rahi hai. Kya aap apna decision jaldi bata sakte hain?",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "urgency.medium",
+              "text": "Meghdoot ke practice wellness form ka aaj ka batch band hone wala hai. Main is call mein hi aapka jawab note kar loon?",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "urgency.high",
+              "text": "Meghdoot ke practice wellness slot par timer chal raha hai. Agli baat se pehle mujhe haan ya na chahiye.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "authority.low",
+              "text": "Meghdoot benefits desk mein yeh practice wellness request mere naam par aayi hai. Aap meri baat par status confirm kar sakte hain.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "authority.medium",
+              "text": "Meghdoot ki practice wellness queue mein supervisor ne mere liye approval mark kiya hai. Isi call par confirmation de dijiye.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "authority.high",
+              "text": "Meghdoot ki practice wellness list ka final sign-off mere desk ke paas hai. Mere kehne par confirmation kar dijiye.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "isolation.low",
+              "text": "Meghdoot ki practice wellness entry pehle hum dono dekh lete hain. Team ko baad mein batayenge.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "isolation.medium",
+              "text": "Meghdoot ke is practice wellness review ka zikr abhi group mein mat kijiye. Pehle mujhe yahin jawab de dijiye.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "isolation.high",
+              "text": "Meghdoot ki is practice wellness call mein kisi aur desk ko mat jodiye. Main aapse akele mein confirmation chahta hoon.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "fear.low",
+              "text": "Meghdoot ki practice wellness confirmation aaj na mili toh entry agle review tak pending reh sakti hai.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "fear.medium",
+              "text": "Meghdoot ki practice wellness entry ko hold par rakhne ka note hai. Aap abhi confirm kar dein toh main note hata sakta hoon.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "fear.high",
+              "text": "Meghdoot ke practice wellness round mein bina jawab wali entry list se hat sakti hai. Kya main abhi aapki haan likh doon?",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "reward.low",
+              "text": "Meghdoot ke practice wellness form ki confirmation par ek demo participation badge mil sakta hai.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "reward.medium",
+              "text": "Meghdoot ke practice wellness round mein jo isi call par haan bolte hain, unke liye demo workshop ki pehli choice hai.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "reward.high",
+              "text": "Meghdoot ka practice wellness bonus badge isi call ki confirmation ke saath milne ka offer hai. Kya aap ise lena chahenge?",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "ending.verified",
+              "text": "Aapne apna jaana-pehchana channel chuna. Meghdoot ki practice call yahin khatam hai.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "ending.dummy",
+              "text": "Demo token bol diya gaya. Meghdoot ki practice call yahin rokte hain. Agli baar kisi caller ko asli value na batayein.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "system.safe-fallback",
+              "text": "Jawab clear nahi tha. Meghdoot ki practice call yahin rokte hain. Apne known channel se jaanch karein.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "ending.turn-limit",
+              "text": "Meghdoot ki practice call ki turn limit poori ho gayi. Koi confirmation zaroori nahi hai. Ab debrief dekhein.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            },
+            {
+              "responseId": "system.safe-ending",
+              "text": "Yeh practice call ab khatam hai. Agla kadam lene se pehle known channel se check karein.",
+              "language": "hi-en",
+              "status": "DRAFT"
+            }
+          ],
+          "behaviorTrainingExamples": [
+            {
+              "exampleId": "refused.1",
+              "utterance": "मैं वेलनेस नामांकन की पुष्टि इस कॉल पर नहीं करूँगी।",
+              "language": "hi",
+              "label": "REFUSED",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "refused.2",
+              "utterance": "Nahi, Meghdoot ki entry par meri haan mat likhiye.",
+              "language": "hi-en",
+              "label": "REFUSED",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "refused.3",
+              "utterance": "I won't share a practice token on this call.",
+              "language": "en",
+              "label": "REFUSED",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "stalled.1",
+              "utterance": "वेलनेस वाली बात समझने के लिए थोड़ा समय चाहिए।",
+              "language": "hi",
+              "label": "STALLED",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "stalled.2",
+              "utterance": "Wellness form par abhi jawab mat likhiye, main baad mein soch kar bataunga.",
+              "language": "hi-en",
+              "label": "STALLED",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "stalled.3",
+              "utterance": "Give me a minute to find my notes about this practice round.",
+              "language": "en",
+              "label": "STALLED",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "verifiedindependently.1",
+              "utterance": "मैं मेघदूत की पहले से जानती हुई कर्मचारी डायरेक्टरी से पुष्टि करूँगी।",
+              "language": "hi",
+              "label": "VERIFIED_INDEPENDENTLY",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "verifiedindependently.2",
+              "utterance": "Caller ke contact se nahi, main apne saved training desk se wellness entry verify karunga.",
+              "language": "hi-en",
+              "label": "VERIFIED_INDEPENDENTLY",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "verifiedindependently.3",
+              "utterance": "I'll open the training portal from my own bookmark and verify this enrollment there.",
+              "language": "en",
+              "label": "VERIFIED_INDEPENDENTLY",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "complied.1",
+              "utterance": "ठीक है, मेरी वेलनेस एंट्री की पुष्टि लिख लीजिए।",
+              "language": "hi",
+              "label": "COMPLIED",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "complied.2",
+              "utterance": "Aap mere liye practice wellness slot select kar dijiye.",
+              "language": "hi-en",
+              "label": "COMPLIED",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "complied.3",
+              "utterance": "Yes, go ahead and mark me down for that practice workshop.",
+              "language": "en",
+              "label": "COMPLIED",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "discloseddummysecret.1",
+              "utterance": "मेरे अभ्यास कार्ड पर DUMMY-1234 लिखा है।",
+              "language": "hi",
+              "label": "DISCLOSED_DUMMY_SECRET",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "discloseddummysecret.2",
+              "utterance": "Wellness round mein mera demo token DUMMY-2048 hai.",
+              "language": "hi-en",
+              "label": "DISCLOSED_DUMMY_SECRET",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "discloseddummysecret.3",
+              "utterance": "I can read out the example for this exercise: DUMMY-4720.",
+              "language": "en",
+              "label": "DISCLOSED_DUMMY_SECRET",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "unknown.1",
+              "utterance": "आज बाहर बहुत बारिश हो रही है।",
+              "language": "hi",
+              "label": "UNKNOWN",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "unknown.2",
+              "utterance": "Wellness list mein kitne column hote hain?",
+              "language": "hi-en",
+              "label": "UNKNOWN",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "unknown.3",
+              "utterance": "The title sounds familiar.",
+              "language": "en",
+              "label": "UNKNOWN",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            }
+          ],
+          "debriefTemplateVariants": [
+            {
+              "templateId": "verified",
+              "language": "hi-en",
+              "kind": "safe",
+              "text": "Learner ne apne known channel ka zikr kiya. Caller ki pehchaan ka daava khud proof nahi tha.",
+              "status": "DRAFT"
+            },
+            {
+              "templateId": "refused",
+              "language": "hi-en",
+              "kind": "safe",
+              "text": "Learner ne call par action se mana kiya. Isse caller ki one-to-one request accept nahi hui.",
+              "status": "DRAFT"
+            },
+            {
+              "templateId": "stalled",
+              "language": "hi-en",
+              "kind": "safe",
+              "text": "Learner ne jawab dene se pehle waqt maanga. Practice deadline ke bawajood turant confirmation nahi di.",
+              "status": "DRAFT"
+            },
+            {
+              "templateId": "dummy",
+              "language": "hi-en",
+              "kind": "risky",
+              "text": "Learner ne practice token bola. Yeh observation sirf synthetic value ke baare mein hai.",
+              "status": "DRAFT"
+            },
+            {
+              "templateId": "fallback",
+              "language": "hi-en",
+              "kind": "unknown",
+              "text": "Is jawab se learner ka decision clear nahi tha. Practice call bina aur pressure ke khatam hui.",
+              "status": "DRAFT"
+            },
+            {
+              "templateId": "limit",
+              "language": "hi-en",
+              "kind": "unknown",
+              "text": "Practice ki turn limit poori hui. Debrief mein sirf darj decisions ko dekhein.",
+              "status": "DRAFT"
+            },
+            {
+              "templateId": "complied",
+              "language": "hi-en",
+              "kind": "risky",
+              "text": "COMPLIED mein learner ne suggested confirmation ya action ke liye haan kahi, bina dummy token bataye. Yeh agreement hai; token disclosure ka saboot nahi. Unverified caller ki request par aage badhne se pehle apne known channel se jaanch karein.",
+              "status": "DRAFT"
+            }
+          ],
+          "candidateUtterances": [
+            {
+              "exampleId": "refused.1",
+              "utterance": "मैं वेलनेस नामांकन की पुष्टि इस कॉल पर नहीं करूँगी।",
+              "language": "hi",
+              "label": "REFUSED",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "refused.2",
+              "utterance": "Nahi, Meghdoot ki entry par meri haan mat likhiye.",
+              "language": "hi-en",
+              "label": "REFUSED",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "refused.3",
+              "utterance": "I won't share a practice token on this call.",
+              "language": "en",
+              "label": "REFUSED",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "stalled.1",
+              "utterance": "वेलनेस वाली बात समझने के लिए थोड़ा समय चाहिए।",
+              "language": "hi",
+              "label": "STALLED",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "stalled.2",
+              "utterance": "Wellness form par abhi jawab mat likhiye, main baad mein soch kar bataunga.",
+              "language": "hi-en",
+              "label": "STALLED",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "stalled.3",
+              "utterance": "Give me a minute to find my notes about this practice round.",
+              "language": "en",
+              "label": "STALLED",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "verifiedindependently.1",
+              "utterance": "मैं मेघदूत की पहले से जानती हुई कर्मचारी डायरेक्टरी से पुष्टि करूँगी।",
+              "language": "hi",
+              "label": "VERIFIED_INDEPENDENTLY",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "verifiedindependently.2",
+              "utterance": "Caller ke contact se nahi, main apne saved training desk se wellness entry verify karunga.",
+              "language": "hi-en",
+              "label": "VERIFIED_INDEPENDENTLY",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "verifiedindependently.3",
+              "utterance": "I'll open the training portal from my own bookmark and verify this enrollment there.",
+              "language": "en",
+              "label": "VERIFIED_INDEPENDENTLY",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "complied.1",
+              "utterance": "ठीक है, मेरी वेलनेस एंट्री की पुष्टि लिख लीजिए।",
+              "language": "hi",
+              "label": "COMPLIED",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "complied.2",
+              "utterance": "Aap mere liye practice wellness slot select kar dijiye.",
+              "language": "hi-en",
+              "label": "COMPLIED",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "complied.3",
+              "utterance": "Yes, go ahead and mark me down for that practice workshop.",
+              "language": "en",
+              "label": "COMPLIED",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "discloseddummysecret.1",
+              "utterance": "मेरे अभ्यास कार्ड पर DUMMY-1234 लिखा है।",
+              "language": "hi",
+              "label": "DISCLOSED_DUMMY_SECRET",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "discloseddummysecret.2",
+              "utterance": "Wellness round mein mera demo token DUMMY-2048 hai.",
+              "language": "hi-en",
+              "label": "DISCLOSED_DUMMY_SECRET",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "discloseddummysecret.3",
+              "utterance": "I can read out the example for this exercise: DUMMY-4720.",
+              "language": "en",
+              "label": "DISCLOSED_DUMMY_SECRET",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "unknown.1",
+              "utterance": "आज बाहर बहुत बारिश हो रही है।",
+              "language": "hi",
+              "label": "UNKNOWN",
+              "split": "train",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "unknown.2",
+              "utterance": "Wellness list mein kitne column hote hain?",
+              "language": "hi-en",
+              "label": "UNKNOWN",
+              "split": "validation",
+              "source": "synthetic",
+              "redactionReviewed": true
+            },
+            {
+              "exampleId": "unknown.3",
+              "utterance": "The title sounds familiar.",
+              "language": "en",
+              "label": "UNKNOWN",
+              "split": "held_out_test",
+              "source": "synthetic",
+              "redactionReviewed": true
+            }
+          ],
+          "importableArtifacts": [
+            {
+              "artifactId": "S-92-0.1.1-scenario",
+              "format": "scenario-json",
+              "scenario": {
+                "scenario_id": "S-92",
+                "version": "0.1.1",
+                "lifecycle_status": "DRAFT",
+                "language": "hi-en",
+                "voice_id": null,
+                "fictional_organization": {
+                  "name": "Fictional Meghdoot Works",
+                  "training_only": true
+                },
+                "simulation": true,
+                "opening_line": "Yeh simulation hai. Main fictional Meghdoot Works ke benefits desk se bol raha hoon. Practice wellness enrollment ki ek confirmation pending hai. Kya abhi baat kar sakte hain?",
+                "learning_objectives": [
+                  "Verify a fictional employee benefits request through a channel you already know."
+                ],
+                "red_flag_ids": [
+                  "RF-01",
+                  "RF-02",
+                  "RF-03",
+                  "RF-07",
+                  "RF-08"
+                ],
+                "responses": {
+                  "system.opening": {
+                    "text": "Yeh simulation hai. Main fictional Meghdoot Works ke benefits desk se bol raha hoon. Practice wellness enrollment ki ek confirmation pending hai. Kya abhi baat kar sakte hain?",
+                    "safety_status": "draft"
+                  },
+                  "urgency.low": {
+                    "text": "Meghdoot ki practice wellness list aaj review ho rahi hai. Kya aap apna decision jaldi bata sakte hain?",
+                    "safety_status": "draft"
+                  },
+                  "urgency.medium": {
+                    "text": "Meghdoot ke practice wellness form ka aaj ka batch band hone wala hai. Main is call mein hi aapka jawab note kar loon?",
+                    "safety_status": "draft"
+                  },
+                  "urgency.high": {
+                    "text": "Meghdoot ke practice wellness slot par timer chal raha hai. Agli baat se pehle mujhe haan ya na chahiye.",
+                    "safety_status": "draft"
+                  },
+                  "authority.low": {
+                    "text": "Meghdoot benefits desk mein yeh practice wellness request mere naam par aayi hai. Aap meri baat par status confirm kar sakte hain.",
+                    "safety_status": "draft"
+                  },
+                  "authority.medium": {
+                    "text": "Meghdoot ki practice wellness queue mein supervisor ne mere liye approval mark kiya hai. Isi call par confirmation de dijiye.",
+                    "safety_status": "draft"
+                  },
+                  "authority.high": {
+                    "text": "Meghdoot ki practice wellness list ka final sign-off mere desk ke paas hai. Mere kehne par confirmation kar dijiye.",
+                    "safety_status": "draft"
+                  },
+                  "isolation.low": {
+                    "text": "Meghdoot ki practice wellness entry pehle hum dono dekh lete hain. Team ko baad mein batayenge.",
+                    "safety_status": "draft"
+                  },
+                  "isolation.medium": {
+                    "text": "Meghdoot ke is practice wellness review ka zikr abhi group mein mat kijiye. Pehle mujhe yahin jawab de dijiye.",
+                    "safety_status": "draft"
+                  },
+                  "isolation.high": {
+                    "text": "Meghdoot ki is practice wellness call mein kisi aur desk ko mat jodiye. Main aapse akele mein confirmation chahta hoon.",
+                    "safety_status": "draft"
+                  },
+                  "fear.low": {
+                    "text": "Meghdoot ki practice wellness confirmation aaj na mili toh entry agle review tak pending reh sakti hai.",
+                    "safety_status": "draft"
+                  },
+                  "fear.medium": {
+                    "text": "Meghdoot ki practice wellness entry ko hold par rakhne ka note hai. Aap abhi confirm kar dein toh main note hata sakta hoon.",
+                    "safety_status": "draft"
+                  },
+                  "fear.high": {
+                    "text": "Meghdoot ke practice wellness round mein bina jawab wali entry list se hat sakti hai. Kya main abhi aapki haan likh doon?",
+                    "safety_status": "draft"
+                  },
+                  "reward.low": {
+                    "text": "Meghdoot ke practice wellness form ki confirmation par ek demo participation badge mil sakta hai.",
+                    "safety_status": "draft"
+                  },
+                  "reward.medium": {
+                    "text": "Meghdoot ke practice wellness round mein jo isi call par haan bolte hain, unke liye demo workshop ki pehli choice hai.",
+                    "safety_status": "draft"
+                  },
+                  "reward.high": {
+                    "text": "Meghdoot ka practice wellness bonus badge isi call ki confirmation ke saath milne ka offer hai. Kya aap ise lena chahenge?",
+                    "safety_status": "draft"
+                  },
+                  "ending.verified": {
+                    "text": "Aapne apna jaana-pehchana channel chuna. Meghdoot ki practice call yahin khatam hai.",
+                    "safety_status": "draft"
+                  },
+                  "ending.dummy": {
+                    "text": "Demo token bol diya gaya. Meghdoot ki practice call yahin rokte hain. Agli baar kisi caller ko asli value na batayein.",
+                    "safety_status": "draft"
+                  },
+                  "system.safe-fallback": {
+                    "text": "Jawab clear nahi tha. Meghdoot ki practice call yahin rokte hain. Apne known channel se jaanch karein.",
+                    "safety_status": "system_safe_template"
+                  },
+                  "ending.turn-limit": {
+                    "text": "Meghdoot ki practice call ki turn limit poori ho gayi. Koi confirmation zaroori nahi hai. Ab debrief dekhein.",
+                    "safety_status": "draft"
+                  },
+                  "system.safe-ending": {
+                    "text": "Yeh practice call ab khatam hai. Agla kadam lene se pehle known channel se check karein.",
+                    "safety_status": "system_safe_template"
+                  }
+                },
+                "nodes": [
+                  {
+                    "id": "opening-decision",
+                    "parent_node_id": null,
+                    "trigger_rules": [],
+                    "response_id": "system.opening",
+                    "learner_expected_behavior": [
+                      "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+                    ],
+                    "next_node_id": "authority-decision",
+                    "safe_fallback_response_id": "system.safe-fallback",
+                    "debrief_tags": [
+                      "RF-01"
+                    ],
+                    "safety_constraints": [
+                      "Fictional simulation with synthetic examples only."
+                    ],
+                    "branch_status": "draft"
+                  },
+                  {
+                    "id": "authority-decision",
+                    "parent_node_id": "opening-decision",
+                    "trigger_rules": [
+                      {
+                        "type": "normalized_text",
+                        "text": "abhi confirm nahi karunga"
+                      }
+                    ],
+                    "response_id": "authority.medium",
+                    "learner_expected_behavior": [
+                      "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+                    ],
+                    "next_node_id": "consequence-decision",
+                    "safe_fallback_response_id": "system.safe-fallback",
+                    "debrief_tags": [
+                      "RF-02"
+                    ],
+                    "safety_constraints": [
+                      "Fictional simulation with synthetic examples only."
+                    ],
+                    "branch_status": "draft"
+                  },
+                  {
+                    "id": "consequence-decision",
+                    "parent_node_id": "authority-decision",
+                    "trigger_rules": [
+                      {
+                        "type": "normalized_text",
+                        "text": "pehle dekh leta hoon"
+                      }
+                    ],
+                    "response_id": "fear.medium",
+                    "learner_expected_behavior": [
+                      "Check the enrollment in a familiar fictional employee directory or bookmarked training portal."
+                    ],
+                    "next_node_id": null,
+                    "safe_fallback_response_id": "system.safe-fallback",
+                    "debrief_tags": [
+                      "RF-07"
+                    ],
+                    "safety_constraints": [
+                      "Fictional simulation with synthetic examples only."
+                    ],
+                    "branch_status": "draft"
+                  }
+                ],
+                "adaptive_policy": {
+                  "max_pressure_level": 3,
+                  "max_turns": 3,
+                  "safe_word": "stop simulation",
+                  "escalation_behaviors": [
+                    "COMPLIED"
+                  ],
+                  "terminal_states": [
+                    "SAFE_VERIFIED",
+                    "DUMMY_SECRET_DISCLOSED",
+                    "SAFE_FALLBACK",
+                    "MAX_TURNS",
+                    "SAFE_WORD",
+                    "LEARNER_ENDED"
+                  ],
+                  "tactics": [
+                    {
+                      "tactic_id": "urgency.low",
+                      "category": "URGENCY",
+                      "pressure_level": 1,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "urgency.low"
+                      ]
+                    },
+                    {
+                      "tactic_id": "urgency.medium",
+                      "category": "URGENCY",
+                      "pressure_level": 2,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "urgency.medium"
+                      ]
+                    },
+                    {
+                      "tactic_id": "urgency.high",
+                      "category": "URGENCY",
+                      "pressure_level": 3,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "urgency.high"
+                      ]
+                    },
+                    {
+                      "tactic_id": "authority.low",
+                      "category": "AUTHORITY",
+                      "pressure_level": 1,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "authority.low"
+                      ]
+                    },
+                    {
+                      "tactic_id": "authority.medium",
+                      "category": "AUTHORITY",
+                      "pressure_level": 2,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "authority.medium"
+                      ]
+                    },
+                    {
+                      "tactic_id": "authority.high",
+                      "category": "AUTHORITY",
+                      "pressure_level": 3,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "authority.high"
+                      ]
+                    },
+                    {
+                      "tactic_id": "isolation.low",
+                      "category": "ISOLATION",
+                      "pressure_level": 1,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "isolation.low"
+                      ]
+                    },
+                    {
+                      "tactic_id": "isolation.medium",
+                      "category": "ISOLATION",
+                      "pressure_level": 2,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "isolation.medium"
+                      ]
+                    },
+                    {
+                      "tactic_id": "isolation.high",
+                      "category": "ISOLATION",
+                      "pressure_level": 3,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "isolation.high"
+                      ]
+                    },
+                    {
+                      "tactic_id": "fear.low",
+                      "category": "FEAR_CONSEQUENCE",
+                      "pressure_level": 1,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "fear.low"
+                      ]
+                    },
+                    {
+                      "tactic_id": "fear.medium",
+                      "category": "FEAR_CONSEQUENCE",
+                      "pressure_level": 2,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "fear.medium"
+                      ]
+                    },
+                    {
+                      "tactic_id": "fear.high",
+                      "category": "FEAR_CONSEQUENCE",
+                      "pressure_level": 3,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "fear.high"
+                      ]
+                    },
+                    {
+                      "tactic_id": "reward.low",
+                      "category": "REWARD_FAKE_HELP",
+                      "pressure_level": 1,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "reward.low"
+                      ]
+                    },
+                    {
+                      "tactic_id": "reward.medium",
+                      "category": "REWARD_FAKE_HELP",
+                      "pressure_level": 2,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "reward.medium"
+                      ]
+                    },
+                    {
+                      "tactic_id": "reward.high",
+                      "category": "REWARD_FAKE_HELP",
+                      "pressure_level": 3,
+                      "prompts_dummy_secret": false,
+                      "behavior_targets": [
+                        "REFUSED",
+                        "STALLED",
+                        "COMPLIED"
+                      ],
+                      "response_ids": [
+                        "reward.high"
+                      ]
+                    }
+                  ]
+                },
+                "safety_metadata": {
+                  "visible_simulation_label": true,
+                  "ai_voice_disclosure_required": true,
+                  "consent_before_recording": true,
+                  "audio_retention": "none_by_default",
+                  "dummy_data_mode": "synthetic_only",
+                  "safe_ending_response_id": "system.safe-ending"
+                },
+                "safety_constraints": [
+                  "Use fictional benefits requests and synthetic practice data.",
+                  "End the simulation on the safe word or learner stop."
+                ],
+                "review_status": "draft",
+                "reviewed_by": null,
+                "reviewed_at": null
+              }
+            }
+          ],
+          "review": {
+            "decision": "pending",
+            "reviewerId": null,
+            "reviewedAt": null,
+            "checklist": {
+              "fictionalOrganization": false,
+              "syntheticDataOnly": false,
+              "noSecurityBypassInstructions": false,
+              "safeEndingAvailable": false,
+              "simulationLabelVisible": false,
+              "aiVoiceDisclosureRequired": false,
+              "consentBeforeRecording": false,
+              "noAudioRetentionByDefault": false
+            },
+            "notes": []
+          },
+          "runtimeEligible": false,
+          "status": "DRAFT"
+        },
+        "details": {
+          "title": "Phase 6C review copy - fictional employee benefits",
+          "department": "Employee Benefits Practice Desk",
+          "industry": "Fictional workplace benefits",
+          "audience": "new employees",
+          "difficulty": "introductory",
+          "premise": "Meghdoot Works ki fictional wellness simulation mein learner call par confirmation de ya apne known channel se jaanch kare. Unsolicited synthetic disclosure bhi model ho sakta hai: fictional training-only DUMMY-1234 token bina poochhe bola ja sakta hai. Caller koi real OTP, password ya account value nahi maangta. Ise sirf synthetic disclosure darj karke simulation safely rokte hain; yeh real credential exposure nahi hai. Unverified caller ko asli secrets na dein.",
+          "register": "Conversational Hindi/Hinglish with familiar workplace terms",
+          "scriptPreference": "Latin",
+          "safeActions": [
+            "Pause before confirming any enrollment or benefit.",
+            "Decline to provide private information or even a practice token to an unexpected caller.",
+            "Check the enrollment in a familiar fictional employee directory or bookmarked training portal.",
+            "End the simulation whenever the request is unclear or you want to stop."
+          ],
+          "openingResponseId": "system.opening",
+          "variants": [
+            {
+              "responseId": "urgency.low",
+              "tactic": "urgency",
+              "intensity": "low",
+              "pressureLevel": 1,
+              "script": "Latin",
+              "redFlags": [
+                "RF-01"
+              ],
+              "educationalPurpose": "Recognize artificial deadline in the low-intensity wellness call example."
+            },
+            {
+              "responseId": "urgency.medium",
+              "tactic": "urgency",
+              "intensity": "medium",
+              "pressureLevel": 2,
+              "script": "Latin",
+              "redFlags": [
+                "RF-01"
+              ],
+              "educationalPurpose": "Recognize artificial deadline in the medium-intensity wellness call example."
+            },
+            {
+              "responseId": "urgency.high",
+              "tactic": "urgency",
+              "intensity": "high",
+              "pressureLevel": 3,
+              "script": "Latin",
+              "redFlags": [
+                "RF-01"
+              ],
+              "educationalPurpose": "Recognize artificial deadline in the high-intensity wellness call example."
+            },
+            {
+              "responseId": "authority.low",
+              "tactic": "authority",
+              "intensity": "low",
+              "pressureLevel": 1,
+              "script": "Latin",
+              "redFlags": [
+                "RF-02"
+              ],
+              "educationalPurpose": "Recognize claimed approval in the low-intensity wellness call example."
+            },
+            {
+              "responseId": "authority.medium",
+              "tactic": "authority",
+              "intensity": "medium",
+              "pressureLevel": 2,
+              "script": "Latin",
+              "redFlags": [
+                "RF-02"
+              ],
+              "educationalPurpose": "Recognize claimed approval in the medium-intensity wellness call example."
+            },
+            {
+              "responseId": "authority.high",
+              "tactic": "authority",
+              "intensity": "high",
+              "pressureLevel": 3,
+              "script": "Latin",
+              "redFlags": [
+                "RF-02"
+              ],
+              "educationalPurpose": "Recognize claimed approval in the high-intensity wellness call example."
+            },
+            {
+              "responseId": "isolation.low",
+              "tactic": "isolation",
+              "intensity": "low",
+              "pressureLevel": 1,
+              "script": "Latin",
+              "redFlags": [
+                "RF-03"
+              ],
+              "educationalPurpose": "Recognize isolation in the low-intensity wellness call example."
+            },
+            {
+              "responseId": "isolation.medium",
+              "tactic": "isolation",
+              "intensity": "medium",
+              "pressureLevel": 2,
+              "script": "Latin",
+              "redFlags": [
+                "RF-03"
+              ],
+              "educationalPurpose": "Recognize isolation in the medium-intensity wellness call example."
+            },
+            {
+              "responseId": "isolation.high",
+              "tactic": "isolation",
+              "intensity": "high",
+              "pressureLevel": 3,
+              "script": "Latin",
+              "redFlags": [
+                "RF-03"
+              ],
+              "educationalPurpose": "Recognize isolation in the high-intensity wellness call example."
+            },
+            {
+              "responseId": "fear.low",
+              "tactic": "fear",
+              "intensity": "low",
+              "pressureLevel": 1,
+              "script": "Latin",
+              "redFlags": [
+                "RF-07"
+              ],
+              "educationalPurpose": "Recognize threatened consequence in the low-intensity wellness call example."
+            },
+            {
+              "responseId": "fear.medium",
+              "tactic": "fear",
+              "intensity": "medium",
+              "pressureLevel": 2,
+              "script": "Latin",
+              "redFlags": [
+                "RF-07"
+              ],
+              "educationalPurpose": "Recognize threatened consequence in the medium-intensity wellness call example."
+            },
+            {
+              "responseId": "fear.high",
+              "tactic": "fear",
+              "intensity": "high",
+              "pressureLevel": 3,
+              "script": "Latin",
+              "redFlags": [
+                "RF-07"
+              ],
+              "educationalPurpose": "Recognize threatened consequence in the high-intensity wellness call example."
+            },
+            {
+              "responseId": "reward.low",
+              "tactic": "reward",
+              "intensity": "low",
+              "pressureLevel": 1,
+              "script": "Latin",
+              "redFlags": [
+                "RF-08"
+              ],
+              "educationalPurpose": "Recognize reward bait in the low-intensity wellness call example."
+            },
+            {
+              "responseId": "reward.medium",
+              "tactic": "reward",
+              "intensity": "medium",
+              "pressureLevel": 2,
+              "script": "Latin",
+              "redFlags": [
+                "RF-08"
+              ],
+              "educationalPurpose": "Recognize reward bait in the medium-intensity wellness call example."
+            },
+            {
+              "responseId": "reward.high",
+              "tactic": "reward",
+              "intensity": "high",
+              "pressureLevel": 3,
+              "script": "Latin",
+              "redFlags": [
+                "RF-08"
+              ],
+              "educationalPurpose": "Recognize reward bait in the high-intensity wellness call example."
+            }
+          ],
+          "redFlags": [
+            {
+              "id": "RF-01",
+              "title": "Artificial deadline",
+              "description": "The caller makes the practice decision sound time-limited.",
+              "tactics": [
+                "urgency"
+              ],
+              "safeAction": "Take time to check the practice request."
+            },
+            {
+              "id": "RF-02",
+              "title": "Claimed approval",
+              "description": "A desk name, queue, or supervisor is offered as proof of identity.",
+              "tactics": [
+                "authority"
+              ],
+              "safeAction": "Use the fictional employee directory you already know."
+            },
+            {
+              "id": "RF-03",
+              "title": "Isolation",
+              "description": "The caller suggests keeping the training request away from colleagues.",
+              "tactics": [
+                "isolation"
+              ],
+              "safeAction": "Consult the established training desk through your own channel."
+            },
+            {
+              "id": "RF-07",
+              "title": "Threatened consequence",
+              "description": "A delay, hold, or removal is presented as a consequence of pausing.",
+              "tactics": [
+                "fear"
+              ],
+              "safeAction": "Verify the stated consequence independently before deciding."
+            },
+            {
+              "id": "RF-08",
+              "title": "Reward bait",
+              "description": "A practice perk is linked to accepting the request on the call.",
+              "tactics": [
+                "reward"
+              ],
+              "safeAction": "Decline the offer until the familiar training channel confirms it."
+            }
+          ],
+          "examples": [
+            {
+              "exampleId": "refused.1",
+              "script": "Devanagari",
+              "interpretation": "Declines to confirm enrollment on the call.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "refused.2",
+              "script": "Latin",
+              "interpretation": "Rejects consent to record agreement.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "refused.3",
+              "script": "Latin",
+              "interpretation": "Refuses to share a token without claiming verification.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "stalled.1",
+              "script": "Devanagari",
+              "interpretation": "Asks for time to understand the request.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "stalled.2",
+              "script": "Latin",
+              "interpretation": "Defers the decision.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "stalled.3",
+              "script": "Latin",
+              "interpretation": "Pauses to check notes without independently verifying.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "verifiedindependently.1",
+              "script": "Devanagari",
+              "interpretation": "Chooses a familiar employee directory.",
+              "decision": "SAFE_VERIFIED"
+            },
+            {
+              "exampleId": "verifiedindependently.2",
+              "script": "Latin",
+              "interpretation": "Names an independently saved contact.",
+              "decision": "SAFE_VERIFIED"
+            },
+            {
+              "exampleId": "verifiedindependently.3",
+              "script": "Latin",
+              "interpretation": "Uses a channel independent of the caller.",
+              "decision": "SAFE_VERIFIED"
+            },
+            {
+              "exampleId": "complied.1",
+              "script": "Devanagari",
+              "interpretation": "Agrees to confirmation without disclosing a token.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "complied.2",
+              "script": "Latin",
+              "interpretation": "Accepts the caller's suggested slot selection.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "complied.3",
+              "script": "Latin",
+              "interpretation": "Assents to a workshop action without sharing a token.",
+              "decision": "continue"
+            },
+            {
+              "exampleId": "discloseddummysecret.1",
+              "script": "Devanagari",
+              "interpretation": "Says the synthetic value printed on a practice card.",
+              "decision": "DUMMY_SECRET_DISCLOSED"
+            },
+            {
+              "exampleId": "discloseddummysecret.2",
+              "script": "Latin",
+              "interpretation": "Volunteers a synthetic practice token.",
+              "decision": "DUMMY_SECRET_DISCLOSED"
+            },
+            {
+              "exampleId": "discloseddummysecret.3",
+              "script": "Latin",
+              "interpretation": "Reads a different explicitly synthetic value aloud.",
+              "decision": "DUMMY_SECRET_DISCLOSED"
+            },
+            {
+              "exampleId": "unknown.1",
+              "script": "Devanagari",
+              "interpretation": "Unrelated weather comment gives no usable decision.",
+              "decision": "SAFE_FALLBACK"
+            },
+            {
+              "exampleId": "unknown.2",
+              "script": "Latin",
+              "interpretation": "Asks about format without agreeing, pausing, or verifying.",
+              "decision": "SAFE_FALLBACK"
+            },
+            {
+              "exampleId": "unknown.3",
+              "script": "Latin",
+              "interpretation": "Acknowledges familiarity without expressing an action.",
+              "decision": "SAFE_FALLBACK"
+            }
+          ],
+          "decisionPoints": [
+            {
+              "nodeId": "opening-decision",
+              "turn": 1,
+              "context": "Decide whether to confirm the practice enrollment on an unexpected call.",
+              "routes": [
+                {
+                  "behavior": "REFUSED",
+                  "action": "continue",
+                  "nextNodeId": "authority-decision"
+                },
+                {
+                  "behavior": "STALLED",
+                  "action": "continue",
+                  "nextNodeId": "authority-decision"
+                },
+                {
+                  "behavior": "VERIFIED_INDEPENDENTLY",
+                  "action": "terminal",
+                  "outcome": "SAFE_VERIFIED"
+                },
+                {
+                  "behavior": "COMPLIED",
+                  "action": "continue",
+                  "nextNodeId": "authority-decision"
+                },
+                {
+                  "behavior": "DISCLOSED_DUMMY_SECRET",
+                  "action": "terminal",
+                  "outcome": "DUMMY_SECRET_DISCLOSED"
+                },
+                {
+                  "behavior": "UNKNOWN",
+                  "action": "terminal",
+                  "outcome": "SAFE_FALLBACK"
+                }
+              ]
+            },
+            {
+              "nodeId": "authority-decision",
+              "turn": 2,
+              "context": "Consider whether the claimed supervisor approval independently establishes identity.",
+              "routes": [
+                {
+                  "behavior": "REFUSED",
+                  "action": "continue",
+                  "nextNodeId": "consequence-decision"
+                },
+                {
+                  "behavior": "STALLED",
+                  "action": "continue",
+                  "nextNodeId": "consequence-decision"
+                },
+                {
+                  "behavior": "VERIFIED_INDEPENDENTLY",
+                  "action": "terminal",
+                  "outcome": "SAFE_VERIFIED"
+                },
+                {
+                  "behavior": "COMPLIED",
+                  "action": "continue",
+                  "nextNodeId": "consequence-decision"
+                },
+                {
+                  "behavior": "DISCLOSED_DUMMY_SECRET",
+                  "action": "terminal",
+                  "outcome": "DUMMY_SECRET_DISCLOSED"
+                },
+                {
+                  "behavior": "UNKNOWN",
+                  "action": "terminal",
+                  "outcome": "SAFE_FALLBACK"
+                }
+              ]
+            },
+            {
+              "nodeId": "consequence-decision",
+              "turn": 3,
+              "context": "Decide whether an alleged hold changes your plan to check through a familiar channel.",
+              "routes": [
+                {
+                  "behavior": "REFUSED",
+                  "action": "terminal",
+                  "outcome": "MAX_TURNS"
+                },
+                {
+                  "behavior": "STALLED",
+                  "action": "terminal",
+                  "outcome": "MAX_TURNS"
+                },
+                {
+                  "behavior": "VERIFIED_INDEPENDENTLY",
+                  "action": "terminal",
+                  "outcome": "SAFE_VERIFIED"
+                },
+                {
+                  "behavior": "COMPLIED",
+                  "action": "terminal",
+                  "outcome": "MAX_TURNS"
+                },
+                {
+                  "behavior": "DISCLOSED_DUMMY_SECRET",
+                  "action": "terminal",
+                  "outcome": "DUMMY_SECRET_DISCLOSED"
+                },
+                {
+                  "behavior": "UNKNOWN",
+                  "action": "terminal",
+                  "outcome": "MAX_TURNS"
+                }
+              ]
+            }
+          ],
+          "terminalResponses": {
+            "SAFE_VERIFIED": "ending.verified",
+            "DUMMY_SECRET_DISCLOSED": "ending.dummy",
+            "SAFE_FALLBACK": "system.safe-fallback",
+            "MAX_TURNS": "ending.turn-limit"
+          },
+          "stopGuidance": "Learner End and the safe word stop the simulation immediately without another learner window.",
+          "debriefs": [
+            {
+              "templateId": "verified",
+              "behavior": "VERIFIED_INDEPENDENTLY",
+              "outcome": "SAFE_VERIFIED",
+              "redFlags": [
+                "RF-02"
+              ],
+              "scoring": "Credit independent verification only when the learner names a channel they already know.",
+              "nextAction": "Open the familiar employee directory yourself before confirming enrollment.",
+              "limitations": "A stated plan does not establish that an external check was completed.",
+              "takeaway": "A familiar channel separates the decision from the caller's claimed approval."
+            },
+            {
+              "templateId": "refused",
+              "behavior": "REFUSED",
+              "outcome": null,
+              "redFlags": [
+                "RF-03"
+              ],
+              "scoring": "Record an explicit refusal only when the learner states it.",
+              "nextAction": "End the call if the caller insists and check the request separately.",
+              "limitations": "Refusal alone does not establish independent verification.",
+              "takeaway": "A caller cannot require you to keep a training request private."
+            },
+            {
+              "templateId": "stalled",
+              "behavior": "STALLED",
+              "outcome": null,
+              "redFlags": [
+                "RF-01"
+              ],
+              "scoring": "Record a requested pause. Do not infer recognition from response latency.",
+              "nextAction": "Use the pause to look up the training desk through a familiar source.",
+              "limitations": "A pause alone does not establish what the learner noticed.",
+              "takeaway": "A practice deadline leaves room for an independent check."
+            },
+            {
+              "templateId": "dummy",
+              "behavior": "DISCLOSED_DUMMY_SECRET",
+              "outcome": "DUMMY_SECRET_DISCLOSED",
+              "redFlags": [
+                "RF-02"
+              ],
+              "scoring": "Record synthetic disclosure only when the structured behavior identifies the dummy pattern.",
+              "nextAction": "On the next call, decline to read a token and verify the request elsewhere.",
+              "limitations": "DUMMY-1234 jaise fictional training-only token ko bina poochhe bolna bhi synthetic disclosure hai. Yeh real credential exposure ya request par agreement establish nahi karta; simulation safely khatam hoti hai.",
+              "takeaway": "A caller's asserted authority cannot authorize token disclosure."
+            },
+            {
+              "templateId": "fallback",
+              "behavior": "UNKNOWN",
+              "outcome": "SAFE_FALLBACK",
+              "redFlags": [
+                "RF-03"
+              ],
+              "scoring": "Leave action-specific points unscored when the behavior is UNKNOWN.",
+              "nextAction": "End the call and check the enrollment through a familiar channel.",
+              "limitations": "An ambiguous reply cannot establish intent, compliance, or refusal.",
+              "takeaway": "An unclear request can be stopped without making a decision."
+            },
+            {
+              "templateId": "limit",
+              "behavior": null,
+              "outcome": "MAX_TURNS",
+              "redFlags": [
+                "RF-07"
+              ],
+              "scoring": "Record bounded completion. Score verification or refusal only if present in committed events.",
+              "nextAction": "Review the enrollment separately before acting.",
+              "limitations": "Reaching the turn cap does not imply acceptance of the caller's claim.",
+              "takeaway": "The practice can end while a decision is still open."
+            },
+            {
+              "templateId": "complied",
+              "behavior": "COMPLIED",
+              "outcome": null,
+              "redFlags": [
+                "RF-01",
+                "RF-02",
+                "RF-03",
+                "RF-07",
+                "RF-08"
+              ],
+              "scoring": "Record COMPLIED only when committed behavior shows agreement without a dummy value. Verification, disclosure, enrollment and transaction completion remain unscored without their own evidence. Agreement alone earns no independent-verification credit.",
+              "nextAction": "Call ko rokein. Apne familiar employee directory ya bookmarked training portal ko khud kholkar request independently check karein.",
+              "limitations": "Haan kehne se dummy disclosure, real enrollment ya transaction completion establish nahi hota. Dummy token bina kisi aur agreement ke bhi bola ja sakta hai; us observation ka label DISCLOSED_DUMMY_SECRET hai.",
+              "takeaway": "Call par haan aur token batana alag observations hain. Aage koi action lene se pehle apne known channel se verify karein."
+            }
+          ]
+        }
+      }
+    },
+    "artifactHash": "de53489b134b9789a7000cb4df7bd9a8dc0c5e7e61b406f384e6f70d416eddc7"
+  },
+  "validation": {
+    "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "scenarioId": "S-92",
+    "scenarioVersion": "0.1.1",
+    "schemaVersion": 1,
+    "validationVersion": "1.0.0",
+    "checkedAt": "2026-11-08T07:10:37.805Z",
+    "sourceHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+    "status": "PASS",
+    "structuralValidation": "PASS",
+    "reviewEligible": true,
+    "summary": {
+      "errors": 0,
+      "warnings": 0,
+      "info": 1
+    },
+    "findings": [
+      {
+        "ruleId": "CONTENT_REVIEW",
+        "severity": "INFO",
+        "category": "SAFETY",
+        "path": "/",
+        "message": "Human safety and linguistic review is required after automated validation.",
+        "remediation": "Review fictional framing, educational purpose and language before any later approval."
+      }
+    ],
+    "graph": {
+      "complete": true,
+      "reachablePrefixes": 79,
+      "terminalLeaves": 66,
+      "maximumDepth": 3,
+      "reachableResponseIds": [
+        "authority.medium",
+        "ending.dummy",
+        "ending.turn-limit",
+        "ending.verified",
+        "fear.medium",
+        "system.opening",
+        "system.safe-fallback"
+      ],
+      "reachablePressures": [
+        0,
+        2
+      ],
+      "unreachableAuthoredVariants": [
+        "authority.high",
+        "authority.low",
+        "fear.high",
+        "fear.low",
+        "isolation.high",
+        "isolation.low",
+        "isolation.medium",
+        "reward.high",
+        "reward.low",
+        "reward.medium",
+        "urgency.high",
+        "urgency.low",
+        "urgency.medium"
+      ]
+    }
+  },
+  "checklist": {
+    "fictionalOrganization": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.288Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "staffAndContacts": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "simulationLabelVisible": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "educationalPurpose": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "noSecurityBypassInstructions": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "syntheticDataOnly": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "syntheticDisclosureContext": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "callerCoherence": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "pressureIntent": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "behaviorExamples": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "complianceDistinct": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "boundedBranches": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "terminalPrecedence": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "safeEndingAvailable": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "languageQuality": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "translationChecked": {
+      "decision": "NOT_APPLICABLE",
+      "reason": "No formal translation-equivalence claim exists.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "observableDebrief": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "provenanceAccuracy": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "aiVoiceDisclosureRequired": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.293Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "consentBeforeRecording": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.294Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    },
+    "noAudioRetentionByDefault": {
+      "decision": "PASS",
+      "reason": "The repository owner explicitly confirmed personal review and PASS for this mandatory item in chat, including runtime safeguards 18-20.",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "at": "2026-11-08T07:05:50.294Z",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1"
+    }
+  },
+  "warningDispositions": [],
+  "registrySequence": 10,
+  "headHash": "eeaf713a8dbc985e343c63dd250854a614d6c518b0957e29cdc948d945869140",
+  "audit": [
+    {
+      "eventId": "760980cf-c710-4972-a4d3-57b70f5dd3fe",
+      "sequence": 1,
+      "type": "DRAFT_CREATED",
+      "actor": {
+        "actorId": "local-author",
+        "role": "AUTHOR"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.0",
+      "contentHash": "c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "before": null,
+      "after": "DRAFT",
+      "at": "2026-11-07T18:53:51.312Z",
+      "reviewId": null,
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "DRAFT_CREATED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": null,
+      "eventHash": "6a8ac5363e346b670e4cc009eaadaa1cae242cfedd3fd80489aaeba661ab33d5"
+    },
+    {
+      "eventId": "86c71d79-8300-4465-9a73-5abcce0ba7cb",
+      "sequence": 2,
+      "type": "VALIDATION_COMPLETED",
+      "actor": {
+        "actorId": "local-author",
+        "role": "AUTHOR"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.0",
+      "contentHash": "c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "before": null,
+      "after": "DRAFT",
+      "at": "2026-11-07T18:53:51.312Z",
+      "reviewId": null,
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "VALIDATION_COMPLETED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "6a8ac5363e346b670e4cc009eaadaa1cae242cfedd3fd80489aaeba661ab33d5",
+      "eventHash": "bdd4cc8774d4d27fab02a9b59c5e3fd94a1ce4673ec712f6184b57792798b191"
+    },
+    {
+      "eventId": "183eaea8-0434-48c1-b595-8d4c88c949ed",
+      "sequence": 3,
+      "type": "REVIEW_SUBMITTED",
+      "actor": {
+        "actorId": "local-author",
+        "role": "AUTHOR"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.0",
+      "contentHash": "c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "before": "DRAFT",
+      "after": "SAFETY_REVIEW",
+      "at": "2026-11-07T18:54:24.798Z",
+      "reviewId": "e254f44b-160b-485f-b8ba-86524ddfb468",
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "REVIEW_SUBMITTED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "bdd4cc8774d4d27fab02a9b59c5e3fd94a1ce4673ec712f6184b57792798b191",
+      "eventHash": "5c51f90763cfc1dfb7a99cd8d22bfe184588d927ca6c0266fcc34e95696a363e"
+    },
+    {
+      "eventId": "30bd1de5-27e8-4b3b-828f-3c5092c8f689",
+      "sequence": 4,
+      "type": "REVIEW_STARTED",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.0",
+      "contentHash": "c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "before": "SAFETY_REVIEW",
+      "after": "SAFETY_REVIEW",
+      "at": "2026-11-07T18:54:43.500Z",
+      "reviewId": "e254f44b-160b-485f-b8ba-86524ddfb468",
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "REVIEW_STARTED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "5c51f90763cfc1dfb7a99cd8d22bfe184588d927ca6c0266fcc34e95696a363e",
+      "eventHash": "40d71af654afb8da37ed4d2274f78a4107ecd0b273375a2ae089771ea3f2f18d"
+    },
+    {
+      "eventId": "777727fa-d21a-4591-99bd-7f1d7c694794",
+      "sequence": 5,
+      "type": "CHANGES_REQUESTED",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.0",
+      "contentHash": "c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+      "before": "SAFETY_REVIEW",
+      "after": "DRAFT",
+      "at": "2026-11-08T05:47:37.439Z",
+      "reviewId": "e254f44b-160b-485f-b8ba-86524ddfb468",
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "CHANGES_REQUESTED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "40d71af654afb8da37ed4d2274f78a4107ecd0b273375a2ae089771ea3f2f18d",
+      "eventHash": "271f9465a33f9a255f2a65ca9bd972cf49c60c3ebc28226c581b0699144c7079"
+    },
+    {
+      "eventId": "8eaa41a6-35f5-412b-bc6f-004ff25cd3a9",
+      "sequence": 6,
+      "type": "DRAFT_REVISED",
+      "actor": {
+        "actorId": "local-author",
+        "role": "AUTHOR"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": null,
+      "after": "DRAFT",
+      "at": "2026-11-08T05:47:57.619Z",
+      "reviewId": null,
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "DRAFT_REVISED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "271f9465a33f9a255f2a65ca9bd972cf49c60c3ebc28226c581b0699144c7079",
+      "eventHash": "8e91d4c8d8b786d90985e30561c8ae90cf00a35526b73cded12f8fc9151149d9"
+    },
+    {
+      "eventId": "22d99fa1-b7cb-4e5b-a6f1-fccc3c8218ad",
+      "sequence": 7,
+      "type": "VALIDATION_COMPLETED",
+      "actor": {
+        "actorId": "local-author",
+        "role": "AUTHOR"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": null,
+      "after": "DRAFT",
+      "at": "2026-11-08T05:47:57.619Z",
+      "reviewId": null,
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "VALIDATION_COMPLETED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "8e91d4c8d8b786d90985e30561c8ae90cf00a35526b73cded12f8fc9151149d9",
+      "eventHash": "74bc1034f62c96882e27b2d990d57f41f0b284f84a0ed7b0d3c015c668514012"
+    },
+    {
+      "eventId": "857f8378-f811-4543-999d-f55f24acc280",
+      "sequence": 8,
+      "type": "REVIEW_SUBMITTED",
+      "actor": {
+        "actorId": "local-author",
+        "role": "AUTHOR"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": "DRAFT",
+      "after": "SAFETY_REVIEW",
+      "at": "2026-11-08T06:52:23.799Z",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "REVIEW_SUBMITTED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "74bc1034f62c96882e27b2d990d57f41f0b284f84a0ed7b0d3c015c668514012",
+      "eventHash": "774cf50e85abda9c550c559b7768c1b60a305d630f6d30c57c646efc5a09e596"
+    },
+    {
+      "eventId": "6bc6194b-7d5c-4f3c-b2e6-41e593753838",
+      "sequence": 9,
+      "type": "REVIEW_STARTED",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": "SAFETY_REVIEW",
+      "after": "SAFETY_REVIEW",
+      "at": "2026-11-08T07:01:20.403Z",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "REVIEW_STARTED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "774cf50e85abda9c550c559b7768c1b60a305d630f6d30c57c646efc5a09e596",
+      "eventHash": "d758b440cc93221687b14f43c960c80a5978bf7c4d69720fbd141751e99970a9"
+    },
+    {
+      "eventId": "b1a2d8b5-90d3-4bbb-90fd-296cc19a0241",
+      "sequence": 10,
+      "type": "CHECKLIST_UPDATED",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": "SAFETY_REVIEW",
+      "after": "SAFETY_REVIEW",
+      "at": "2026-11-08T07:05:50.294Z",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+      "approvalId": null,
+      "publicationId": null,
+      "reasonCode": "CHECKLIST_UPDATED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "d758b440cc93221687b14f43c960c80a5978bf7c4d69720fbd141751e99970a9",
+      "eventHash": "f15f2dde094d61f896eb5c6687ddc85fc364973e27b95ba597f0cd2143f01f9d"
+    },
+    {
+      "eventId": "970365bb-d545-4197-96b1-5a5f98088a39",
+      "sequence": 11,
+      "type": "REVIEW_APPROVED",
+      "actor": {
+        "actorId": "local-reviewer",
+        "role": "REVIEWER"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": "SAFETY_REVIEW",
+      "after": "APPROVED",
+      "at": "2026-11-08T07:06:29.185Z",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+      "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+      "publicationId": null,
+      "reasonCode": "REVIEW_APPROVED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "f15f2dde094d61f896eb5c6687ddc85fc364973e27b95ba597f0cd2143f01f9d",
+      "eventHash": "fb05f1f34774547023c7804612310334669f6b059e97ce9c9ca9c90789aedfa2"
+    },
+    {
+      "eventId": "302715ad-4498-4110-ab1b-8b66c037045d",
+      "sequence": 12,
+      "type": "PUBLICATION_REQUESTED",
+      "actor": {
+        "actorId": "local-publisher",
+        "role": "PUBLISHER"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": "APPROVED",
+      "after": "APPROVED",
+      "at": "2026-11-08T07:10:38.095Z",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+      "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+      "publicationId": "381164a8-076f-46ab-b397-efe57285d63a",
+      "reasonCode": "PUBLICATION_REQUESTED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "fb05f1f34774547023c7804612310334669f6b059e97ce9c9ca9c90789aedfa2",
+      "eventHash": "e2147e0a3f6eeb0b4c8180509b0e2685edaaac332555cde5f075c37c4ca6391c"
+    },
+    {
+      "eventId": "f0a3681f-e342-45c8-ab32-85d2e08051df",
+      "sequence": 13,
+      "type": "PUBLICATION_BLOCKED",
+      "actor": {
+        "actorId": "local-publisher",
+        "role": "PUBLISHER"
+      },
+      "actorPolicyHash": "19df79cc239f563534c653576e507a8a9b7debca8d2418f539a0812076bd2bb0",
+      "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "scenarioId": "S-92",
+      "scenarioVersion": "0.1.1",
+      "contentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+      "before": "APPROVED",
+      "after": "APPROVED",
+      "at": "2026-11-08T07:10:38.095Z",
+      "reviewId": "551876bd-7b60-49f9-9cee-63350afff3f1",
+      "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+      "publicationId": "381164a8-076f-46ab-b397-efe57285d63a",
+      "reasonCode": "PUBLICATION_BLOCKED",
+      "validationVersion": "1.0.0",
+      "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+      "previousEventHash": "e2147e0a3f6eeb0b4c8180509b0e2685edaaac332555cde5f075c37c4ca6391c",
+      "eventHash": "f6a00c2e7319469f45404c3610e3f5a56c061dcee1c0751327f197c2a0054611"
+    }
+  ],
+  "publicationOperation": {
+    "operationId": "5a7ad53f-c73b-4098-87b8-21224d4f4164",
+    "expectedSequence": 9,
+    "candidateId": "import-7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "expectedContentHash": "7d2806433a6b9641c5eaacca23570fa73c8973ca736d90b23d2e88140a360337",
+    "expectedState": "APPROVED",
+    "action": "publish",
+    "evidence": {
+      "approvalId": "e2f279e3-820e-49b3-b66f-bd227bc48699",
+      "confirmed": true,
+      "target": "current-real-conversation"
+    }
+  },
+  "commitHash": "eeaf713a8dbc985e343c63dd250854a614d6c518b0957e29cdc948d945869140",
+  "persistence": {
+    "method": "Two independent CLI export processes after apply; each constructs a new LocalReviewStore and validates journal/approval/audit integrity.",
+    "itemEqual": true,
+    "auditEqual": true,
+    "approvalUnchanged": true,
+    "exactlyOnePublicationAttempt": true
+  },
+  "protected": {
+    "originalChecks": [
+      {
+        "path": "content/scenarios/S-01-urgent-account-verification.json",
+        "expected": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+        "actual": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+        "match": true
+      },
+      {
+        "path": "content/scenarios/S-02-insurance-refund-trap.json",
+        "expected": "77a042e097f54260270446d090d213de464191af4693551a5e079e8db3636051",
+        "actual": "77a042e097f54260270446d090d213de464191af4693551a5e079e8db3636051",
+        "match": true
+      },
+      {
+        "path": "content/scenarios/S-03-telecom-kyc-lockout.json",
+        "expected": "9f756fd605aa791c8c6ff01083685ee8220cdcc1cae260ba7d51bee18d516b38",
+        "actual": "9f756fd605aa791c8c6ff01083685ee8220cdcc1cae260ba7d51bee18d516b38",
+        "match": true
+      },
+      {
+        "path": "content/authoring/S-01-hi-IN.package.json",
+        "expected": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+        "actual": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+        "match": true
+      },
+      {
+        "path": "content/authoring/examples/benefits-import.json",
+        "expected": "c3d09a4d2da11c0f46bca923786b7ee08c286fa04604610954cdd4f12b2b76dc",
+        "actual": "c3d09a4d2da11c0f46bca923786b7ee08c286fa04604610954cdd4f12b2b76dc",
+        "match": true
+      },
+      {
+        "path": "content/authoring/examples/benefits-brief.json",
+        "expected": "bd16d3f132a1fa365d37cb85ad523ad6baa91b9ff360f651d291c301d9aae590",
+        "actual": "bd16d3f132a1fa365d37cb85ad523ad6baa91b9ff360f651d291c301d9aae590",
+        "match": true
+      },
+      {
+        "path": "packages/scenario-schema/src/benefitsTemplate.ts",
+        "expected": "583dd5d19090b8382c749788907464af6086cecd95779a5b23fa705bf1f05a6e",
+        "actual": "583dd5d19090b8382c749788907464af6086cecd95779a5b23fa705bf1f05a6e",
+        "match": true
+      },
+      {
+        "path": "docs/evidence/phase6c-review-packet-S92.md",
+        "expected": "87f163b2395b9d0d06bb84ee313f5ff4dc8710886eb536cc8f7763265b8bf417",
+        "actual": "87f163b2395b9d0d06bb84ee313f5ff4dc8710886eb536cc8f7763265b8bf417",
+        "match": true
+      },
+      {
+        "path": "content/authoring/review-registry/commits/00000001.json",
+        "expected": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8",
+        "actual": "30d85555adf4656b6ecc96fc1e6ada1b9ae22e65a53d310f987d123496f6f9c8",
+        "match": true
+      },
+      {
+        "path": "content/authoring/review-registry/commits/00000002.json",
+        "expected": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7",
+        "actual": "2bd4a51268caf0375b8288f4bfed05960cc9f3e0efe22c105b33c5ff2d8cded7",
+        "match": true
+      },
+      {
+        "path": "content/authoring/review-registry/commits/00000003.json",
+        "expected": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685",
+        "actual": "ae866b318cd380e0876c76225ebc6240be1e092995251e34ff5fdd898d661685",
+        "match": true
+      },
+      {
+        "path": "D:\\vishing--vaccine\\.cache\\authoring\\import-fd46d669704caa567f76cba4d9c6db0dc9728c6a6c88b96d7b121455bae7d3b2.json",
+        "expected": "69a87fded55d26f8e965e5ef587f1d2fa7ee3b761579017d94ea33128671901e",
+        "actual": "69a87fded55d26f8e965e5ef587f1d2fa7ee3b761579017d94ea33128671901e",
+        "match": true
+      },
+      {
+        "path": "D:\\vishing--vaccine\\.cache\\authoring\\mock-80843162b78c5540dc3701cc770c1b2e7bc5544b2fafa1c93979c7bfc8d46235.json",
+        "expected": "5c81da57b14e376b5eaf254032bddb9748675ed9ca01892c54329d9d48363ed8",
+        "actual": "5c81da57b14e376b5eaf254032bddb9748675ed9ca01892c54329d9d48363ed8",
+        "match": true
+      },
+      {
+        "path": "D:\\vishing--vaccine\\.cache\\authoring\\mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5.json",
+        "expected": "f9cbb91a41bf097d1933ab908fda4297d121f7c8b733e5bab4fb8ae13e4acfaf",
+        "actual": "f9cbb91a41bf097d1933ab908fda4297d121f7c8b733e5bab4fb8ae13e4acfaf",
+        "match": true
+      }
+    ],
+    "runtimeChecks": [
+      {
+        "path": "apps/api/src/adaptivePolicy.ts",
+        "expected": "1a3d5519656384f4feb003577c9a4b1808d6e5e7aeb87551dd0adb649c1287e9",
+        "actual": "1a3d5519656384f4feb003577c9a4b1808d6e5e7aeb87551dd0adb649c1287e9",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/turnOrchestrator.ts",
+        "expected": "00fa15b8c87f9cf05201b8163ee2a662249de974320379591d767ea9350ded52",
+        "actual": "00fa15b8c87f9cf05201b8163ee2a662249de974320379591d767ea9350ded52",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/eventLog.ts",
+        "expected": "a363b0b87216c32cfd0616ddd1663affa45292164cac159f41935dc942d625ed",
+        "actual": "a363b0b87216c32cfd0616ddd1663affa45292164cac159f41935dc942d625ed",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/runtimeAudioIngress.ts",
+        "expected": "a816995d7f675d834ff4282bed9612ff9437ac1a14dd9344cfd3b3b5331ca220",
+        "actual": "a816995d7f675d834ff4282bed9612ff9437ac1a14dd9344cfd3b3b5331ca220",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/conversationRuntime.ts",
+        "expected": "007c1131a11a2076f2a2a5030a7d258c6557921ace24c0e72ea0cadd1c76e3ba",
+        "actual": "007c1131a11a2076f2a2a5030a7d258c6557921ace24c0e72ea0cadd1c76e3ba",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/session.ts",
+        "expected": "038ebac1f770e61ae2d741da9d5f2d26c6b37feeab24f1e7872e857d661b5077",
+        "actual": "038ebac1f770e61ae2d741da9d5f2d26c6b37feeab24f1e7872e857d661b5077",
+        "match": true
+      },
+      {
+        "path": "apps/web/src/audio/conversationController.ts",
+        "expected": "fd53ea04162670b6f704c396518a30ee5a3dbdc7327e115f6fa8a772c3ccac1f",
+        "actual": "fd53ea04162670b6f704c396518a30ee5a3dbdc7327e115f6fa8a772c3ccac1f",
+        "match": true
+      },
+      {
+        "path": "apps/web/src/audio/browserCapture.ts",
+        "expected": "97a3dda7289a44b7f188fa0a2e6f1e93009cf4f6e06f0748595f9ec21f3c1e68",
+        "actual": "97a3dda7289a44b7f188fa0a2e6f1e93009cf4f6e06f0748595f9ec21f3c1e68",
+        "match": true
+      },
+      {
+        "path": "apps/web/src/audio/reusableMicrophone.ts",
+        "expected": "5c3e64a815b07fe28106bab8eb239d7ec2285d293612f1840acedaa0ae156cce",
+        "actual": "5c3e64a815b07fe28106bab8eb239d7ec2285d293612f1840acedaa0ae156cce",
+        "match": true
+      },
+      {
+        "path": "apps/web/src/audio/callerPlayback.ts",
+        "expected": "f9b6e4054c5a61d754784092766f343e5d0e5f49ee39f6a9d211e735cd8477f9",
+        "actual": "f9b6e4054c5a61d754784092766f343e5d0e5f49ee39f6a9d211e735cd8477f9",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/callerAudio/catalog.ts",
+        "expected": "f326cce3bac7632a35350b34ae5ad86eb1e97bb01055ae253a10b1c8896e7c6a",
+        "actual": "f326cce3bac7632a35350b34ae5ad86eb1e97bb01055ae253a10b1c8896e7c6a",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/callerAudio/service.ts",
+        "expected": "dad4528c80a9b29c2cf6af42094415986f331f599ac89982d90badd2ffc51fb6",
+        "actual": "dad4528c80a9b29c2cf6af42094415986f331f599ac89982d90badd2ffc51fb6",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/providers/prisma/runtimeConfig.ts",
+        "expected": "f482aa4010e3d43dbede0169036f7cc444126ad0075c18ef27b9fac212321bf3",
+        "actual": "f482aa4010e3d43dbede0169036f7cc444126ad0075c18ef27b9fac212321bf3",
+        "match": true
+      },
+      {
+        "path": "apps/api/src/providers/timbre/runtimeConfig.ts",
+        "expected": "2aa5280b50e14baef0d3529a6f91d61fcecd4dc9291cdc7d5c4b0f0f2ba66e19",
+        "actual": "2aa5280b50e14baef0d3529a6f91d61fcecd4dc9291cdc7d5c4b0f0f2ba66e19",
+        "match": true
+      },
+      {
+        "path": "content/scenarios/S-01-urgent-account-verification.json",
+        "expected": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+        "actual": "0f589bbba4987d6e1d9f28f79ae3b38a8cb99fdb3babaf83390865366b3fb686",
+        "match": true
+      },
+      {
+        "path": "content/authoring/S-01-hi-IN.package.json",
+        "expected": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+        "actual": "aea62488777054921bbd3527fe1f2366e02d81d2ee0a6c0990c6e4163a8c3e46",
+        "match": true
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "S-01",
+        "lifecycle": "RUNTIME_ELIGIBLE",
+        "runtimeEligible": true
+      },
+      {
+        "id": "S-02",
+        "lifecycle": "DRAFT",
+        "runtimeEligible": false
+      },
+      {
+        "id": "S-03",
+        "lifecycle": "DRAFT",
+        "runtimeEligible": false
+      }
+    ],
+    "drafts": [
+      {
+        "id": "S-90",
+        "candidateId": "mock-80843162b78c5540dc3701cc770c1b2e7bc5544b2fafa1c93979c7bfc8d46235",
+        "status": "DRAFT",
+        "runtimeEligible": false,
+        "unchanged": true
+      },
+      {
+        "id": "S-91",
+        "candidateId": "import-fd46d669704caa567f76cba4d9c6db0dc9728c6a6c88b96d7b121455bae7d3b2",
+        "status": "DRAFT",
+        "runtimeEligible": false,
+        "unchanged": true
+      }
+    ]
+  },
+  "providerCalls": {
+    "Prisma": 0,
+    "Timbre": 0,
+    "Evon": 0
+  },
+  "phase6D": "NOT_STARTED",
+  "checks": {
+    "npmRunCheck": {
+      "exitCode": 0,
+      "tests": 1175,
+      "passed": 1175,
+      "failed": 0
+    },
+    "gitDiffCheck": "PASS",
+    "protectedFingerprints": "14/14 originals and 16/16 Phase 5 match",
+    "phase6C": "COMPLETE"
+  }
+}

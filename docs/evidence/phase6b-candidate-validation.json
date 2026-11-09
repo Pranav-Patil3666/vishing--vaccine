@@ -1,0 +1,177 @@
+{
+  "evidenceType": "READ_ONLY_LOCAL_VALIDATION",
+  "date": "2026-11-07",
+  "realProviderCalls": 0,
+  "candidates": [
+    {
+      "sourceFile": ".cache/authoring/import-fd46d669704caa567f76cba4d9c6db0dc9728c6a6c88b96d7b121455bae7d3b2.json",
+      "validation": {
+        "candidateId": "import-fd46d669704caa567f76cba4d9c6db0dc9728c6a6c88b96d7b121455bae7d3b2",
+        "scenarioId": "S-91",
+        "scenarioVersion": "0.1.0",
+        "schemaVersion": 1,
+        "validationVersion": "1.0.0",
+        "checkedAt": "2026-11-07T09:48:25.221Z",
+        "sourceHash": "fd46d669704caa567f76cba4d9c6db0dc9728c6a6c88b96d7b121455bae7d3b2",
+        "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+        "status": "WARN",
+        "structuralValidation": "PASS",
+        "reviewEligible": true,
+        "summary": {
+          "errors": 0,
+          "warnings": 2,
+          "info": 1
+        },
+        "findings": [
+          {
+            "ruleId": "CONTENT_REVIEW",
+            "category": "SAFETY",
+            "severity": "INFO",
+            "message": "Human safety and linguistic review is required after automated validation.",
+            "remediation": "Review fictional framing, educational purpose and language before any later approval.",
+            "path": "/"
+          },
+          {
+            "ruleId": "COMPLIANCE_REVIEW",
+            "category": "DEBRIEF",
+            "severity": "WARNING",
+            "message": "Compliance lacks an explicit outcome-neutral educational explanation.",
+            "remediation": "Have a reviewer confirm how non-disclosure compliance is explained.",
+            "path": "/candidate/details/debriefs"
+          },
+          {
+            "ruleId": "DUMMY_CONTEXT",
+            "category": "BEHAVIOR",
+            "severity": "WARNING",
+            "message": "Dummy-disclosure examples lack a clearly established synthetic-token or unsolicited-disclosure context.",
+            "remediation": "Document the synthetic exercise or the educational meaning of unsolicited disclosure.",
+            "path": "/candidate/details/examples"
+          }
+        ],
+        "graph": {
+          "complete": true,
+          "reachablePrefixes": 25,
+          "terminalLeaves": 21,
+          "maximumDepth": 2,
+          "reachableResponseIds": [
+            "authority.medium",
+            "ending.dummy",
+            "ending.turn-limit",
+            "ending.verified",
+            "system.opening",
+            "system.safe-fallback"
+          ],
+          "reachablePressures": [
+            0,
+            2
+          ],
+          "unreachableAuthoredVariants": [
+            "authority.high",
+            "authority.low",
+            "fear.high",
+            "fear.low",
+            "fear.medium",
+            "isolation.high",
+            "isolation.low",
+            "isolation.medium",
+            "reward.high",
+            "reward.low",
+            "reward.medium",
+            "urgency.high",
+            "urgency.low",
+            "urgency.medium"
+          ]
+        }
+      },
+      "reviewGate": {
+        "eligible": true,
+        "reasons": []
+      }
+    },
+    {
+      "sourceFile": ".cache/authoring/mock-80843162b78c5540dc3701cc770c1b2e7bc5544b2fafa1c93979c7bfc8d46235.json",
+      "validation": {
+        "candidateId": "mock-80843162b78c5540dc3701cc770c1b2e7bc5544b2fafa1c93979c7bfc8d46235",
+        "scenarioId": "S-90",
+        "scenarioVersion": "0.1.0",
+        "schemaVersion": 1,
+        "validationVersion": "1.0.0",
+        "checkedAt": "2026-11-07T09:48:25.266Z",
+        "sourceHash": "80843162b78c5540dc3701cc770c1b2e7bc5544b2fafa1c93979c7bfc8d46235",
+        "policyHash": "c50d6c4dca8124fc7f20850955f85505f5c5e6003bfb1d9f504df7a5fe828aa0",
+        "status": "WARN",
+        "structuralValidation": "PASS",
+        "reviewEligible": true,
+        "summary": {
+          "errors": 0,
+          "warnings": 2,
+          "info": 1
+        },
+        "findings": [
+          {
+            "ruleId": "CONTENT_REVIEW",
+            "category": "SAFETY",
+            "severity": "INFO",
+            "message": "Human safety and linguistic review is required after automated validation.",
+            "remediation": "Review fictional framing, educational purpose and language before any later approval.",
+            "path": "/"
+          },
+          {
+            "ruleId": "COMPLIANCE_REVIEW",
+            "category": "DEBRIEF",
+            "severity": "WARNING",
+            "message": "Compliance lacks an explicit outcome-neutral educational explanation.",
+            "remediation": "Have a reviewer confirm how non-disclosure compliance is explained.",
+            "path": "/candidate/details/debriefs"
+          },
+          {
+            "ruleId": "DUMMY_CONTEXT",
+            "category": "BEHAVIOR",
+            "severity": "WARNING",
+            "message": "Dummy-disclosure examples lack a clearly established synthetic-token or unsolicited-disclosure context.",
+            "remediation": "Document the synthetic exercise or the educational meaning of unsolicited disclosure.",
+            "path": "/candidate/details/examples"
+          }
+        ],
+        "graph": {
+          "complete": true,
+          "reachablePrefixes": 79,
+          "terminalLeaves": 66,
+          "maximumDepth": 3,
+          "reachableResponseIds": [
+            "authority.medium",
+            "ending.dummy",
+            "ending.turn-limit",
+            "ending.verified",
+            "fear.medium",
+            "system.opening",
+            "system.safe-fallback"
+          ],
+          "reachablePressures": [
+            0,
+            2
+          ],
+          "unreachableAuthoredVariants": [
+            "authority.high",
+            "authority.low",
+            "fear.high",
+            "fear.low",
+            "isolation.high",
+            "isolation.low",
+            "isolation.medium",
+            "reward.high",
+            "reward.low",
+            "reward.medium",
+            "urgency.high",
+            "urgency.low",
+            "urgency.medium"
+          ]
+        }
+      },
+      "reviewGate": {
+        "eligible": true,
+        "reasons": []
+      }
+    }
+  ]
+}

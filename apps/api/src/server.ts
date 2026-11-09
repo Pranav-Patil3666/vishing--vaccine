@@ -17,6 +17,7 @@ const runtimePrisma = readPrismaRuntimeConfig(process.env);
 const runtimeTimbre = readTimbreRuntimeConfig(process.env);
 const server = createApiServer({
   environment: environment.nodeEnvironment,
+  onRuntimeDenial: (event) => process.stderr.write(JSON.stringify({ type: "RUNTIME_SESSION_DENIED", ...event }) + "\n"),
   budget: {
     mode: "development",
     developmentCap: environment.developmentCreditCap,

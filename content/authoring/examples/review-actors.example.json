@@ -1,0 +1,10 @@
+{
+  "mode": "LOCAL_OS_DEMO",
+  "acknowledgedLocalTrust": true,
+  "actors": [
+    { "actorId": "local-author", "roles": ["AUTHOR"] },
+    { "actorId": "local-reviewer", "roles": ["REVIEWER"] },
+    { "actorId": "local-publisher", "roles": ["PUBLISHER"] }
+  ]
+}
+

@@ -1,6 +1,7 @@
 node_modules/
 .cache/tts/
 .cache/authoring/
+content/authoring/review-registry/
 **/dist/
 **/coverage/
 .env

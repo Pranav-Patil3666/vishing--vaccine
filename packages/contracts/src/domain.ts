@@ -262,6 +262,7 @@ export const EndSessionRequestSchema = z.object({}).strict();
 
 export const SafeSessionSchema = z.object({
   sessionId: z.string().min(1), scenarioId: z.string().min(1), scenarioVersion: z.string().min(1),
+  runtimeRelease: z.object({ publicationId: z.string().uuid().nullable(), packageHash: z.string().regex(/^[0-9a-f]{64}$/u), policyVersion: z.string().min(1) }).strict().optional(),
   language: z.string().min(1), state: SessionLifecycleStateSchema, consent: ConsentStateSchema,
   scenarioRuntimeStatus: ScenarioRuntimeStatusSchema.default("DRAFT"),
   turnNumber: z.number().int().nonnegative(), currentNodeId: z.string().min(1),

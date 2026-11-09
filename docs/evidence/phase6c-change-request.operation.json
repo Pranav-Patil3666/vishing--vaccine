@@ -1,0 +1,24 @@
+{
+  "kind": "EXACT_EXISTING_LOCAL_CHANGE_REQUEST_NOT_APPROVAL",
+  "committedSequence": 4,
+  "actorId": "local-reviewer",
+  "requestHash": "9e213e5bc92765a231756797a2415a96c351287b1331b40c57a7ecb6d4214ec1",
+  "operation": {
+    "operationId": "3ef8ca78-61ab-47d5-9975-2bbf5fb959d3",
+    "expectedSequence": 3,
+    "candidateId": "mock-c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+    "expectedContentHash": "c5ab4e92ac5f0062efae8f774c2c4bba02ad86236b5dbaa3586c91efaddca3b5",
+    "expectedState": "SAFETY_REVIEW",
+    "action": "request-changes",
+    "evidence": {
+      "reviewId": "e254f44b-160b-485f-b8ba-86524ddfb468",
+      "confirmed": true,
+      "reason": "Owner requested changes: add explicit outcome-neutral COMPLIED guidance distinct from dummy disclosure, and visible unsolicited synthetic-disclosure context. No checklist approval or warning acceptance was authorized.",
+      "failedItems": [],
+      "findingPaths": [
+        "/candidate/details/debriefs",
+        "/candidate/details/examples"
+      ]
+    }
+  }
+}

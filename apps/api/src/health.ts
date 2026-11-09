@@ -5,7 +5,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { ApiHealthResponseSchema, ConsentRequestSchema, CreateSessionRequestSchema, EndSessionRequestSchema, MockTurnRequestSchema, ScenarioBriefSchema, type ApiHealthResponse, type SpeechRecognizer, type SpeechSynthesizer, type RuntimeCreditReservation } from "@vaccine/contracts";
-import { DraftScenarioPackageSchema, isScenarioRuntimeEligible, validateScenarioDocument, validateScenarioSafety, type ScenarioDocument, type ScenarioSafetyOptions } from "@vaccine/scenario-schema";
+import { DraftScenarioPackageSchema, isScenarioRuntimeEligible, validateScenarioDocument, validateScenarioSafety, type RuntimeRelease, type ScenarioDocument, type ScenarioSafetyOptions } from "@vaccine/scenario-schema";
 import { MockEvonAuthoringAdapter } from "./providers/evon/mockEvon.js";
 import { MockPrismaRecognizer } from "./providers/prisma/mockPrisma.js";
 import { MockTimbreSynthesizer } from "./providers/timbre/mockTimbre.js";
@@ -23,12 +23,16 @@ import type { CallerAudioService } from "./callerAudio/service.js";
 import { applyConversationAction } from "./conversationRuntime.js";
 import { requireLocalRuntimeRequest } from "./runtimeAudioIngress.js";
 import { conversationDebrief, readConversationTemplates, type ReviewedTemplates } from "./conversationDebrief.js";
+import { RuntimeCatalog } from "./runtimeCatalog.js";
 
 export interface HealthServerOptions {
   environment: string;
   version?: string;
   now?: () => Date;
   scenarioDirectory?: string;
+  /** Trusted process configuration, never accepted from the learner API. */
+  runtimeWorkspace?: string;
+  onRuntimeDenial?: (event: { scenarioId: string; scenarioVersion: string; code: string; at: string }) => void;
   budget?: CreditBudget;
   sttUnits?: number;
   ttsUnits?: number;
@@ -53,9 +57,18 @@ export function createHealthResponse(options: HealthServerOptions): ApiHealthRes
 }
 
 export function createApiServer(options: HealthServerOptions): Server {
+  const workspace = options.runtimeWorkspace ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+  const catalog = new RuntimeCatalog(workspace);
+  if (options.scenarioDirectory && options.environment !== "test") throw new Error("Scenario fixture directories are test-only.");
+  const testDirectory = options.scenarioDirectory;
   const templates = new Map<string, ReviewedTemplates>();
-  const safeSession = (state: ReturnType<typeof createSessionState>) => projectSafeSession(state, templates.get(`${state.scenarioId}:${state.scenarioVersion}`));
-  const scenarios = loadScenarios(options.scenarioDirectory ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../../content/scenarios"));
+  const pins = new Map<string, { publicationId: string | null; packageHash: string; policyVersion: string }>();
+  const publishedSessions = new Map<string, { release: RuntimeRelease; pipeline: TurnOrchestrator }>();
+  const safeSession = (state: ReturnType<typeof createSessionState>) => ({
+    ...projectSafeSession(state, templates.get(`${state.scenarioId}:${state.scenarioVersion}`)),
+    ...(pins.has(state.sessionId) ? { runtimeRelease: pins.get(state.sessionId)! } : {}),
+  });
+  const scenarios = testDirectory ? loadTestScenarios(testDirectory) : catalog.legacyScenarios();
   const store = options.sessionStore ?? new InMemorySessionStore();
   const browserAudio = new BrowserAudioIngress(options.environment, store);
   const apiBudget = options.budget ?? { mode: "development" as const, developmentCap: 100, publicDemoCap: 100, reserveCap: 0, usedUnits: 0 };
@@ -83,8 +96,41 @@ export function createApiServer(options: HealthServerOptions): Server {
   server.once("close", () => { runtimeAudio.close(); callerAudio.close(); });
   return server;
 
+  async function verifyPublished(release: RuntimeRelease) {
+    const current = (await catalog.published()).find((entry) => entry.publicationId === release.publicationId);
+    if (current?.packageHash !== release.packageHash) throw new ApplicationError("INVALID_SCENARIO", "The pinned release is no longer available.");
+  }
+
+  async function guardSession(sessionId: string, frame: boolean) {
+    const state = store.get(sessionId);
+    const pinned = publishedSessions.get(sessionId);
+    try {
+      if (pinned) await verifyPublished(pinned.release);
+      else if (!testDirectory && state.scenarioRuntimeStatus === "RUNTIME_ELIGIBLE") {
+        if (state.scenarioId !== "S-01" || !pins.has(sessionId)) throw new ApplicationError("INVALID_SCENARIO", "Session release is unavailable.");
+        if (!frame && catalog.legacyRelease().scenario.version !== state.scenarioVersion) throw new ApplicationError("INVALID_SCENARIO", "Session release has changed.");
+      }
+    } catch (error) {
+      browserAudio.cancelSession(sessionId); runtimeAudio.cancelSession(sessionId); callerAudio.cancelSession(sessionId);
+      store.update(endSession(store.get(sessionId), (options.now ?? (() => new Date()))()));
+      throw error;
+    }
+  }
+
+  function offlinePipeline(release: RuntimeRelease) {
+    const synthesizer = options.environment === "test" && options.synthesizer ? options.synthesizer : new MockTimbreSynthesizer();
+    return new TurnOrchestrator({ store, scenarios: new Map([[release.scenario.scenario_id, release.scenario]]),
+      recognizer: options.environment === "test" && options.recognizer ? options.recognizer : new MockPrismaRecognizer(),
+      synthesizer: { synthesize: async (request) => { await verifyPublished(release); return synthesizer.synthesize(request); } },
+      budget: apiBudget, sttUnits: 0, ttsUnits: 0, ...(options.now ? { now: options.now } : {}),
+    });
+  }
+
   async function handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
     const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+    if (request.method === "GET" && pathname === "/api/runtime/scenarios") {
+      sendJson(response, 200, { scenarios: await catalog.playable() }); return;
+    }
     if (request.method === "GET" && pathname === "/api/runtime/credit") {
       requireLocalRuntimeRequest(request, options.environment);
       sendJson(response, 200, orchestrator.creditDiagnostics()); return;
@@ -111,7 +157,25 @@ export function createApiServer(options: HealthServerOptions): Server {
       const parsed = CreateSessionRequestSchema.safeParse(body);
       if (!parsed.success) throw new ApplicationError("INVALID_REQUEST", "Session request did not match the allowed configuration.");
       const input = parsed.data;
-      const scenario = scenarios.get(input.scenarioId);
+      try { await startSession(input, startedAt, response); }
+      catch (error) {
+        const identity = /^S-\d{2}$/u.test(input.scenarioId) ? input.scenarioId : "invalid";
+        const version = /^\d{1,4}\.\d{1,4}\.\d{1,4}(?:-draft)?$/u.test(input.scenarioVersion) ? input.scenarioVersion : "invalid";
+        const event = { scenarioId: identity, scenarioVersion: version, code: error instanceof ApplicationError ? error.code : "INTERNAL_ERROR", at: startedAt.toISOString() };
+        options.onRuntimeDenial?.(event);
+        throw error;
+      }
+      return;
+    }
+
+    const scoped = pathname.match(/^\/api\/sessions\/([^/]+)(?:\/.*)?$/u);
+    if (scoped && !/\/(?:end|cancel)$/u.test(pathname)) await guardSession(decodeURIComponent(scoped[1]!), pathname.endsWith("/frame"));
+
+    async function startSession(input: import("@vaccine/contracts").CreateSessionRequest, startedAt: Date, response: ServerResponse) {
+      let scenario = scenarios.get(input.scenarioId);
+      const release = scenario ? undefined : (await catalog.published()).find((entry) =>
+        entry.scenario.scenario_id === input.scenarioId && entry.scenario.version === input.scenarioVersion);
+      scenario ??= release?.scenario;
       if (!scenario) throw new ApplicationError("SCENARIO_NOT_FOUND", "Scenario was not found.");
       if (scenario.version !== input.scenarioVersion || scenario.simulation !== true) throw new ApplicationError("INVALID_SCENARIO", "Scenario version or simulation metadata is invalid.");
       const runtimeEligible = isScenarioRuntimeEligible(scenario);
@@ -127,13 +191,15 @@ export function createApiServer(options: HealthServerOptions): Server {
           throw new ApplicationError("INVALID_SCENARIO", "Draft scenarios can only run the explicitly limited metadata-only mock fallback.");
         }
       }
+      const canonical = runtimeEligible && !release && !testDirectory ? catalog.legacyRelease() : undefined;
+      if (canonical && canonical.scenario.version !== scenario.version) throw new ApplicationError("INVALID_SCENARIO", "Runtime version has changed.");
       if (input.runtimeMode === "REAL_CONVERSATION") templates.set(`${scenario.scenario_id}:${scenario.version}`,
-        readConversationTemplates(resolve(dirname(fileURLToPath(import.meta.url)), "../../../content/authoring/S-01-hi-IN.package.json"), scenario));
+        canonical?.templates ?? readConversationTemplates(resolve(workspace, "content/authoring/S-01-hi-IN.package.json"), scenario));
       const initial = createSessionState({
         sessionId: randomUUID(), scenarioId: scenario.scenario_id, scenarioVersion: scenario.version,
         language: input.language, startingNodeId: scenario.nodes.find((node) => node.parent_node_id === null)?.id ?? "start",
         consentVersion: CONSENT_VERSION,
-        mode: input.demoMode ? "demo" : "safe",
+        mode: input.demoMode && !release ? "demo" : "safe",
         runtimeMode: input.runtimeMode,
         scenarioRuntimeStatus: scenario.lifecycle_status,
         maxPressureLevel: scenario.adaptive_policy?.max_pressure_level ?? 5,
@@ -148,6 +214,10 @@ export function createApiServer(options: HealthServerOptions): Server {
           currentTacticPromptedDummySecret: openingTactic?.prompts_dummy_secret ?? false,
           previousTacticIds: openingTactic ? [openingTactic.tactic_id] : [] } : {}),
         metrics: [{ operation: "session_creation", stage: "session_creation", sessionId: initial.sessionId, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString(), durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()), measuredAt: endedAt.toISOString(), success: true }] };
+      if (release) {
+        pins.set(state.sessionId, { publicationId: release.publicationId, packageHash: release.packageHash, policyVersion: release.policyVersion });
+        publishedSessions.set(state.sessionId, { release, pipeline: offlinePipeline(release) });
+      } else if (canonical) pins.set(state.sessionId, { publicationId: null, packageHash: canonical.packageHash, policyVersion: "deterministic-adaptive-v1" });
       store.create(state);
       sendJson(response, 201, { session: safeSession(state), simulationOnly: true, draftFallbackOnly: !runtimeEligible });
       return;
@@ -172,6 +242,7 @@ export function createApiServer(options: HealthServerOptions): Server {
     }
     const audioRoute = pathname.match(/^\/api\/sessions\/([^/]+)\/audio\/(start|frame|finish|cancel)$/);
     if (request.method === "POST" && audioRoute) {
+      if (publishedSessions.has(decodeURIComponent(audioRoute[1]!))) throw new ApplicationError("INVALID_STATE", "This published practice accepts typed input only.");
       if (audioRoute[2] === "start") rate(turnLimiter, request, "browser-audio");
       await browserAudio.handle(request, response, decodeURIComponent(audioRoute[1]!), audioRoute[2]!);
       return;
@@ -209,7 +280,8 @@ export function createApiServer(options: HealthServerOptions): Server {
       if (parsed.data.timingFixture && options.environment !== "development" && options.environment !== "test") {
         throw new ApplicationError("INVALID_REQUEST", "Timing fixtures are available only in development and test environments.");
       }
-      const result = await orchestrator.processTurn(sessionId, parsed.data.text, parsed.data.timingFixture);
+      const result = await (publishedSessions.get(sessionId)?.pipeline ?? orchestrator).processTurn(sessionId, parsed.data.text, parsed.data.timingFixture);
+      if (publishedSessions.has(sessionId)) await guardSession(sessionId, false);
       sendJson(response, 200, { ...result, session: safeSession(result.session) });
       return;
     }
@@ -229,7 +301,7 @@ export function createApiServer(options: HealthServerOptions): Server {
   }
 }
 
-function loadScenarios(directory: string): Map<string, ScenarioDocument> {
+function loadTestScenarios(directory: string): Map<string, ScenarioDocument> {
   try {
     const result = new Map<string, ScenarioDocument>();
     for (const name of readdirSync(directory).filter((entry) => entry.endsWith(".json"))) {

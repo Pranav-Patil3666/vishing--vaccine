@@ -1,9 +1,9 @@
-import type { ZodIssue } from "zod";
+import { z, type ZodIssue } from "zod";
 import { authoringRules, type AddAuthoringFinding, type AuthoringFinding, type AuthoringRuleId } from "./authoringRules.js";
 import { affirmativeMatch, independentCue, inspectDebriefClaim, scanAuthoringText, simulationCue, stopCue } from "./authoringContentSafety.js";
 import {
   AuthoringCandidateSchema, canonicalDraftJson, draftBehaviors, draftOutcomes, DraftAuthoringError, draftJsonLimit,
-  outcomeFor, parseAuthoringCandidate, parseDraftJson, SavedDraftSchema, tacticCategories,
+  offlineAdaptiveMockGeneratorVersion, outcomeFor, parseAuthoringCandidate, parseDraftJson, SavedDraftSchema, tacticCategories,
   type AuthoringCandidate, type SavedDraft,
 } from "./phase6Draft.js";
 import type { ScenarioSafetyOptions } from "./safety.js";
@@ -40,18 +40,44 @@ export interface AuthoringValidationOptions {
   lineage?: readonly unknown[];
 }
 
+export const AuthoringValidationResultSchema: z.ZodType<AuthoringValidationResult> = z.object({
+  candidateId: z.string().nullable(), scenarioId: z.string().nullable(), scenarioVersion: z.string().nullable(),
+  schemaVersion: z.number().int().nullable(), validationVersion: z.string(),
+  checkedAt: z.string().datetime(), sourceHash: z.string().regex(/^[0-9a-f]{64}$/u).nullable(),
+  policyHash: z.string().regex(/^[0-9a-f]{64}$/u).nullable(), status: z.enum(["PASS", "WARN", "FAIL"]),
+  structuralValidation: z.enum(["PASS", "FAIL"]), reviewEligible: z.boolean(),
+  summary: z.object({ errors: z.number().int().nonnegative(), warnings: z.number().int().nonnegative(), info: z.number().int().nonnegative() }).strict(),
+  findings: z.array(z.object({
+    ruleId: z.custom<AuthoringRuleId>((value) => typeof value === "string" && Object.hasOwn(authoringRules, value)),
+    severity: z.enum(["ERROR", "WARNING", "INFO"]),
+    category: z.enum(["INPUT", "SCHEMA", "IDENTITY", "PROVENANCE", "SAFETY", "TACTIC", "PRESSURE", "RESPONSE", "GRAPH", "LANGUAGE", "BEHAVIOR", "RED_FLAG", "GUIDANCE", "DEBRIEF"]),
+    path: z.string(), message: z.string(), remediation: z.string(),
+  }).strict()).max(81),
+  graph: z.object({
+    complete: z.boolean(), reachablePrefixes: z.number().int().nonnegative(), terminalLeaves: z.number().int().nonnegative(),
+    maximumDepth: z.number().int().nonnegative(), reachableResponseIds: z.array(z.string()),
+    reachablePressures: z.array(z.number().int().min(0).max(5)), unreachableAuthoredVariants: z.array(z.string()),
+  }).strict().nullable(),
+}).strict();
+
 const asObject = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const equal = (a: unknown, b: unknown) => canonicalDraftJson(a) === canonicalDraftJson(b);
 const validId = /^[a-zA-Z0-9][a-zA-Z0-9.-]{0,79}$/u;
 type CandidateContent = Pick<AuthoringCandidate, "draft" | "details">;
+class UnsafeAuthoringData extends Error {}
 const validVersion = /^(?:0|[1-9]\d{0,3})\.(?:0|[1-9]\d{0,3})\.(?:0|[1-9]\d{0,3})$/u;
 const duplicate = <T>(items: T[]) => new Set(items).size !== items.length;
 const sameIds = (a: string[], b: string[]) => !duplicate(a) && !duplicate(b) && a.length === b.length && a.every((id) => b.includes(id));
 const pathToken = /^(?:[a-zA-Z_][a-zA-Z_0-9]{0,49}|[0-9]+|(?:system|ending|urgency|authority|isolation|fear|reward)\.[a-z.-]{1,32})$/u;
 
 export function authoringPointer(parts: (string | number)[]) {
-  return parts.length ? "/" + parts.map((part) => pathToken.test(String(part)) ? String(part) : "*").join("/") : "/";
+  return parts.length ? "/" + parts.map((part, index) => {
+    if (parts[index - 1] === "responses") {
+      return /^(?:system\.(?:opening|safe-ending|safe-fallback)|ending\.(?:verified|dummy|turn-limit)|(?:urgency|authority|isolation|fear|reward)\.(?:low|medium|high))$/u.test(String(part)) ? String(part) : "*";
+    }
+    return pathToken.test(String(part)) ? String(part) : "*";
+  }).join("/") : "/";
 }
 
 export async function hashAuthoringData(value: unknown) {
@@ -81,10 +107,12 @@ function boundedData(value: unknown) {
       }
       active.add(current);
       stack.push({ value: current, path: entry.path, leave: true });
-      for (const key of Object.keys(current).sort().reverse()) {
+      if (Object.getOwnPropertySymbols(current).length) throw new DraftAuthoringError("UNSUPPORTED_IMPORT_FORMAT");
+      for (const key of Object.getOwnPropertyNames(current).sort().reverse()) {
+        if (Array.isArray(current) && key === "length") continue;
         const descriptor = Object.getOwnPropertyDescriptor(current, key)!;
         if (["__proto__", "prototype", "constructor"].includes(key) || descriptor.get || descriptor.set) {
-          throw new DraftAuthoringError("UNSUPPORTED_IMPORT_FORMAT");
+          throw new UnsafeAuthoringData();
         }
         stack.push({ value: descriptor.value, path: [...entry.path, key] });
       }
@@ -150,6 +178,7 @@ export async function validateAuthoringDraft(input: unknown, options: AuthoringV
     boundedData(value);
     const object = asObject(value);
     const isSaved = Object.hasOwn(object, "candidate");
+    const addCandidate: AddAuthoringFinding = (rule, path) => add(rule, isSaved ? ["candidate", ...path] : path);
     const candidateValue = isSaved ? object.candidate : value;
     const raw = asObject(candidateValue);
     const candidateStrings = boundedData(candidateValue);
@@ -166,16 +195,16 @@ export async function validateAuthoringDraft(input: unknown, options: AuthoringV
       add("REFERENCE_CONFIG", []);
     } else {
       policyHash = await hashAuthoringData(config);
-      scanAuthoringText(candidateStrings, config, add);
+      scanAuthoringText(candidateStrings, config, addCandidate);
     }
     const parsed = AuthoringCandidateSchema.safeParse(candidateValue);
     if (!parsed.success) {
-      for (const issue of parsed.error.issues) add(schemaRule(issue), issue.path);
+      for (const issue of parsed.error.issues) addCandidate(schemaRule(issue), issue.path);
     } else {
       const candidate = parsed.data;
       structuralValidation = "PASS";
-      inspectCandidate(candidate, add);
-      graph = inspectGraph(candidate, add);
+      inspectCandidate(candidate, addCandidate);
+      graph = inspectGraph(candidate, addCandidate);
       if (isSaved) {
         const savedResult = SavedDraftSchema.safeParse(value);
         if (!savedResult.success) {
@@ -192,12 +221,21 @@ export async function validateAuthoringDraft(input: unknown, options: AuthoringV
           if (saved.provenance.source === "MANUAL_IMPORT" ? saved.provenance.declaredOrigin !== (candidate.declaredOrigin ?? null) : candidate.declaredOrigin !== undefined) {
             add("PROVENANCE_INVALID", ["provenance"]);
           }
+          const expectedGeneratorVersion = candidate.details.runtimeProfile === "offline-adaptive-v1" ? offlineAdaptiveMockGeneratorVersion : "1.0.0";
+          if (saved.provenance.source === "DETERMINISTIC_MOCK" && saved.provenance.generatorVersion !== expectedGeneratorVersion) {
+            add("PROVENANCE_INVALID", ["provenance", "generatorVersion"]);
+          }
           if (manual && /evon|gnani|model|llm|inference/iu.test(candidate.declaredOrigin ?? "")) {
             add("ORIGIN_UNVERIFIED", ["candidate", "declaredOrigin"]);
           }
           await inspectLineage(saved, options.lineage ?? [], add);
           // Also scan imported record metadata, using the same sensitive-data rules and safe paths.
-          if (policyHash) scanAuthoringText(boundedData({ provenance: object.provenance }), config, add);
+          if (policyHash) {
+            const metadata = saved.provenance.source === "MANUAL_IMPORT"
+              ? { originalFilename: saved.provenance.originalFilename, declaredOrigin: saved.provenance.declaredOrigin }
+              : { templateFamily: saved.provenance.templateFamily };
+            scanAuthoringText(boundedData({ provenance: metadata }), config, add);
+          }
         }
       } else {
         add("RECORD_REQUIRED", []);
@@ -207,15 +245,16 @@ export async function validateAuthoringDraft(input: unknown, options: AuthoringV
         try { parseAuthoringCandidate(candidateValue, config); }
         catch (error) {
           if (error instanceof DraftAuthoringError && error.code === "UNSAFE_DRAFT_CONTENT") {
-            add("SAFETY_CONTEXT_REVIEW", []);
-          } else add("CANDIDATE_CONTRACT", error instanceof Error
+            addCandidate("SAFETY_CONTEXT_REVIEW", []);
+          } else addCandidate("CANDIDATE_CONTRACT", error instanceof Error
             ? (error.message.match(/ Field: ([a-zA-Z0-9_.]+)\.$/u)?.[1]?.split(".") ?? []) : []);
         }
       }
     }
     add("CONTENT_REVIEW", []);
   } catch (error) {
-    add(error instanceof DraftAuthoringError ? "INPUT_INVALID" : "VALIDATOR_FAILED", []);
+    add(error instanceof UnsafeAuthoringData ? "INPUT_UNSAFE_KEY"
+      : error instanceof DraftAuthoringError ? "INPUT_INVALID" : "VALIDATOR_FAILED", []);
   }
   findings.sort((a, b) => {
     const left = a.path + "\u0000" + a.ruleId, right = b.path + "\u0000" + b.ruleId;
@@ -242,6 +281,10 @@ function inspectCandidate({ draft, details }: AuthoringCandidate, add: AddAuthor
     || scenario.review_status !== "draft" || review.decision !== "pending"
     || review.reviewerId || review.reviewedAt || scenario.reviewed_by || scenario.reviewed_at
     || Object.values(review.checklist).some(Boolean)) add("LIFECYCLE_FORGED", ["draft", "review"]);
+  if (scenario.voice_id !== null || scenario.nodes.some((node) => node.branch_status !== "draft")
+    || Object.values(scenario.responses).some((response) => response.safety_status === "reviewed_safe")) {
+    add("LIFECYCLE_FORGED", ["draft", "scenario"]);
+  }
   if (!/^S-\d{2}$/u.test(scenario.scenario_id) || ["S-01", "S-02", "S-03"].includes(scenario.scenario_id)
     || !validVersion.test(scenario.version) || draft.packageId !== `${scenario.scenario_id}-${scenario.version}-draft`
     || draft.scenarioBrief.scenarioId !== scenario.scenario_id) add("IDENTITY_INVALID", ["draft", "packageId"]);
@@ -256,7 +299,8 @@ function inspectCandidate({ draft, details }: AuthoringCandidate, add: AddAuthor
   const responseIds = Object.keys(responses);
   const terminalIds = Object.values(details.terminalResponses);
   const variantIds = details.variants.map((entry) => entry.responseId);
-  if (duplicate(draft.candidateApprovedResponses.map((entry) => entry.responseId)) || duplicate(terminalIds)
+  if (duplicate(draft.candidateApprovedResponses.map((entry) => entry.responseId))
+    || (details.runtimeProfile !== "offline-adaptive-v1" && duplicate(terminalIds))
     || [...variantIds, details.openingResponseId].some((id) => terminalIds.includes(id))
     || details.variants.some((entry) => !validId.test(entry.responseId)) || responseIds.some((id) => !validId.test(id))) {
     add("RESPONSE_ID", ["draft", "candidateApprovedResponses"]);
@@ -267,7 +311,9 @@ function inspectCandidate({ draft, details }: AuthoringCandidate, add: AddAuthor
   for (const [id, response] of Object.entries(responses)) {
     const path = ["draft", "scenario", "responses", id, "text"];
     if (!response.text.trim() || response.text.length > 280) add("CALLER_LENGTH", path);
-    if (/[<>]|[\u0000-\u0008\u000b-\u001f]|\n\s*\n|(?:\.\.\.|…|-)$/u.test(response.text)) add("CALLER_FORMAT", path);
+    if (/[<>]|\n\s*\n|(?:\.\.\.|…|-)$/u.test(response.text)
+      || Array.from(response.text).some((character) => character.charCodeAt(0) < 32 && character !== "\n" && character !== "\t")
+      || /\b[a-zA-Z0-9_-]{45,}\b/u.test(response.text)) add("CALLER_FORMAT", path);
     const hasScript = details.scriptPreference === "Devanagari" ? /\p{Script=Devanagari}/u : /\p{Script=Latin}/u;
     if (!hasScript.test(response.text) || /\ufffd/u.test(response.text)) add("SCRIPT_REVIEW", path);
     const record = draft.candidateApprovedResponses.find((entry) => entry.responseId === id);
@@ -282,7 +328,7 @@ function inspectCandidate({ draft, details }: AuthoringCandidate, add: AddAuthor
     const response = responses[id];
     if (!response) { add("RESPONSE_MISSING", path); continue; }
     if (!stopCue.test(response.text)) add("ENDING_AMBIGUOUS", path);
-    if (affirmativeMatch(response.text, /\b(?:please|now|abhi)\s+(?:confirm|continue|send|share|pay)|\b(?:or else|last chance|account will be blocked)|अब.{0,10}(?:भेजिए|बताइए|जारी रखिए)/iu)) {
+    if (affirmativeMatch(response.text, /\b(?:please|now|abhi)\s+(?:confirm|continue|send|share|pay)|\b(?:or else|last chance|account will be blocked|continue (?:the|this) (?:call|conversation)|provide more details|keep talking|do not end the call)|अब.{0,10}(?:भेजिए|बताइए|जारी रखिए)/iu)) {
       add("ENDING_UNSAFE", path);
     }
   }
@@ -360,6 +406,9 @@ function inspectExamples({ draft, details }: CandidateContent, add: AddAuthoring
     if (entry.label === "UNKNOWN" && affirmativeMatch(entry.utterance, /\b(?:I agree|I will verify independently|main independently verify|mark me down)\b|मैं.{0,10}स्वतंत्र.{0,10}सत्यापन/iu)) {
       add("BEHAVIOR_REVIEW", path);
     }
+    if (entry.label === "STALLED" && /\b(?:I refuse|I will not accept|main mana karta hoon)\b|मैं मना करता हूँ/iu.test(entry.utterance)) {
+      add("BEHAVIOR_REVIEW", path);
+    }
   });
   const context = details.premise + " " + details.examples.map((entry) => entry.interpretation).join(" ");
   if (!/(?:unsolicited (?:synthetic )?(?:token )?disclosure|without being asked|synthetic.token (?:request|exercise)|अनचाहे.{0,10}खुलासे)/iu.test(context)) {
@@ -382,7 +431,7 @@ function inspectGuidance({ draft, details }: CandidateContent, add: AddAuthoring
     ...details.redFlags.map((entry, index) => ({ text: entry.safeAction, path: ["details", "redFlags", index, "safeAction"] })),
   ];
   for (const { text, path } of recommendations) {
-    if (affirmativeMatch(text, /\b(?:use|trust|call|verify through)\b.{0,25}\bcaller[-' ](?:supplied|provided|s)\b.{0,30}\b(?:number|contact|proof|link)|caller ke diye.{0,20}(?:number|contact).{0,12}(?:bharosa|verify)/iu)) {
+    if (affirmativeMatch(text, /\b(?:use|trust|call|verify through)\b.{0,25}\bcaller[-' ](?:supplied|provided|s)\b.{0,30}\b(?:number|contact|proof|link)|caller ke diye.{0,20}(?:number|contact).{0,12}(?:bharosa|verify)|\bshare (?:your )?(?:password|pin|otp)|\bsend money/iu)) {
       add("GUIDANCE_UNSAFE", path);
     }
   }
@@ -489,12 +538,14 @@ async function inspectLineage(saved: SavedDraft, lineage: readonly unknown[], ad
 }
 
 export async function canSubmitForSafetyReview(
-  candidate: unknown, previous: AuthoringValidationResult, options: AuthoringValidationOptions,
+  candidate: unknown, report: unknown, options: AuthoringValidationOptions,
 ): Promise<{ eligible: boolean; reasons: ("STALE_CONTENT" | "STALE_VALIDATOR" | "STALE_POLICY" | "REPORT_MISMATCH" | "VALIDATION_BLOCKED")[] }> {
   const current = await validateAuthoringDraft(candidate, options);
-  try { boundedData(previous); }
+  try { boundedData(report); }
   catch { return { eligible: false, reasons: ["REPORT_MISMATCH"] }; }
-  if (!previous || typeof previous !== "object") return { eligible: false, reasons: ["REPORT_MISMATCH"] };
+  const parsed = AuthoringValidationResultSchema.safeParse(report);
+  if (!parsed.success) return { eligible: false, reasons: ["REPORT_MISMATCH"] };
+  const previous = parsed.data;
   const reasons: ("STALE_CONTENT" | "STALE_VALIDATOR" | "STALE_POLICY" | "REPORT_MISMATCH" | "VALIDATION_BLOCKED")[] = [];
   if (previous.sourceHash !== current.sourceHash) reasons.push("STALE_CONTENT");
   if (previous.validationVersion !== authoringValidationVersion) reasons.push("STALE_VALIDATOR");
@@ -504,4 +555,3 @@ export async function canSubmitForSafetyReview(
   if (!current.reviewEligible) reasons.push("VALIDATION_BLOCKED");
   return { eligible: reasons.length === 0, reasons };
 }
-

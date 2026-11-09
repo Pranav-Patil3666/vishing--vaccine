@@ -77,4 +77,3 @@ export interface AuthoringFinding {
   remediation: string;
 }
 export type AddAuthoringFinding = (ruleId: AuthoringRuleId, path: (string | number)[]) => void;
-

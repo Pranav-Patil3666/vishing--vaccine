@@ -1,0 +1,14 @@
+{
+  "scenarioId": "S-92",
+  "title": "Phase 6C review copy - fictional employee benefits",
+  "draftVersion": "0.1.0",
+  "templateFamily": "fictional-benefits-verification",
+  "templateVersion": "1.0.0",
+  "audience": "new employees",
+  "difficulty": "introductory",
+  "language": "hi-en",
+  "scriptPreference": "Latin",
+  "learningObjective": "verify-through-known-channel",
+  "maxLearnerTurns": 3
+}
+

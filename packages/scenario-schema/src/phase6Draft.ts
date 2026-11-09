@@ -4,6 +4,7 @@ import { DraftScenarioPackageSchema } from "./authoring.js";
 import { validateScenarioSafety, type ScenarioSafetyOptions } from "./safety.js";
 
 export const draftJsonLimit = 160 * 1024;
+export const offlineAdaptiveMockGeneratorVersion = "1.1.0";
 export const tacticCategories = {
   urgency: "URGENCY", authority: "AUTHORITY", isolation: "ISOLATION",
   fear: "FEAR_CONSEQUENCE", reward: "REWARD_FAKE_HELP",
@@ -61,6 +62,7 @@ export const MockDraftBriefSchema = ScenarioBriefSchema.extend({
   difficulty: z.enum(["introductory", "intermediate"]),
   scriptPreference: script,
   maxLearnerTurns: z.union([z.literal(2), z.literal(3)]),
+  runtimeProfile: z.literal("offline-adaptive-v1").optional(),
 }).strict();
 export type MockDraftBrief = z.infer<typeof MockDraftBriefSchema>;
 
@@ -79,6 +81,7 @@ const route = z.discriminatedUnion("action", [
 ]);
 
 const DraftDetailsSchema = z.object({
+  runtimeProfile: z.literal("offline-adaptive-v1").optional(),
   title: copy(100), department: copy(100), industry: copy(100), audience: copy(100),
   difficulty: z.enum(["introductory", "intermediate"]),
   premise: copy(500), register: copy(120), scriptPreference: script,
@@ -142,7 +145,11 @@ function safeField(path: (string | number)[]) {
 }
 
 export function parseDraftJson(bytes: Uint8Array): unknown {
-  if (bytes.length > draftJsonLimit) throw new DraftAuthoringError("IMPORT_TOO_LARGE");
+  return parseBoundedAuthoringJson(bytes, { maxBytes: draftJsonLimit, maxDepth: 20, maxArray: 128, maxValues: 12_000 });
+}
+
+export function parseBoundedAuthoringJson(bytes: Uint8Array, limits: { maxBytes: number; maxDepth: number; maxArray: number; maxValues: number }): unknown {
+  if (bytes.length > limits.maxBytes) throw new DraftAuthoringError("IMPORT_TOO_LARGE");
   let parsed: unknown;
   let text: string;
   try {
@@ -155,7 +162,7 @@ export function parseDraftJson(bytes: Uint8Array): unknown {
   let visited = 0;
   while (stack.length) {
     const { value, depth } = stack.pop()!;
-    if (++visited > 12_000 || depth > 20 || (Array.isArray(value) && value.length > 128)) {
+    if (++visited > limits.maxValues || depth > limits.maxDepth || (Array.isArray(value) && value.length > limits.maxArray)) {
       throw new DraftAuthoringError("UNSUPPORTED_IMPORT_FORMAT");
     }
     if (value === null || typeof value !== "object") continue;
@@ -286,10 +293,14 @@ export function parseAuthoringCandidate(value: unknown, safety: ScenarioSafetyOp
 
   const variantIds = details.variants.map((item) => item.responseId);
   const terminalIds = Object.values(details.terminalResponses);
-  ref(unique(terminalIds) && terminalIds.every((key) => ids.includes(key))
-    && terminalIds.every((key) => !allowedSafeIds.includes(key) || key === "system.safe-fallback")
+  const terminalMappingSupported = details.runtimeProfile === "offline-adaptive-v1"
+    ? details.terminalResponses.SAFE_VERIFIED === "system.safe-ending"
+      && details.terminalResponses.DUMMY_SECRET_DISCLOSED === "system.safe-ending"
+      && details.terminalResponses.MAX_TURNS === "system.safe-ending"
+    : unique(terminalIds) && terminalIds.every((key) => !allowedSafeIds.includes(key) || key === "system.safe-fallback");
+  ref(terminalMappingSupported && terminalIds.every((key) => ids.includes(key))
     && details.terminalResponses.SAFE_FALLBACK === "system.safe-fallback"
-    && sameSet(ids, [...variantIds, ...terminalIds, details.openingResponseId, "system.safe-ending"])
+    && sameSet(ids, [...variantIds, ...(details.runtimeProfile === "offline-adaptive-v1" ? ["system.safe-fallback"] : terminalIds), details.openingResponseId, "system.safe-ending"])
     && unique(details.variants.map((item) => responses[item.responseId]?.text)), "details.variants");
   ref(sameSet(variantIds, policy.tactics.flatMap((item) => item.response_ids))
     && sameSet(variantIds, draft.tacticPool.flatMap((item) => item.responseIds)), "draft.tacticPool");
@@ -311,7 +322,7 @@ export function parseAuthoringCandidate(value: unknown, safety: ScenarioSafetyOp
       && item.redFlags.every((flag) => details.redFlags.some((entry) => entry.id === flag && entry.tactics.includes(item.tactic)))),
     "details.variants.references");
   }
-  ref(policy.max_pressure_level === 3 && details.redFlags.every((flag) =>
+  ref(details.variants.every((variant) => variant.pressureLevel <= policy.max_pressure_level) && details.redFlags.every((flag) =>
     unique(flag.tactics) && flag.tactics.every((key) =>
       details.variants.some((item) => item.tactic === key && item.redFlags.includes(flag.id)))),
   "details.redFlags");
