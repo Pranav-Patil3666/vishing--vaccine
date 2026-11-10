@@ -1,13 +1,46 @@
+# Dependencies and generated build/test output
 node_modules/
-.cache/tts/
-.cache/authoring/
-content/authoring/review-registry/
 **/dist/
 **/coverage/
+
+# Local caches and authoring/review state
+.cache/
+content/authoring/review-registry/
+.vite/
+*.eslintcache
+*.tsbuildinfo
+
+# Local environment and credentials
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs and temporary/editor files
 npm-debug.log*
-*.tsbuildinfo
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Local editor configuration
+/.vscode/settings.json
+.idea/
+
+# OS metadata
 .DS_Store
 Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# Internal planning document not intended for the public repository
+/ROADMAP.md
